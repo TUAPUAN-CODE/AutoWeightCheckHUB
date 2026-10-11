@@ -1,0 +1,22 @@
+{
+	"folders": [
+		{
+			"path": "../../.vscode"
+		},
+		{
+			"path": "../../backend"
+		},
+		{
+			"path": ".."
+		},
+		{
+			"path": "../../legacy-python"
+		},
+		{
+			"path": "../../logs"
+		},
+		{
+			"path": "../../node_modules"
+		}
+	]
+}

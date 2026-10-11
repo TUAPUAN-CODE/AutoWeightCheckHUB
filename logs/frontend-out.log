@@ -1,0 +1,63 @@
+◇ injected env (26) from ..\.env // tip: ⌘ enable debugging { debug: true }
+◇ injected env (0) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+2026-08-16 08:25:26 [INFO] Frontend on http://0.0.0.0:3000  ->  proxying /api to http://127.0.0.1:8000
+◇ injected env (26) from ..\.env // tip: ◈ encrypted .env [www.dotenvx.com]
+◇ injected env (0) from .env // tip: ⌘ suppress logs { quiet: true }
+2026-08-16 08:26:32 [INFO] Frontend on http://0.0.0.0:3000  ->  proxying /api to http://127.0.0.1:8000
+◇ injected env (26) from ..\.env // tip: ◈ encrypted .env [www.dotenvx.com]
+◇ injected env (0) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+2026-08-18 00:28:39 [INFO] Frontend on http://0.0.0.0:3000  ->  proxying /api to http://127.0.0.1:8000
+◇ injected env (26) from ..\.env // tip: ⌘ enable debugging { debug: true }
+◇ injected env (0) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+2026-09-11 03:24:19 [INFO] Frontend on http://0.0.0.0:3000  ->  proxying /api to http://127.0.0.1:8000
+◇ injected env (26) from ..\.env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+◇ injected env (0) from .env // tip: ⌘ override existing { override: true }
+2026-09-12 01:20:46 [INFO] Frontend on http://0.0.0.0:3000  ->  proxying /api to http://127.0.0.1:8000
+◇ injected env (26) from ..\.env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+◇ injected env (0) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+2026-09-12 01:51:14 [INFO] Frontend on http://0.0.0.0:3000  ->  proxying /api to http://127.0.0.1:8000
+◇ injected env (26) from ..\.env // tip: ⌘ override existing { override: true }
+◇ injected env (0) from .env // tip: ⌘ enable debugging { debug: true }
+2026-09-12 01:58:26 [INFO] Frontend on http://0.0.0.0:3000  ->  proxying /api to http://127.0.0.1:8000
+◇ injected env (26) from ..\.env // tip: ◈ encrypted .env [www.dotenvx.com]
+◇ injected env (0) from .env // tip: ⌘ override existing { override: true }
+2026-09-12 06:23:50 [INFO] Frontend on http://0.0.0.0:3000  ->  proxying /api to http://127.0.0.1:8000
+◇ injected env (26) from ..\.env // tip: ⌘ override existing { override: true }
+◇ injected env (0) from .env // tip: ⌘ enable debugging { debug: true }
+2026-09-14 02:23:11 [INFO] Frontend on http://0.0.0.0:3000  ->  proxying /api to http://127.0.0.1:8000
+◇ injected env (26) from ..\.env // tip: ⌘ suppress logs { quiet: true }
+◇ injected env (0) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+2026-09-14 02:55:28 [INFO] Frontend on http://0.0.0.0:3000  ->  proxying /api to http://127.0.0.1:8000
+◇ injected env (26) from ..\.env // tip: ⌁ auth for agents [www.vestauth.com]
+◇ injected env (0) from .env // tip: ⌘ override existing { override: true }
+2026-09-14 04:52:32 [INFO] Frontend on http://0.0.0.0:3000  ->  proxying /api to http://127.0.0.1:8000
+◇ injected env (26) from ..\.env // tip: ⌘ override existing { override: true }
+◇ injected env (0) from .env // tip: ⌘ override existing { override: true }
+2026-09-16 04:13:24 [INFO] Frontend on http://0.0.0.0:3000  ->  proxying /api to http://127.0.0.1:8000
+◇ injected env (26) from ..\.env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+◇ injected env (0) from .env // tip: ⌘ suppress logs { quiet: true }
+2026-09-17 07:16:04 [INFO] Frontend on http://0.0.0.0:3000  ->  proxying /api to http://127.0.0.1:8000
+◇ injected env (26) from ..\.env // tip: ◈ secrets for agents [www.dotenvx.com]
+◇ injected env (0) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+2026-09-18 00:46:24 [INFO] Frontend on http://0.0.0.0:3000  ->  proxying /api to http://127.0.0.1:8000
+◇ injected env (26) from ..\.env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+◇ injected env (0) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+2026-09-18 07:05:36 [INFO] Frontend on http://0.0.0.0:3000  ->  proxying /api to http://127.0.0.1:8000
+◇ injected env (26) from ..\.env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+◇ injected env (0) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+2026-09-18 08:33:01 [INFO] Frontend on http://0.0.0.0:3000  ->  proxying /api to http://127.0.0.1:8000
+◇ injected env (26) from ..\.env // tip: ◈ encrypted .env [www.dotenvx.com]
+◇ injected env (0) from .env // tip: ⌘ override existing { override: true }
+2026-09-18 08:34:41 [INFO] Frontend on http://0.0.0.0:3000  ->  proxying /api to http://127.0.0.1:8000
+◇ injected env (26) from ..\.env // tip: ◈ secrets for agents [www.dotenvx.com]
+◇ injected env (0) from .env // tip: ⌘ suppress logs { quiet: true }
+2026-09-19 01:42:13 [INFO] Frontend on http://0.0.0.0:3000  ->  proxying /api to http://127.0.0.1:8000
+◇ injected env (26) from ..\.env // tip: ⌘ override existing { override: true }
+◇ injected env (0) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+2026-09-21 06:35:22 [INFO] Frontend on http://0.0.0.0:3000  ->  proxying /api to http://127.0.0.1:8000
+◇ injected env (26) from ..\.env // tip: ◈ encrypted .env [www.dotenvx.com]
+◇ injected env (0) from .env // tip: ⌘ enable debugging { debug: true }
+2026-09-22 04:22:28 [INFO] Frontend on http://0.0.0.0:3000  ->  proxying /api to http://127.0.0.1:8000
+◇ injected env (26) from ..\.env // tip: ⌁ auth for agents [www.vestauth.com]
+◇ injected env (0) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+2026-09-24 00:14:32 [INFO] Frontend on http://0.0.0.0:3000  ->  proxying /api to http://127.0.0.1:8000

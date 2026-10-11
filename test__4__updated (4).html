@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<title>Fill-Weight Live SPC Panel</title>
+<style>
+  :root{
+    --bg:        #ffffff;
+    --panel:     #ffffff;
+    --panel-2:   #f2f6fb;
+    --line:      #dbe4f0;
+    --text:      #000000;
+    --text-dim:  rgba(0,0,0,0.65);
+    --text-faint:rgba(0,0,0,0.45);
+
+    --ok:        #1d63e0;
+    --ok-dim:    rgba(29,99,224,0.10);
+    --target:    #e8720c;
+    --limit:     #d1453d;
+    --limit-dim: rgba(209,69,61,0.09);
+    --ctrl:      #5b7db8;
+
+    --mono: Tahoma, Geneva, Verdana, sans-serif;
+    --sans: Tahoma, Geneva, Verdana, sans-serif;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html, body{height:100%;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:var(--sans);
+    font-weight:700;
+    overflow:hidden;
+    display:flex;
+    flex-direction:column;
+  }
+  svg text{font-family:var(--mono); font-weight:700;}
+  .wrap{
+    flex:1; min-height:0; display:flex; flex-direction:column;
+    max-width:1400px; width:100%; margin:0 auto;
+    padding:12px 16px 10px; gap:8px;
+  }
+
+  /* ---------- header ---------- */
+  header{
+    display:flex; flex-direction:row; align-items:center; justify-content:space-between;
+    flex:0 0 auto; gap:12px; flex-wrap:wrap;
+    background:var(--panel); border:1px solid var(--line); border-radius:8px;
+    padding:9px 14px; box-shadow:0 2px 5px rgba(0,0,0,0.07), 0 10px 24px -14px rgba(0,0,0,0.18);
+  }
+  .eyebrow{
+    font-family:var(--mono); font-size:9px; letter-spacing:.1em; text-transform:uppercase;
+    color:var(--text-faint);
+  }
+  h1{font-family:var(--mono); font-weight:600; font-size:16px; letter-spacing:-0.01em; margin-top:1px;}
+  h1 span{color:var(--ok);}
+  .header-right{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
+  .spec-chips{display:flex; gap:6px; font-family:var(--mono); font-size:11px; flex-wrap:wrap;}
+  .chip{
+    border:1px solid var(--line); background:var(--panel-2); border-radius:6px;
+    padding:3px 8px; display:flex; align-items:center; gap:4px;
+  }
+  .chip small{color:var(--text-faint); font-size:9px; letter-spacing:.06em;}
+  .chip b{font-size:12px;}
+  .chip.lsl b, .chip.usl b{color:var(--limit);}
+  .chip.tgt b{color:var(--target);}
+  .header-btns{display:flex; gap:6px;}
+  .btn{
+    font-family:var(--mono); font-size:10px; letter-spacing:.04em; text-transform:uppercase;
+    background:var(--panel-2); border:1px solid var(--line); color:var(--text);
+    padding:4px 9px; border-radius:6px; cursor:pointer; transition:background .15s;
+  }
+  .btn:hover{background:var(--line);}
+  .btn.accent{border-color:rgba(29,99,224,0.4); color:var(--ok);}
+
+  .legend-bar{
+    display:flex; gap:16px; flex-wrap:wrap; align-items:center;
+    font-family:var(--mono); font-size:10px; color:var(--text-dim);
+    flex:0 0 auto; padding:5px 12px; background:var(--panel); border:1px solid var(--line);
+    border-radius:8px; box-shadow:0 2px 5px rgba(0,0,0,0.07);
+  }
+  .legend-bar i{display:inline-block; width:10px; height:2px; margin-right:5px; vertical-align:middle; position:relative; top:-2px;}
+  .legend-bar .d-dash{border-top:2px dashed var(--ctrl); width:10px; height:0; display:inline-block; margin-right:5px;}
+  .legend-bar strong{color:var(--text); font-weight:600; margin-right:2px;}
+
+  .range-switch{display:flex; align-items:center; gap:4px; font-family:var(--mono); font-size:10px;}
+  .range-btn{
+    font-family:var(--mono); font-size:10px; letter-spacing:.03em;
+    background:var(--panel-2); border:1px solid var(--line); color:var(--text-dim);
+    padding:3px 9px; border-radius:5px; cursor:pointer; transition:background .15s, color .15s, border-color .15s;
+  }
+  .range-btn:hover{background:var(--line);}
+  .range-btn.active{background:var(--ok-dim); border-color:rgba(29,99,224,0.4); color:var(--ok); font-weight:600;}
+  .range-sep{width:1px; height:14px; background:var(--line); margin:0 2px;}
+  .time-input{
+    font-family:var(--mono); font-size:10px; color:var(--text);
+    background:var(--panel-2); border:1px solid var(--line); border-radius:5px;
+    padding:2.5px 5px; width:82px;
+  }
+  .time-input:focus{outline:none; border-color:var(--ctrl);}
+
+  /* ---------- kpi row ---------- */
+  .kpis{display:grid; grid-template-columns:repeat(6,1fr); gap:8px; flex:0 0 auto;}
+  .kpi{background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:7px 11px; box-shadow:0 2px 5px rgba(0,0,0,0.07);}
+  .kpi .lbl{font-size:9px; letter-spacing:.06em; text-transform:uppercase; color:var(--text-faint); font-family:var(--mono);}
+  .kpi .val{font-family:var(--mono); font-size:16px; font-weight:600; margin-top:1px; transition:color .2s;}
+  .kpi .sub{font-family:var(--mono); font-size:9.5px; color:var(--text-dim); margin-top:1px; line-height:1.25; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .kpi.good .val{color:var(--ok);}
+  .kpi.warn .val{color:var(--target);}
+  .kpi.bad  .val{color:var(--limit);}
+
+  /* ---------- chart grid ---------- */
+  .main-grid{
+    flex:1.15; min-height:0; display:grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    gap:8px;
+  }
+  .hist-row{
+    flex:1.3; min-height:0; display:grid;
+    grid-template-columns: 1fr;
+  }
+  .panel{
+    background:var(--panel); border:1px solid var(--line); border-radius:8px;
+    padding:8px 12px 6px; box-shadow:0 2px 5px rgba(0,0,0,0.07), 0 10px 24px -14px rgba(0,0,0,0.18);
+    display:flex; flex-direction:column; min-height:0; min-width:0;
+  }
+  .panel h2{
+    font-family:var(--mono); font-size:10.5px; letter-spacing:.04em; text-transform:uppercase;
+    color:var(--text-dim); font-weight:700; margin-bottom:2px; flex:0 0 auto;
+    display:flex; justify-content:flex-start; align-items:baseline; gap:6px;
+    white-space:nowrap; overflow:hidden;
+  }
+  .panel h2 em{font-style:normal; color:var(--text-faint); font-size:9px; text-transform:none; letter-spacing:0; white-space:nowrap; flex:1 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis;}
+  .chart-body{flex:1; min-height:0; display:flex;}
+  .chart-body svg{width:100%; height:100%;}
+
+  .panel.expandable{cursor:zoom-in; transition:box-shadow .15s, border-color .15s;}
+  .panel.expandable:hover{border-color:var(--ctrl); box-shadow:0 1px 2px rgba(16,33,46,0.04), 0 10px 24px -14px rgba(16,33,46,0.25);}
+  .expand-hint{font-size:12px; color:var(--text-faint); margin-left:auto; flex:0 0 auto;}
+
+  .modal-overlay{
+    display:none; position:fixed; inset:0; background:rgba(16,26,36,0.55);
+    z-index:50; align-items:center; justify-content:center; padding:30px;
+  }
+  .modal-overlay.open{display:flex;}
+  .modal-box{
+    background:var(--panel); border-radius:12px; border:1px solid var(--line);
+    width:min(1200px, 100%); height:min(720px, 100%); display:flex; flex-direction:column;
+    box-shadow:0 24px 60px rgba(16,26,36,0.35); overflow:hidden;
+  }
+  .modal-head{display:flex; justify-content:space-between; align-items:center; padding:14px 18px; border-bottom:1px solid var(--line); flex:0 0 auto;}
+  .modal-head h2{font-family:var(--mono); font-size:14px; color:var(--text);}
+  .modal-body{flex:1; min-height:0; padding:18px; display:flex;}
+  .modal-body svg{width:100%; height:100%;}
+
+  svg text{font-family:var(--mono); font-weight:700;}
+  .axis{stroke:var(--line); stroke-width:1;}
+  .tick{fill:var(--text-faint); font-size:9px; font-weight:700;}
+
+  /* live feed */
+  .feed{display:flex; flex-direction:column; gap:0; font-family:var(--mono); font-size:11px; flex:1; min-height:0; overflow-y:auto;}
+  .feed-row{
+    display:grid; grid-template-columns:60px 60px 1fr 62px; gap:8px; align-items:center;
+    padding:3.5px 2px; border-bottom:1px solid rgba(223,230,238,0.8);
+  }
+  .feed-row:first-child{animation:slideIn .3s ease;}
+  @keyframes slideIn{from{opacity:0; transform:translateY(-6px);} to{opacity:1; transform:translateY(0);}}
+  .feed-row .sample{color:var(--text-faint); font-size:10px;}
+  .feed-row .value{font-weight:600; text-align:right;}
+  .feed-row .bar-bg{background:var(--panel-2); border-radius:2px; height:5px; position:relative; overflow:hidden;}
+  .feed-row .bar-fill{position:absolute; top:0; bottom:0; left:0; border-radius:2px;}
+  .tag{display:inline-block; padding:1.5px 6px; border-radius:5px; font-size:9px; letter-spacing:.02em; justify-self:end;}
+  .tag.OK{background:var(--ok-dim); color:var(--ok);}
+  .tag.WARNING{background:rgba(232,114,12,0.12); color:var(--target);}
+  .tag.OUT_OF_SPEC{background:var(--limit-dim); color:var(--limit);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div>
+      <div class="eyebrow">Statistical Process Control · Fill-Weight Line 3 · Live Feed</div>
+      <h1>SPC <span>Panel</span> — Real-Time</h1>
+    </div>
+    <div class="header-right">
+      <div class="spec-chips">
+        <div class="chip lsl"><small>LSL</small><b>30 g</b></div>
+        <div class="chip tgt"><small>TARGET</small><b>40 g</b></div>
+        <div class="chip usl"><small>USL</small><b>50 g</b></div>
+      </div>
+      <div class="header-btns">
+        <button class="btn accent" id="toggleBtn">Pause</button>
+        <button class="btn" id="resetBtn">Reset</button>
+        <button class="btn accent" id="exportBtn">Export Report</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="legend-bar">
+    <span><strong>Legend</strong></span>
+    <span><i style="background:var(--ok)"></i>in-spec / actual value</span>
+    <span><i style="background:var(--target)"></i>warning zone / target / Cp,1.33 line</span>
+    <span><i style="background:var(--limit)"></i>out of spec / LSL,USL / &lt;1.00 zone</span>
+    <span><i class="d-dash"></i>control limit (UCL/LCL) / Cp (dashed)</span>
+    <div class="range-switch" id="rangeSwitch" style="margin-left:auto;">
+      <span style="color:var(--text-faint); margin-right:2px;">Range</span>
+      <button class="range-btn" data-ms="300000">5m</button>
+      <button class="range-btn" data-ms="600000">10m</button>
+      <button class="range-btn" data-ms="1800000">30m</button>
+      <button class="range-btn" data-ms="3600000">1h</button>
+      <button class="range-btn active" data-ms="all">All</button>
+      <span class="range-sep"></span>
+      <input type="text" id="rangeFrom" class="time-input" placeholder="HH:MM" inputmode="numeric" maxlength="5" autocomplete="off">
+      <span style="color:var(--text-faint);">–</span>
+      <input type="text" id="rangeTo" class="time-input" placeholder="HH:MM" inputmode="numeric" maxlength="5" autocomplete="off">
+      <button class="range-btn" id="applyCustomRange">Apply</button>
+    </div>
+  </div>
+
+  <div class="kpis" id="kpiRow"></div>
+
+  <div class="main-grid">
+    <div class="panel expandable" data-title="Individuals (X) Chart" data-src="ichart">
+      <h2>Individuals (X) Chart <em id="ichartMeta"></em><span class="expand-hint">⤢</span></h2>
+      <div class="chart-body"><svg id="ichart" viewBox="0 0 1120 250" preserveAspectRatio="xMidYMid meet"></svg></div>
+    </div>
+
+    <div class="panel expandable" data-title="X-bar Chart" data-src="xbarchart">
+      <h2>X-bar Chart <em id="xbarMeta"></em><span class="expand-hint">⤢</span></h2>
+      <div class="chart-body"><svg id="xbarchart" viewBox="0 0 1120 220" preserveAspectRatio="xMidYMid meet"></svg></div>
+    </div>
+
+    <div class="panel expandable" data-title="R Chart (Range)" data-src="rchart">
+      <h2>R Chart <em id="rMeta"></em><span class="expand-hint">⤢</span></h2>
+      <div class="chart-body"><svg id="rchart" viewBox="0 0 1120 220" preserveAspectRatio="xMidYMid meet"></svg></div>
+    </div>
+
+    <div class="panel expandable" data-title="Capability Trend — Cp / Cpk" data-src="trendchart">
+      <h2>Capability Trend <em id="trendMeta"></em><span class="expand-hint">⤢</span></h2>
+      <div class="chart-body"><svg id="trendchart" viewBox="0 0 1120 240" preserveAspectRatio="xMidYMid meet"></svg></div>
+    </div>
+
+    <div class="panel expandable" data-title="S Chart (Std Dev)" data-src="schart">
+      <h2>S Chart <em id="sMeta"></em><span class="expand-hint">⤢</span></h2>
+      <div class="chart-body"><svg id="schart" viewBox="0 0 1120 220" preserveAspectRatio="xMidYMid meet"></svg></div>
+    </div>
+
+    <div class="panel">
+      <h2>Live Feed <em>recent readings</em></h2>
+      <div class="feed" id="feed"></div>
+    </div>
+  </div>
+
+  <div class="hist-row">
+    <div class="panel expandable" data-title="Histogram" data-src="hist">
+      <h2>Histogram <em id="histMeta"></em><span class="expand-hint">⤢</span></h2>
+      <div class="chart-body"><svg id="hist" viewBox="0 0 1400 420" preserveAspectRatio="xMidYMid meet"></svg></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h2 id="modalTitle">Chart</h2>
+      <button class="btn" id="modalClose">✕ Close</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<script>
+const SPEC = { LSL:30, TARGET:40, USL:50 };
+const BUFFER_MAX = 4000;    // ~1 hour of samples at TICK_MS interval
+const STRIP_WINDOW = 120;   // max points shown on the scrolling individuals chart when no range narrows it further
+const TICK_MS = 900;
+const TIME_RANGES = [
+  {label:'5m',  ms:5*60*1000},
+  {label:'10m', ms:10*60*1000},
+  {label:'30m', ms:30*60*1000},
+  {label:'1h',  ms:60*60*1000},
+  {label:'All', ms:null},
+];
+let selectedRangeMs = null; // null = All
+let selectedRangeLabel = 'All';
+let useCustomRange = false;
+let customFrom = null, customTo = null; // Date objects, only when custom time range is applied
+
+function parseTimeToday(timeStr){
+  if(!timeStr) return null;
+  const [h,m] = timeStr.split(':').map(Number);
+  const d = new Date();
+  d.setHours(h, m, 0, 0);
+  return d;
+}
+
+function getView(){
+  if(useCustomRange && customFrom && customTo){
+    return buffer.filter(r=> r.ts>=customFrom && r.ts<=customTo);
+  }
+  if(selectedRangeMs==null) return buffer;
+  const cutoff = Date.now() - selectedRangeMs;
+  return buffer.filter(r=>r.ts.getTime()>=cutoff);
+}
+
+let buffer = [];
+let idCounter = 0;
+let sim = { mean: 40, sigma: 2.0 };
+let running = true;
+let intervalId = null;
+
+function mean(a){return a.reduce((s,x)=>s+x,0)/a.length;}
+function stdev(a){const m=mean(a); return a.length>1 ? Math.sqrt(a.reduce((s,x)=>s+(x-m)**2,0)/(a.length-1)) : 0;}
+function randNormal(){
+  let u=0,v=0;
+  while(u===0) u=Math.random();
+  while(v===0) v=Math.random();
+  return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
+}
+function statusOf(v){
+  const band=(SPEC.USL-SPEC.LSL)*0.1;
+  if(v>SPEC.USL||v<SPEC.LSL) return 'OUT_OF_SPEC';
+  if(v>SPEC.USL-band||v<SPEC.LSL+band) return 'WARNING';
+  return 'OK';
+}
+function nextValue(){
+  sim.mean += (Math.random()-0.5)*0.5;
+  sim.mean = Math.max(37, Math.min(43, sim.mean));
+  sim.sigma += (Math.random()-0.5)*0.2;
+  sim.sigma = Math.max(1.2, Math.min(4.3, sim.sigma));
+  let v = sim.mean + randNormal()*sim.sigma;
+  if(Math.random() < 0.025){
+    v = Math.random()<0.5 ? SPEC.USL + Math.random()*2.5 : SPEC.LSL - Math.random()*2.5;
+  }
+  return Math.round(v*10)/10;
+}
+
+const NS='http://www.w3.org/2000/svg';
+function el(tag, attrs){
+  const e=document.createElementNS(NS,tag);
+  for(const k in attrs) e.setAttribute(k, attrs[k]);
+  return e;
+}
+function clearSvg(svg){ while(svg.firstChild) svg.removeChild(svg.firstChild); }
+
+function tick(){
+  const v = nextValue();
+  idCounter++;
+  const rec = {id:idCounter, sample:`S-${String(idCounter).padStart(4,'0')}`, value:v, status:statusOf(v), ts:new Date()};
+  buffer.push(rec);
+  if(buffer.length>BUFFER_MAX) buffer.shift();
+  renderAll(rec);
+}
+
+function renderAll(latest){
+  renderKPIs();
+  renderHistogram();
+  renderIndividuals();
+  renderXbar();
+  renderRChart();
+  renderTrend();
+  renderSChart();
+  renderFeed();
+}
+
+// ================= KPI row =================
+function renderKPIs(){
+  const view = getView();
+  const vals = view.map(r=>r.value);
+  const m = mean(vals), sd = stdev(vals);
+  const cp = sd>0 ? (SPEC.USL-SPEC.LSL)/(6*sd) : 0;
+  const cpk = sd>0 ? Math.min(SPEC.USL-m, m-SPEC.LSL)/(3*sd) : 0;
+  const oos = view.filter(r=>r.status==='OUT_OF_SPEC').length;
+  const warn = view.filter(r=>r.status==='WARNING').length;
+
+  const kpis = [
+    {lbl:'Mean', val: view.length? m.toFixed(2)+' g':'--', cls:'', sub:`${selectedRangeLabel} · n=${view.length}`},
+    {lbl:'Std Dev (s)', val: view.length>1? sd.toFixed(3):'--', cls:'', sub:`rolling`},
+    {lbl:'Cp', val: view.length>1? cp.toFixed(2):'--', cls: cp>=1.33?'good':cp>=1?'warn':'bad', sub:'potential capability'},
+    {lbl:'Cpk', val: view.length>1? cpk.toFixed(2):'--', cls: cpk>=1.33?'good':cpk>=1?'warn':'bad', sub:'actual capability'},
+    {lbl:'Min / Max', val: view.length? `${Math.min(...vals).toFixed(1)} / ${Math.max(...vals).toFixed(1)}`:'--', cls:'', sub:'g'},
+    {lbl:'Out of Spec', val: oos, cls: oos>0?'bad':'good', sub:`${warn} warning`},
+  ];
+  document.getElementById('kpiRow').innerHTML = kpis.map(k=>`
+    <div class="kpi ${k.cls}">
+      <div class="lbl">${k.lbl}</div>
+      <div class="val">${k.val}</div>
+      <div class="sub">${k.sub}</div>
+    </div>`).join('');
+}
+
+// ================= histogram =================
+function renderHistogram(){
+  const svg=document.getElementById('hist');
+  clearSvg(svg);
+  const vals = getView().map(r=>r.value);
+  document.getElementById('histMeta').textContent = `n=${vals.length} · ${selectedRangeLabel}`;
+  if(vals.length<2) return;
+  const W=1400,H=420,padL=60,padR=28,padT=50,padB=54;
+  const plotW=W-padL-padR, plotH=H-padT-padB;
+  const binW=1.0;
+  const lo=Math.floor(Math.min(...vals,SPEC.LSL)), hi=Math.ceil(Math.max(...vals,SPEC.USL));
+  const nBins=Math.max(1,Math.ceil((hi-lo)/binW));
+  const bins=new Array(nBins).fill(0);
+  vals.forEach(v=>{ let idx=Math.floor((v-lo)/binW); if(idx>=nBins) idx=nBins-1; if(idx<0) idx=0; bins[idx]++; });
+  const maxCount=Math.max(...bins,1);
+  const x=(v)=> padL + ((v-lo)/(hi-lo))*plotW;
+  const y=(c)=> padT + plotH - (c/maxCount)*plotH;
+
+  svg.appendChild(el('rect',{x:x(SPEC.LSL),y:padT,width:x(SPEC.USL)-x(SPEC.LSL),height:plotH,fill:'var(--ok-dim)'}));
+  bins.forEach((c,i)=>{
+    if(c===0) return;
+    const bx0=lo+i*binW, bx1=bx0+binW;
+    const barX=x(bx0), barW=x(bx1)-x(bx0)-3;
+    svg.appendChild(el('rect',{x:barX,y:y(c),width:Math.max(barW,2),height:padT+plotH-y(c),fill:'var(--ok)',opacity:0.88,rx:2}));
+    svg.appendChild(el('text',{x:barX+barW/2,y:y(c)-8,'font-size':'15','font-weight':'600',fill:'var(--text-dim)','text-anchor':'middle'})).textContent=c;
+  });
+  [[SPEC.LSL,'LSL','var(--limit)'],[SPEC.USL,'USL','var(--limit)'],[SPEC.TARGET,'Target','var(--target)']].forEach(([val,lbl,color])=>{
+    svg.appendChild(el('line',{x1:x(val),x2:x(val),y1:padT,y2:padT+plotH,stroke:color,'stroke-width':2.4,'stroke-dasharray': lbl==='Target'?'6 4':'0'}));
+    svg.appendChild(el('text',{x:x(val),y:padT-14,'font-size':'15','font-weight':'600','text-anchor':'middle',fill:color})).textContent=lbl+' '+val;
+  });
+  svg.appendChild(el('line',{x1:padL,x2:W-padR,y1:padT+plotH,y2:padT+plotH,stroke:'var(--line)','stroke-width':1.5}));
+  for(let v=lo; v<=hi; v+=2){
+    svg.appendChild(el('text',{x:x(v),y:H-16,'font-size':'14',fill:'var(--text-faint)','text-anchor':'middle'})).textContent=v;
+  }
+}
+
+// ================= individuals (scrolling strip) =================
+function renderIndividuals(){
+  const svg=document.getElementById('ichart');
+  clearSvg(svg);
+  const view = getView();
+  const win = (selectedRangeMs==null && !useCustomRange) ? view.slice(-STRIP_WINDOW) : view;
+  const highCount = win.filter(r=>r.value>SPEC.USL).length;
+  const lowCount = win.filter(r=>r.value<SPEC.LSL).length;
+  const highPct = win.length? (highCount/win.length*100).toFixed(1) : '0.0';
+  const lowPct = win.length? (lowCount/win.length*100).toFixed(1) : '0.0';
+  document.getElementById('ichartMeta').textContent = `${selectedRangeLabel} · ${win.length} samples · High ${highPct}% · Low ${lowPct}%`;
+  if(win.length<2) return;
+  const vals = win.map(r=>r.value);
+  const allVals = view.map(r=>r.value);
+  const m = mean(allVals);
+  const mr=[]; for(let i=1;i<allVals.length;i++) mr.push(Math.abs(allVals[i]-allVals[i-1]));
+  const mrBar = mr.length? mean(mr) : 0;
+  const UCL=m+2.66*mrBar, LCL=m-2.66*mrBar;
+
+  const W=1120,H=250,padL=48,padR=20,padT=16,padB=30;
+  const plotW=W-padL-padR, plotH=H-padT-padB;
+  const yMin=Math.min(SPEC.LSL, LCL, Math.min(...vals))-1.5, yMax=Math.max(SPEC.USL, UCL, Math.max(...vals))+1.5;
+  const x=(i)=> padL + (i/(Math.max(win.length-1,1)))*plotW;
+  const y=(v)=> padT + plotH - ((v-yMin)/(yMax-yMin))*plotH;
+
+  svg.appendChild(el('rect',{x:padL,y:y(SPEC.USL),width:plotW,height:Math.max(y(SPEC.LSL)-y(SPEC.USL),0),fill:'var(--ok-dim)'}));
+  [[SPEC.LSL,'LSL','var(--limit)'],[SPEC.USL,'USL','var(--limit)'],[SPEC.TARGET,'Target','var(--target)']].forEach(([val,lbl,color])=>{
+    svg.appendChild(el('line',{x1:padL,x2:W-padR,y1:y(val),y2:y(val),stroke:color,'stroke-width':1.2,'stroke-dasharray': lbl==='Target'?'4 3':'0'}));
+    svg.appendChild(el('text',{x:W-padR+4,y:y(val)+3,class:'tick',fill:color})).textContent=lbl;
+  });
+  [[UCL,'UCL'],[LCL,'LCL'],[m,'x̄']].forEach(([val,lbl])=>{
+    svg.appendChild(el('line',{x1:padL,x2:W-padR,y1:y(val),y2:y(val),stroke: lbl==='x̄'?'var(--target)':'var(--ctrl)','stroke-width':1,'stroke-dasharray':'5 4'}));
+    svg.appendChild(el('text',{x:padL-6,y:y(val)+3,class:'tick','text-anchor':'end'})).textContent=lbl;
+  });
+  svg.appendChild(el('line',{x1:padL,x2:W-padR,y1:padT+plotH,y2:padT+plotH,class:'axis'}));
+  svg.appendChild(el('text',{x:padL,y:H-8,class:'tick'})).textContent='S-'+win[0].id;
+  svg.appendChild(el('text',{x:W-padR,y:H-8,class:'tick','text-anchor':'end'})).textContent='S-'+win[win.length-1].id;
+
+  // high / low % badges directly on the chart
+  svg.appendChild(el('text',{x:padL+4,y:padT+2,'font-size':'12','font-weight':'600',fill:'var(--limit)'})).textContent=`▲ High ${highPct}%`;
+  svg.appendChild(el('text',{x:padL+4,y:padT+16,'font-size':'12','font-weight':'600',fill:'var(--limit)'})).textContent=`▼ Low ${lowPct}%`;
+
+  let d='';
+  win.forEach((r,i)=>{ d += (i===0?'M':'L') + x(i) + ' ' + y(r.value) + ' '; });
+  svg.appendChild(el('path',{d, fill:'none', stroke:'var(--ok)', 'stroke-width':1.6, opacity:0.9}));
+  win.forEach((r,i)=>{
+    const bad = r.status==='OUT_OF_SPEC';
+    const warn = r.status==='WARNING';
+    const isLast = i===win.length-1;
+    svg.appendChild(el('circle',{cx:x(i),cy:y(r.value),r: isLast?5:(bad?3.6:2.4),
+      fill: bad?'var(--limit)':(warn?'var(--target)':'var(--ok)'), stroke:'var(--panel)','stroke-width':isLast?1.5:0.75}));
+  });
+}
+
+// ================= X-bar =================
+function renderXbar(){
+  const svg=document.getElementById('xbarchart');
+  clearSvg(svg);
+  const vals = getView().map(r=>r.value);
+  const nSub = Math.floor(vals.length/5);
+  document.getElementById('xbarMeta').textContent = `${nSub} subgroups × n=5 · ${selectedRangeLabel}`;
+  if(nSub<2) return;
+  const subMeans=[]; for(let s=0;s<nSub;s++) subMeans.push(mean(vals.slice(s*5,s*5+5)));
+  const subRanges=[]; for(let s=0;s<nSub;s++){ const g=vals.slice(s*5,s*5+5); subRanges.push(Math.max(...g)-Math.min(...g)); }
+  const shown = subMeans.slice(-40);
+  const shownRanges = subRanges.slice(-40);
+  const xbb=mean(subMeans), rBar=mean(subRanges), A2=0.577;
+  const UCL=xbb+A2*rBar, LCL=xbb-A2*rBar;
+
+  const W=1120,H=220,padL=48,padR=20,padT=16,padB=30;
+  const plotW=W-padL-padR, plotH=H-padT-padB;
+  const yMin=Math.min(SPEC.LSL,LCL,Math.min(...shown))-1, yMax=Math.max(SPEC.USL,UCL,Math.max(...shown))+1;
+  const x=(i)=> padL + (i/(Math.max(shown.length-1,1)))*plotW;
+  const y=(v)=> padT + plotH - ((v-yMin)/(yMax-yMin))*plotH;
+
+  svg.appendChild(el('rect',{x:padL,y:y(SPEC.USL),width:plotW,height:Math.max(y(SPEC.LSL)-y(SPEC.USL),0),fill:'var(--ok-dim)'}));
+  [[SPEC.LSL,'LSL','var(--limit)'],[SPEC.USL,'USL','var(--limit)']].forEach(([val,lbl,color])=>{
+    svg.appendChild(el('line',{x1:padL,x2:W-padR,y1:y(val),y2:y(val),stroke:color,'stroke-width':1.2}));
+    svg.appendChild(el('text',{x:W-padR+4,y:y(val)+3,class:'tick',fill:color})).textContent=lbl;
+  });
+  [[UCL,'UCL'],[LCL,'LCL'],[xbb,'x̿']].forEach(([val,lbl])=>{
+    svg.appendChild(el('line',{x1:padL,x2:W-padR,y1:y(val),y2:y(val),stroke: lbl==='x̿'?'var(--target)':'var(--ctrl)','stroke-width':1,'stroke-dasharray':'5 4'}));
+    svg.appendChild(el('text',{x:padL-6,y:y(val)+3,class:'tick','text-anchor':'end'})).textContent=lbl;
+  });
+  svg.appendChild(el('line',{x1:padL,x2:W-padR,y1:padT+plotH,y2:padT+plotH,class:'axis'}));
+  svg.appendChild(el('text',{x:padL,y:H-8,class:'tick'})).textContent='SG'+(nSub-shown.length+1);
+  svg.appendChild(el('text',{x:W-padR,y:H-8,class:'tick','text-anchor':'end'})).textContent='SG'+nSub;
+
+  let d='';
+  shown.forEach((v,i)=>{ d += (i===0?'M':'L') + x(i) + ' ' + y(v) + ' '; });
+  svg.appendChild(el('path',{d, fill:'none', stroke:'var(--ok)', 'stroke-width':1.6}));
+  shown.forEach((v,i)=>{
+    const oob = v>UCL||v<LCL;
+    const isLast = i===shown.length-1;
+    svg.appendChild(el('circle',{cx:x(i),cy:y(v),r: isLast?5.5:3.2, fill: oob?'var(--limit)':'var(--ok)',stroke:'var(--panel)','stroke-width':1}));
+  });
+}
+
+// ================= R chart (subgroup range, n=5 per point) =================
+function renderRChart(){
+  const svg=document.getElementById('rchart');
+  clearSvg(svg);
+  const vals = getView().map(r=>r.value);
+  const nSub = Math.floor(vals.length/5);
+  document.getElementById('rMeta').textContent = `${nSub} subgroups × n=5 · ${selectedRangeLabel}`;
+  if(nSub<2) return;
+  const subRanges=[]; for(let s=0;s<nSub;s++){ const g=vals.slice(s*5,s*5+5); subRanges.push(Math.max(...g)-Math.min(...g)); }
+  const shown = subRanges.slice(-40);
+  const rBar = mean(subRanges);
+  // D3/D4 control-limit constants for subgroup size n=5
+  const D3=0, D4=2.114;
+  const UCL = D4*rBar, LCL = D3*rBar;
+
+  const W=1120,H=220,padL=48,padR=20,padT=16,padB=30;
+  const plotW=W-padL-padR, plotH=H-padT-padB;
+  const yMax = Math.max(UCL, Math.max(...shown))*1.15 || 1;
+  const x=(i)=> padL + (i/(Math.max(shown.length-1,1)))*plotW;
+  const y=(v)=> padT + plotH - ((v-0)/(yMax-0))*plotH;
+
+  [[UCL,'UCL'],[LCL,'LCL'],[rBar,'R̄']].forEach(([val,lbl])=>{
+    svg.appendChild(el('line',{x1:padL,x2:W-padR,y1:y(val),y2:y(val),stroke: lbl==='R̄'?'var(--target)':'var(--ctrl)','stroke-width':1,'stroke-dasharray':'5 4'}));
+    svg.appendChild(el('text',{x:padL-6,y:y(val)+3,class:'tick','text-anchor':'end'})).textContent=lbl;
+  });
+  svg.appendChild(el('line',{x1:padL,x2:W-padR,y1:padT+plotH,y2:padT+plotH,class:'axis'}));
+  svg.appendChild(el('text',{x:padL,y:H-8,class:'tick'})).textContent='SG'+(nSub-shown.length+1);
+  svg.appendChild(el('text',{x:W-padR,y:H-8,class:'tick','text-anchor':'end'})).textContent='SG'+nSub;
+
+  let d=''; shown.forEach((v,i)=>{ d += (i===0?'M':'L') + x(i) + ' ' + y(v) + ' '; });
+  svg.appendChild(el('path',{d, fill:'none', stroke:'var(--ok)', 'stroke-width':1.6}));
+  shown.forEach((v,i)=>{
+    const oob = v>UCL||v<LCL;
+    const isLast = i===shown.length-1;
+    svg.appendChild(el('circle',{cx:x(i),cy:y(v),r: isLast?5.5:3.2, fill: oob?'var(--limit)':'var(--ok)',stroke:'var(--panel)','stroke-width':1}));
+  });
+}
+
+// ================= capability trend =================
+function renderTrend(){
+  const svg=document.getElementById('trendchart');
+  clearSvg(svg);
+  const vals = getView().map(r=>r.value);
+  const batchSize = 20;
+  const nBatches = Math.floor(vals.length/batchSize);
+  document.getElementById('trendMeta').textContent = `${nBatches} batches × n=${batchSize} (rolling)`;
+  if(nBatches<2) return;
+
+  const batches=[];
+  for(let b=0;b<nBatches;b++){
+    const grp = vals.slice(b*batchSize,(b+1)*batchSize);
+    const gm=mean(grp), gs=stdev(grp);
+    batches.push({ cp: gs>0?(SPEC.USL-SPEC.LSL)/(6*gs):0, cpk: gs>0?Math.min(SPEC.USL-gm,gm-SPEC.LSL)/(3*gs):0 });
+  }
+  const shown = batches.slice(-20);
+
+  const W=1120,H=240,padL=42,padR=20,padT=16,padB=30;
+  const plotW=W-padL-padR, plotH=H-padT-padB;
+  const allVals = shown.flatMap(b=>[b.cp,b.cpk]);
+  const yMax = Math.max(2.0, Math.max(...allVals)*1.1);
+  const x=(i)=> padL + (i/(Math.max(shown.length-1,1)))*plotW;
+  const y=(v)=> padT + plotH - ((v-0)/(yMax-0))*plotH;
+
+  svg.appendChild(el('rect',{x:padL,y:y(Math.min(1.0,yMax)),width:plotW,height:y(0)-y(Math.min(1.0,yMax)),fill:'var(--limit-dim)'}));
+  if(yMax>1.0) svg.appendChild(el('rect',{x:padL,y:y(Math.min(1.33,yMax)),width:plotW,height:y(1.0)-y(Math.min(1.33,yMax)),fill:'rgba(232,176,75,0.10)'}));
+  if(yMax>1.33) svg.appendChild(el('rect',{x:padL,y:padT,width:plotW,height:y(1.33)-padT,fill:'var(--ok-dim)'}));
+
+  [[1.0,'1.00','var(--limit)'],[1.33,'1.33','var(--target)']].forEach(([val,lbl,color])=>{
+    if(val>yMax) return;
+    svg.appendChild(el('line',{x1:padL,x2:W-padR,y1:y(val),y2:y(val),stroke:color,'stroke-width':1,'stroke-dasharray':'3 3'}));
+    svg.appendChild(el('text',{x:padL-6,y:y(val)+3,class:'tick','text-anchor':'end'})).textContent=lbl;
+  });
+  for(let t=0; t<=yMax; t+=0.5){
+    svg.appendChild(el('text',{x:padL-6,y:y(t)+3,class:'tick','text-anchor':'end',fill:'var(--text-faint)'})).textContent=t.toFixed(1);
+  }
+  svg.appendChild(el('line',{x1:padL,x2:W-padR,y1:padT+plotH,y2:padT+plotH,class:'axis'}));
+  svg.appendChild(el('text',{x:padL,y:H-8,class:'tick'})).textContent='B'+(nBatches-shown.length+1);
+  svg.appendChild(el('text',{x:W-padR,y:H-8,class:'tick','text-anchor':'end'})).textContent='B'+nBatches;
+
+  function path(key){
+    let d=''; shown.forEach((b,i)=>{ d += (i===0?'M':'L') + x(i) + ' ' + y(b[key]) + ' '; }); return d;
+  }
+  svg.appendChild(el('path',{d:path('cp'), fill:'none', stroke:'var(--ctrl)', 'stroke-width':1.6, 'stroke-dasharray':'5 4'}));
+  svg.appendChild(el('path',{d:path('cpk'), fill:'none', stroke:'var(--ok)', 'stroke-width':2}));
+  shown.forEach((b,i)=>{
+    svg.appendChild(el('circle',{cx:x(i),cy:y(b.cpk),r: i===shown.length-1?4.5:2.6,
+      fill: b.cpk<1.0?'var(--limit)':(b.cpk<1.33?'var(--target)':'var(--ok)'), stroke:'var(--panel)','stroke-width':0.75}));
+  });
+}
+
+// ================= S chart (subgroup std-dev, n=30 per point) =================
+function renderSChart(){
+  const svg=document.getElementById('schart');
+  clearSvg(svg);
+  const vals = getView().map(r=>r.value);
+  const groupSize = 30;
+  const nSub = Math.floor(vals.length/groupSize);
+  document.getElementById('sMeta').textContent = `${nSub} subgroups × n=${groupSize} · ${selectedRangeLabel}`;
+  if(nSub<2) return;
+
+  const subS=[]; for(let s=0;s<nSub;s++) subS.push(stdev(vals.slice(s*groupSize,s*groupSize+groupSize)));
+  const shown = subS.slice(-30);
+  const sBar = mean(subS);
+
+  // B3/B4 control-limit constants derived from c4, valid for any subgroup size n
+  const n = groupSize;
+  const c4 = 4*(n-1)/(4*n-3);
+  const term = 3*Math.sqrt(Math.max(0,1-c4*c4))/c4;
+  const B3 = Math.max(0, 1-term), B4 = 1+term;
+  const UCL = B4*sBar, LCL = B3*sBar;
+
+  const W=1120,H=220,padL=48,padR=20,padT=16,padB=30;
+  const plotW=W-padL-padR, plotH=H-padT-padB;
+  const yMax = Math.max(UCL, Math.max(...shown))*1.15;
+  const x=(i)=> padL + (i/(Math.max(shown.length-1,1)))*plotW;
+  const y=(v)=> padT + plotH - ((v-0)/(yMax-0))*plotH;
+
+  [[UCL,'UCL'],[LCL,'LCL'],[sBar,'s̄']].forEach(([val,lbl])=>{
+    svg.appendChild(el('line',{x1:padL,x2:W-padR,y1:y(val),y2:y(val),stroke: lbl==='s̄'?'var(--target)':'var(--ctrl)','stroke-width':1,'stroke-dasharray':'5 4'}));
+    svg.appendChild(el('text',{x:padL-6,y:y(val)+3,class:'tick','text-anchor':'end'})).textContent=lbl;
+  });
+  svg.appendChild(el('line',{x1:padL,x2:W-padR,y1:padT+plotH,y2:padT+plotH,class:'axis'}));
+  svg.appendChild(el('text',{x:padL,y:H-8,class:'tick'})).textContent='SG'+(nSub-shown.length+1);
+  svg.appendChild(el('text',{x:W-padR,y:H-8,class:'tick','text-anchor':'end'})).textContent='SG'+nSub;
+
+  let d=''; shown.forEach((v,i)=>{ d += (i===0?'M':'L') + x(i) + ' ' + y(v) + ' '; });
+  svg.appendChild(el('path',{d, fill:'none', stroke:'var(--ok)', 'stroke-width':1.6}));
+  shown.forEach((v,i)=>{
+    const oob = v>UCL||v<LCL;
+    const isLast = i===shown.length-1;
+    svg.appendChild(el('circle',{cx:x(i),cy:y(v),r: isLast?5.5:3.2, fill: oob?'var(--limit)':'var(--ok)',stroke:'var(--panel)','stroke-width':1}));
+  });
+}
+
+// ================= live feed =================
+function renderFeed(){
+  const recent = getView().slice(-15).reverse();
+  document.getElementById('feed').innerHTML = recent.map(r=>{
+    const pct = Math.max(0,Math.min(100, ((r.value-(SPEC.LSL-5))/((SPEC.USL+5)-(SPEC.LSL-5)))*100));
+    const color = r.status==='OK'?'var(--ok)':r.status==='WARNING'?'var(--target)':'var(--limit)';
+    return `<div class="feed-row">
+      <span class="sample">${r.sample}</span>
+      <span class="value" style="color:${color}">${r.value.toFixed(1)} g</span>
+      <span class="bar-bg"><span class="bar-fill" style="width:${pct}%; background:${color}"></span></span>
+      <span class="tag ${r.status}">${r.status.replace('_',' ')}</span>
+    </div>`;
+  }).join('');
+}
+
+
+// ================= controls =================
+document.getElementById('toggleBtn').addEventListener('click', ()=>{
+  running = !running;
+  document.getElementById('toggleBtn').textContent = running ? 'Pause' : 'Resume';
+  if(running){ intervalId = setInterval(tick, TICK_MS); }
+  else { clearInterval(intervalId); }
+});
+document.getElementById('resetBtn').addEventListener('click', ()=>{
+  buffer = []; idCounter = 0; sim = { mean:40, sigma:2.0 };
+  prefill();
+});
+
+// ================= export report (Net Weight only) =================
+document.getElementById('exportBtn').addEventListener('click', exportNetWeightReport);
+
+function exportNetWeightReport(){
+  const view = getView();
+  if(view.length===0){ alert('ไม่มีข้อมูลในช่วงเวลาที่เลือก (ลองเปลี่ยน Range แล้วลองใหม่)'); return; }
+
+  const vals = view.map(r=>r.value);
+  const n = vals.length;
+  const avg = mean(vals);
+  const sd = stdev(vals);
+  const minV = Math.min(...vals), maxV = Math.max(...vals);
+  const { LSL, TARGET, USL } = SPEC;
+
+  const now = new Date();
+  const dd = String(now.getDate()).padStart(2,'0');
+  const mm = String(now.getMonth()+1).padStart(2,'0');
+  const beYear = now.getFullYear()+543; // Buddhist Era, matches the paper form's date format
+  const dateStr = `${dd}.${mm}.${beYear}`;
+  const timeStr = now.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit',hour12:false});
+
+  // ---- cell builders that mirror the WEIGHT CHECK RECORD table markup ----
+  const EMPTY_STAT = '<td class="cell stat"></td>';
+  function firstTripleCells(a,b,c){
+    return `<td class="cell stat statval">${a}</td><td class="cell stat statval">${b}</td><td class="cell stat statval">${c}</td>` + EMPTY_STAT.repeat(21);
+  }
+  const BLANK_24 = EMPTY_STAT.repeat(24);
+
+  // deviation-from-target bins for the NET WEIGHT tally box (scale 5 down
+  // to <-5, 12 rows — matches the paper form's tally section exactly).
+  const binKeys = [5,4,3,2,1,0,-1,-2,-3,-4,-5,'<-5'];
+  const binCounts = {}; binKeys.forEach(k=>binCounts[k]=0);
+  vals.forEach(v=>{
+    const diff = v - TARGET;
+    let key;
+    if(diff>5) key=5;
+    else if(diff<-5) key='<-5';
+    else key = Math.round(diff);
+    if(!(key in binCounts)) binCounts[key]=0;
+    binCounts[key]++;
+  });
+  const maxBinCount = Math.max(1, ...binKeys.map(k=>binCounts[k]));
+  const TALLY_MAX_PX = 58; // fits inside the ~66px stat column
+  function tallyRow(count){
+    const px = count>0 ? Math.max(4, Math.round((count/maxBinCount)*TALLY_MAX_PX)) : 0;
+    const bar = count>0 ? `<span class="tickbar" style="width:${px}px"></span>` : '';
+    return `<td class="cell stat statval">${count||''}</td><td class="cell stat tallycell">${bar}</td>` + EMPTY_STAT.repeat(22);
+  }
+
+  const html = `<!doctype html><html lang="th"><head><meta charset="utf-8">
+<title>WEIGHT CHECK RECORD - i-Tail Corporation</title>
+<style>
+  :root{ --navy:#191970; --shade:#F0F8FF; --red:#e8747c; --page-bg:#e9ebf2; }
+  *{box-sizing:border-box;}
+  body{ margin:0; padding:24px; background:var(--page-bg); font-family:"Courier New","Consolas",ui-monospace,monospace; color:var(--navy); }
+  .toolbar{ max-width:1900px; margin:0 auto 14px auto; display:flex; justify-content:flex-end; gap:10px; }
+  .toolbar button{ font-family:inherit; font-size:13px; padding:8px 16px; border:1.5px solid var(--navy); background:#fff; color:var(--navy); border-radius:4px; cursor:pointer; font-weight:bold; }
+  .toolbar button:hover{ background:var(--navy); color:#fff; }
+  .sheet-wrap{ max-width:1900px; margin:0 auto; overflow-x:auto; background:#fff; box-shadow:0 2px 14px rgba(25,25,112,0.18); padding:14px; }
+  table.form{ border-collapse:collapse; width:100%; min-width:1720px; table-layout:fixed; }
+  table.form col.c-major{ width:150px; } table.form col.c-box{ width:96px; } table.form col.c-scale{ width:48px; } table.form col.c-stat{ width:66px; }
+  td.cell{ border:1px solid var(--navy); padding:3px 6px; font-size:12.5px; line-height:1.25; vertical-align:middle; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .bold{ font-weight:700; } .shaded{ background:var(--shade); } .vcenter{ text-align:center; vertical-align:middle; }
+  tr.titlebar td.titlecell{ border:2px solid var(--navy); font-size:21px; font-weight:700; letter-spacing:0.5px; padding:10px 14px; white-space:normal; }
+  tr.titlebar td.titlecenter{ text-align:center; }
+  tr.addrrow td.addrcell{ border:1px solid var(--navy); border-top:none; font-size:13px; font-weight:700; padding:5px 10px; white-space:normal; }
+  .chkbox{ display:inline-block; width:15px; height:15px; border:2px solid var(--navy); text-align:center; line-height:13px; font-size:12px; margin-right:4px; color:var(--navy); font-weight:900; }
+  tr.dprow td.dpcell{ border:1px solid var(--navy); padding:6px 10px; font-size:13px; white-space:normal; }
+  .fieldlabel{ font-weight:400; }
+  .typed{ font-family:"Trebuchet MS","Segoe UI",sans-serif; font-weight:600; font-size:15px; border-bottom:1.5px solid var(--navy); padding:0 4px 1px 4px; }
+  .qcinspector{ text-align:right; }
+  .signature{ font-family:"Segoe Script","Brush Script MT",cursive; font-size:20px; font-weight:700; border-bottom:1.5px solid var(--navy); padding:0 10px 0 6px; color:var(--navy); display:inline-block; min-width:120px; }
+  td.labelmajor{ font-size:12.5px; white-space:normal; font-weight:400; }
+  td.box{ text-align:center; font-size:12px; } td.scale{ text-align:right; font-weight:700; padding-right:8px; }
+  td.prodval{ text-align:center; font-size:14px; white-space:normal; }
+  td.stathead{ text-align:center; font-weight:700; background:#fff; font-size:12px; }
+  td.stat{ text-align:center; } td.statval{ font-weight:700; }
+
+  .tallycell{ padding:2px 4px; }
+  .tickbar{ display:inline-block; height:12px; background:repeating-linear-gradient(90deg, var(--navy) 0px, var(--navy) 2px, transparent 2px, transparent 5px); vertical-align:middle; }
+  tr.redline-top td{ border-top:2.5px solid var(--red) !important; }
+  .tlcurow{ padding:2px 2px; } .tlcu{ display:flex; }
+  .tlcu span{ flex:1; text-align:center; font-size:10.5px; border-right:1px solid var(--navy); padding:1px 0; }
+  .tlcu span:last-child{ border-right:none; }
+  td.thaicell{ font-family:"Noto Sans Thai","Tahoma","Leelawadee UI",sans-serif; font-size:13px; white-space:normal; }
+  td.passcell{ text-align:center; font-weight:700; color:#1a7a3c; }
+  tr.remarkfill td.cell{ height:26px; border-left:1px solid var(--navy); border-right:1px solid var(--navy); }
+  @media print{ body{ background:#fff; padding:0; } .toolbar{ display:none; } .sheet-wrap{ box-shadow:none; padding:0; } }
+</style>
+</head>
+<body>
+  <div class="toolbar"><button onclick="window.print()">🖨️ Print / Export PDF</button></div>
+  <div class="sheet-wrap">
+    <table class="form">
+      <colgroup>
+        <col class="c-major"><col class="c-box"><col class="c-scale">
+        ${'<col class="c-stat">'.repeat(24)}
+      </colgroup>
+      <tbody>
+<tr class="titlebar"><td class="cell titlecell" colspan="10">i-Tail Corporation Public Company Limited</td><td class="cell titlecell titlecenter" colspan="10">WEIGHT CHECK RECORD</td><td class="cell titlecell" colspan="7"></td></tr>
+<tr class="addrrow"><td class="cell addrcell" colspan="27"><span class="chkbox">&#10003;</span> ITC: 333 Moo 2, Karnjanavanich Road,&nbsp;&nbsp;Pavong Sub-district, Mueang Songkhla District, Songkhla 90100, Thailand</td></tr>
+<tr class="dprow"><td class="cell dpcell" colspan="8"><span class="fieldlabel">DATE CHECK :</span> <span class="typed">${dateStr}</span></td><td class="cell dpcell" colspan="7"><span class="fieldlabel">PACKING LINE :</span> <span class="typed">Fill-Weight Line 3</span></td><td class="cell dpcell" colspan="8"></td><td class="cell dpcell qcinspector" colspan="4"><span class="fieldlabel">QC INSPECTOR :</span> <span class="signature">&nbsp;</span></td></tr>
+<tr><td class="cell labelmajor bold shaded">GENERAL INFO.</td><td class="cell box bold shaded" rowspan="3">PRODUCT<br>CODE</td><td class="cell prodval bold" colspan="25" rowspan="3">&nbsp;</td></tr>
+<tr class="sizerow"><td class="cell labelmajor">SIZE: -</td></tr>
+<tr class="custrow"><td class="cell labelmajor">CUSTOMER: -</td></tr>
+<tr><td class="cell labelmajor">CODE: -</td><td class="cell box bold">TIME CHECK</td><td class="cell scale"></td><td class="cell prodval" colspan="3">${timeStr}</td><td class="cell prodval" colspan="3">&nbsp;</td><td class="cell prodval" colspan="3">&nbsp;</td><td class="cell prodval" colspan="3">&nbsp;</td><td class="cell prodval" colspan="3">&nbsp;</td><td class="cell prodval" colspan="3">&nbsp;</td><td class="cell prodval" colspan="3">&nbsp;</td><td class="cell prodval" colspan="3">&nbsp;</td></tr>
+<tr><td class="cell labelmajor bold shaded" rowspan="2">DIGITAL BALANCE<br>EQ. NO.</td><td class="cell box shaded" rowspan="2"></td><td class="cell scale shaded" rowspan="2"></td><td class="cell stathead">N</td><td class="cell stathead">AVG.</td><td class="cell stathead">R</td><td class="cell stathead">N</td><td class="cell stathead">AVG.</td><td class="cell stathead">R</td><td class="cell stathead">N</td><td class="cell stathead">AVG.</td><td class="cell stathead">R</td><td class="cell stathead">N</td><td class="cell stathead">AVG.</td><td class="cell stathead">R</td><td class="cell stathead">N</td><td class="cell stathead">AVG.</td><td class="cell stathead">R</td><td class="cell stathead">N</td><td class="cell stathead">AVG.</td><td class="cell stathead">R</td><td class="cell stathead">N</td><td class="cell stathead">AVG.</td><td class="cell stathead">R</td><td class="cell stathead">N</td><td class="cell stathead">AVG.</td><td class="cell stathead">R</td></tr>
+<tr>${firstTripleCells(n, avg.toFixed(1), `${minV.toFixed(0)}-${maxV.toFixed(0)}`)}</tr>
+<tr class="ttrow"><td class="cell labelmajor tlcurow"><div class="tlcu"><span>TARGET</span><span>LCL</span><span>UCL</span></div></td><td class="cell box bold">TOPPING</td><td class="cell scale"></td>${BLANK_24}</tr>
+<tr class="ttrow"><td class="cell labelmajor tlcurow"><div class="tlcu"><span>TARGET</span><span>LCL</span><span>UCL</span></div></td><td class="cell box bold">SOLUTION</td><td class="cell scale"></td>${BLANK_24}</tr>
+<tr><td class="cell labelmajor bold" colspan="3">CALCULATE MAX F/W:</td>${BLANK_24}</tr>
+<tr><td class="cell labelmajor bold shaded">NET WEIGHT (g)</td><td class="cell box"></td><td class="cell scale"></td>${BLANK_24}</tr>
+<tr><td class="cell labelmajor">TARGET: -</td><td class="cell box"></td><td class="cell scale"></td>${firstTripleCells(n, avg.toFixed(1), `${minV.toFixed(0)}-${maxV.toFixed(0)}`)}</tr>
+<tr class="netrow"><td class="cell labelmajor">UCL: -</td><td class="cell box"></td><td class="cell scale">&gt;10</td>${BLANK_24}</tr>
+<tr class="netrow"><td class="cell labelmajor">UWL: -</td><td class="cell box"></td><td class="cell scale">10</td>${BLANK_24}</tr>
+<tr class="netrow"><td class="cell labelmajor">LWL: -</td><td class="cell box"></td><td class="cell scale">9</td>${BLANK_24}</tr>
+<tr class="netrow"><td class="cell labelmajor">LCL: -</td><td class="cell box"></td><td class="cell scale">8</td>${BLANK_24}</tr>
+<tr class="netrow"><td class="cell labelmajor">Max NW: -</td><td class="cell box"></td><td class="cell scale">7</td>${BLANK_24}</tr>
+<tr class="netrow"><td class="cell labelmajor">T1&lt;-</td><td class="cell box"></td><td class="cell scale">6</td>${BLANK_24}</tr>
+<tr class="netrow"><td class="cell labelmajor">T2&lt;-</td><td class="cell box bold vcenter" rowspan="12">NET<br>WEIGHT<br>(g)</td><td class="cell scale">5</td>${tallyRow(binCounts[5])}</tr>
+<tr class="netrow redline-top"><td class="cell labelmajor bold" rowspan="11">REMARK</td><td class="cell scale">4</td>${tallyRow(binCounts[4])}</tr>
+<tr class="netrow"><td class="cell scale">3</td>${tallyRow(binCounts[3])}</tr>
+<tr class="netrow"><td class="cell scale">2</td>${tallyRow(binCounts[2])}</tr>
+<tr class="netrow"><td class="cell scale">1</td>${tallyRow(binCounts[1])}</tr>
+<tr class="netrow"><td class="cell scale">0</td>${tallyRow(binCounts[0])}</tr>
+<tr class="netrow"><td class="cell scale">-1</td>${tallyRow(binCounts[-1])}</tr>
+<tr class="netrow"><td class="cell scale">-2</td>${tallyRow(binCounts[-2])}</tr>
+<tr class="netrow redline-top"><td class="cell scale">-3</td>${tallyRow(binCounts[-3])}</tr>
+<tr class="netrow"><td class="cell scale">-4</td>${tallyRow(binCounts[-4])}</tr>
+<tr class="netrow"><td class="cell scale">-5</td>${tallyRow(binCounts[-5])}</tr>
+<tr class="netrow"><td class="cell scale">&lt;-5</td>${tallyRow(binCounts['<-5'])}</tr>
+<tr><td class="cell labelmajor bold" colspan="27">CHECK LIST:</td></tr>
+<tr class="checkrow"><td class="cell labelmajor thaicell" colspan="3">กลิ่นวัตถุดิบหลังผสม</td><td class="cell passcell" colspan="3"></td>${EMPTY_STAT.repeat(21)}</tr>
+<tr class="checkrow"><td class="cell labelmajor thaicell" colspan="3">ลูกน้ำตาชั่งตรงกลาง</td><td class="cell passcell" colspan="3"></td>${EMPTY_STAT.repeat(21)}</tr>
+<tr class="checkrow"><td class="cell labelmajor thaicell" colspan="3">เปิดใบพัดถังพักน้ำ</td><td class="cell passcell" colspan="3"></td>${EMPTY_STAT.repeat(21)}</tr>
+<tr class="checkrow"><td class="cell labelmajor thaicell" colspan="3">Tare ตาชั่ง</td><td class="cell passcell" colspan="3"></td>${EMPTY_STAT.repeat(21)}</tr>
+<tr class="checkrow lastcheck"><td class="cell labelmajor bold" colspan="3">REMARK:</td><td class="cell passcell thaicell" colspan="3">Auto-generated from SPC Panel · Range: ${selectedRangeLabel}</td>${EMPTY_STAT.repeat(21)}</tr>
+<tr class="remarkfill"><td class="cell" colspan="27">&nbsp;</td></tr>
+<tr class="remarkfill"><td class="cell" colspan="27">&nbsp;</td></tr>
+<tr class="remarkfill"><td class="cell" colspan="27">&nbsp;</td></tr>
+      </tbody>
+    </table>
+  </div>
+</body>
+</html>`;
+
+  const w = window.open('', '_blank');
+  if(!w){ alert('เบราว์เซอร์บล็อก popup — กรุณาอนุญาต popup แล้วลองใหม่'); return; }
+  w.document.write(html);
+  w.document.close();
+}
+
+document.querySelectorAll('.range-btn:not(#applyCustomRange)').forEach(b=>{
+  b.addEventListener('click', ()=>{
+    document.querySelectorAll('.range-btn').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    useCustomRange = false;
+    customFrom = null; customTo = null;
+    document.getElementById('rangeFrom').value = '';
+    document.getElementById('rangeTo').value = '';
+    selectedRangeMs = b.dataset.ms==='all' ? null : parseInt(b.dataset.ms,10);
+    selectedRangeLabel = b.textContent.trim();
+    if(buffer.length) renderAll(buffer[buffer.length-1]);
+  });
+});
+
+document.getElementById('applyCustomRange').addEventListener('click', ()=>{
+  const fromVal = document.getElementById('rangeFrom').value;
+  const toVal = document.getElementById('rangeTo').value;
+  const timeRe = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/;
+  if(!timeRe.test(fromVal) || !timeRe.test(toVal)){
+    alert('กรุณากรอกเวลาแบบ HH:MM ในรูปแบบ 24 ชั่วโมง เช่น 14:30');
+    return;
+  }
+  let from = parseTimeToday(fromVal);
+  let to = parseTimeToday(toVal);
+  if(from > to){ const tmp=from; from=to; to=tmp; }
+  customFrom = from; customTo = to;
+  useCustomRange = true;
+  selectedRangeMs = null;
+  selectedRangeLabel = `${fromVal}–${toVal}`;
+  document.querySelectorAll('.range-btn:not(#applyCustomRange)').forEach(x=>x.classList.remove('active'));
+  if(buffer.length) renderAll(buffer[buffer.length-1]);
+});
+
+// auto-insert ':' as the user types digits, e.g. "1430" -> "14:30" — pure 24h, no AM/PM anywhere
+['rangeFrom','rangeTo'].forEach(id=>{
+  const input = document.getElementById(id);
+  input.addEventListener('input', ()=>{
+    let digits = input.value.replace(/[^0-9]/g,'').slice(0,4);
+    if(digits.length>=3){
+      input.value = digits.slice(0,2)+':'+digits.slice(2);
+    } else {
+      input.value = digits;
+    }
+  });
+});
+
+function prefill(){
+  // seed a full BUFFER_MAX history with backdated timestamps so the
+  // time-range filters (5m/10m/30m/1h) show meaningful data immediately
+  const now = Date.now();
+  for(let i=BUFFER_MAX-1; i>=0; i--){
+    const v = nextValue();
+    idCounter++;
+    const ts = new Date(now - i*TICK_MS);
+    buffer.push({id:idCounter, sample:`S-${String(idCounter).padStart(4,'0')}`, value:v, status:statusOf(v), ts});
+  }
+  renderAll(buffer[buffer.length-1]);
+}
+
+// ================= expand-to-modal =================
+let expandedSrcId = null;
+const modalOverlay = document.getElementById('modalOverlay');
+const modalBody = document.getElementById('modalBody');
+const modalTitle = document.getElementById('modalTitle');
+
+function openModal(srcId, title){
+  expandedSrcId = srcId;
+  modalTitle.textContent = title;
+  modalOverlay.classList.add('open');
+  syncModalSvg();
+}
+function closeModal(){
+  expandedSrcId = null;
+  modalOverlay.classList.remove('open');
+  modalBody.innerHTML = '';
+}
+function syncModalSvg(){
+  if(!expandedSrcId) return;
+  const source = document.getElementById(expandedSrcId);
+  if(!source) return;
+  modalBody.innerHTML = '';
+  const clone = source.cloneNode(true);
+  clone.removeAttribute('id');
+  clone.setAttribute('preserveAspectRatio','xMidYMid meet'); // undistorted view in the big modal
+  modalBody.appendChild(clone);
+}
+
+document.querySelectorAll('.panel.expandable').forEach(p=>{
+  p.addEventListener('click', ()=> openModal(p.dataset.src, p.dataset.title));
+});
+document.getElementById('modalClose').addEventListener('click', closeModal);
+modalOverlay.addEventListener('click', (e)=>{ if(e.target===modalOverlay) closeModal(); });
+document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') closeModal(); });
+
+// keep the modal's chart in sync with the live-updating source chart
+const _renderAll = renderAll;
+renderAll = function(latest){
+  _renderAll(latest);
+  if(expandedSrcId) syncModalSvg();
+};
+
+prefill();
+intervalId = setInterval(tick, TICK_MS);
+</script>
+</body>
+</html>

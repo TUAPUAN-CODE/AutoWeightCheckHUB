@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Monitor — Auto Weight</title>
+<link rel="icon" type="image/png" href="icon.png">
+<style>
+  :root{
+    --bg:#f4f6fb; --panel:#ffffff; --panel-2:#f2f6fb; --line:#dbe4f0;
+    --text:#131a2b; --text-dim:rgba(19,26,43,0.65); --text-faint:rgba(19,26,43,0.45);
+    --ok:#1d9e5a; --ok-dim:rgba(29,158,90,0.10);
+    --warn:#e8720c; --warn-dim:rgba(232,114,12,0.10);
+    --down:#d1453d; --down-dim:rgba(209,69,61,0.10);
+    --brand:#2f8fef; --sans:Tahoma,Geneva,Verdana,sans-serif; --mono:Tahoma,Geneva,Verdana,sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); padding:18px 22px;}
+  /* sidebar.js บังคับ body{padding-left:var(--sb-w)!important} — เพิ่ม wrapper นี้ให้มีช่องว่างเท่าหน้า Dashboard (.wrap มี padding 16px) */
+  .page-wrap{padding-left:16px;}
+  h1{font-size:16px; margin-top:1px; font-weight:600; letter-spacing:-0.01em;}
+  h1 span{color:#ff9f1c;}
+  .sub{font-size:12px; color:var(--text-faint); margin-bottom:16px;}
+  .toolbar{display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:14px;}
+  button{font-family:inherit; cursor:pointer;}
+  .btn{border:1px solid var(--line); background:var(--panel); border-radius:7px; padding:8px 14px; font-size:12.5px; font-weight:700; color:var(--text);}
+  .btn:hover{background:var(--panel-2);}
+  .btn.primary{background:var(--brand); border-color:var(--brand); color:#fff;}
+  .btn.primary:hover{filter:brightness(1.06);}
+  .btn.danger{background:var(--down); border-color:var(--down); color:#fff;}
+  .btn.small{padding:5px 10px; font-size:11.5px; border-radius:6px;}
+  .btn:disabled{opacity:.45; cursor:not-allowed;}
+
+  /* ---------- header bar (สไตล์เดียวกับหน้า Dashboard) ---------- */
+  header{
+    position:relative; overflow:hidden;
+    display:flex; flex-direction:row; align-items:center; justify-content:space-between;
+    gap:12px; flex-wrap:wrap;
+    background:var(--panel); border:1px solid var(--line); border-radius:8px;
+    padding:9px 14px; box-shadow:0 2px 5px rgba(0,0,0,0.07), 0 10px 24px -14px rgba(0,0,0,0.18);
+    margin-bottom:14px;
+  }
+  header::before{
+    content:''; position:absolute; top:0; left:0; right:0; height:3px;
+    background:linear-gradient(135deg,#ff4d5e 0%, #ff9f1c 20%, #ffd93d 40%, #3ecf6e 60%, #2f8fef 80%, #7c5cff 100%);
+  }
+  .header-left{display:flex; align-items:center; gap:10px;}
+  .logo-badge{
+    width:34px; height:34px; flex:none; display:flex; align-items:center; justify-content:center;
+    border-radius:10px; background:linear-gradient(160deg,#ffffff,#f2f6fc);
+    border:1px solid var(--line); box-shadow:0 1px 2px rgba(16,24,40,0.08);
+  }
+  .brand-logo{width:19px; height:auto; display:block;}
+  .eyebrow{font-family:var(--mono); font-size:9px; letter-spacing:.1em; text-transform:uppercase; color:var(--text-faint);}
+  .header-right{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
+
+  .view-toggle{display:flex; border:1px solid var(--line); border-radius:7px; overflow:hidden;}
+  .view-toggle button{border:none; background:var(--panel); padding:7px 12px; font-size:11.5px; font-weight:700; color:var(--text-dim);}
+  .view-toggle button.active{background:var(--brand); color:#fff;}
+  .view-toggle button:hover:not(.active){background:var(--panel-2);}
+
+  .grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(340px,1fr)); gap:14px;}
+  .card{background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:14px 16px; box-shadow:0 2px 6px rgba(20,30,60,0.05);}
+  .card-head{display:flex; justify-content:space-between; align-items:flex-start; gap:8px; margin-bottom:8px;}
+  .card-head h3{margin:0; font-size:15px;}
+  .card-head .meta{font-size:11px; color:var(--text-faint); font-family:var(--mono);}
+  .dot{display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:6px; flex:none;}
+  .status-pill{display:inline-flex; align-items:center; font-size:11px; font-weight:700; padding:4px 9px; border-radius:20px;}
+  .status-pill.ok{background:var(--ok-dim); color:var(--ok);}
+  .status-pill.ok .dot{background:var(--ok); box-shadow:0 0 0 3px var(--ok-dim);}
+  .status-pill.warn{background:var(--warn-dim); color:var(--warn);}
+  .status-pill.warn .dot{background:var(--warn); box-shadow:0 0 0 3px var(--warn-dim);}
+  .status-pill.down{background:var(--down-dim); color:var(--down);}
+  .status-pill.down .dot{background:var(--down); box-shadow:0 0 0 3px var(--down-dim);}
+
+  /* ---------- table view ---------- */
+  .table-wrap{background:var(--panel); border:1px solid var(--line); border-radius:10px; overflow:auto;}
+  table.scale-table{border-collapse:collapse; width:100%; font-size:12px; min-width:900px;}
+  table.scale-table thead th{position:sticky; top:0; background:var(--panel-2); text-align:left; padding:9px 10px; border-bottom:1px solid var(--line); white-space:nowrap;}
+  table.scale-table tbody td{padding:8px 10px; border-bottom:1px solid var(--line); white-space:nowrap;}
+  table.scale-table tbody tr:hover{background:var(--panel-2);}
+
+  .row-line{display:flex; gap:14px; font-size:12px; color:var(--text-dim); margin:2px 0 10px; flex-wrap:wrap;}
+  .row-line b{color:var(--text); font-weight:700;}
+
+  .session-box{background:var(--panel-2); border:1px solid var(--line); border-radius:8px; padding:10px 12px; margin-bottom:10px;}
+  .session-box .lbl{font-size:10px; letter-spacing:.05em; text-transform:uppercase; color:var(--text-faint); margin-bottom:4px;}
+  select, input{font-family:inherit; font-size:12.5px; padding:7px 8px; border:1px solid var(--line); border-radius:6px; background:#fff; color:var(--text); width:100%;}
+  .two-col{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px;}
+  .actions{display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;}
+  .running-tag{display:flex; justify-content:space-between; align-items:center; gap:8px;}
+  .running-tag .code{font-weight:700; font-family:var(--mono);}
+  .elapsed{font-family:var(--mono); font-size:12px; color:var(--text-dim);}
+  .empty{padding:40px; text-align:center; color:var(--text-faint); font-size:13px;}
+
+  .modal-backdrop{position:fixed; inset:0; background:rgba(10,14,26,0.45); display:none; align-items:center; justify-content:center; z-index:2000;}
+  .modal-backdrop.open{display:flex;}
+  .modal{background:#fff; border-radius:12px; padding:20px 22px; width:360px; max-width:92vw; box-shadow:0 20px 50px rgba(0,0,0,0.25);}
+  .modal h3{margin:0 0 12px; font-size:15px;}
+  .modal label{display:block; font-size:11px; color:var(--text-faint); margin:8px 0 4px;}
+  .modal .actions{justify-content:flex-end;}
+  .err-text{color:var(--down); font-size:11.5px; margin-top:6px; min-height:14px;}
+</style>
+</head>
+<body data-page="monitor">
+<script src="sidebar.js"></script>
+<div id="app-sidebar-root"></div>
+<div class="page-wrap">
+
+<header>
+  <div class="header-left">
+    <div class="logo-badge"><img class="brand-logo" src="icon.png" alt=""></div>
+    <div>
+      <div class="eyebrow" id="subLine">กำลังโหลด…</div>
+      <h1>Monitor — <span>เครื่องชั่งทั้งหมด</span></h1>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="view-toggle">
+      <button id="viewCardBtn" class="active">🔳 Card</button>
+      <button id="viewTableBtn">📋 Table</button>
+    </div>
+    <button class="btn primary" id="btnAddScale">+ เพิ่มเครื่องชั่ง</button>
+  </div>
+</header>
+
+<div class="grid" id="grid"><div class="empty">กำลังโหลดรายชื่อเครื่องชั่ง…</div></div>
+<div class="table-wrap" id="tableWrap" style="display:none;">
+  <table class="scale-table">
+    <thead><tr>
+      <th>Line</th><th>IP:Port</th><th>S/N</th><th>สถานะ</th><th>น้ำหนักล่าสุด</th><th>เอกสารที่กำลังทำ</th><th>เริ่มเมื่อ</th><th>การจัดการ</th>
+    </tr></thead>
+    <tbody id="tableBody"></tbody>
+  </table>
+</div>
+
+</div><!-- /.page-wrap -->
+
+<!-- ---------------- modal: เพิ่ม/แก้ไขเครื่องชั่ง ---------------- -->
+<div class="modal-backdrop" id="scaleModal">
+  <div class="modal">
+    <h3 id="scaleModalTitle">เพิ่มเครื่องชั่ง</h3>
+    <div class="two-col">
+      <div><label>IP</label><input id="fIp" placeholder="172.48.2.175"></div>
+      <div><label>Port</label><input id="fPort" placeholder="1052"></div>
+    </div>
+    <div class="two-col">
+      <div><label>Line</label><input id="fLine" placeholder="Line 1"></div>
+      <div><label>S/N</label><input id="fSn" placeholder="SN-0001"></div>
+    </div>
+    <div class="err-text" id="scaleModalErr"></div>
+    <div class="actions">
+      <button class="btn" id="btnScaleCancel">ยกเลิก</button>
+      <button class="btn primary" id="btnScaleSave">บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<!-- ---------------- modal: เริ่มเอกสารใหม่ (เลือก group/product) ---------------- -->
+<div class="modal-backdrop" id="startModal">
+  <div class="modal">
+    <h3>เริ่มเอกสารใหม่</h3>
+    <div class="sub" id="startModalScaleName" style="margin-bottom:10px;"></div>
+    <label>Group Code</label>
+    <input id="fGroup" list="fGroupList" placeholder="พิมพ์เพื่อค้นหา Group Code…" autocomplete="off">
+    <datalist id="fGroupList"></datalist>
+    <label>Product Code</label>
+    <input id="fProduct" list="fProductList" placeholder="เลือก Group ก่อน" disabled autocomplete="off">
+    <datalist id="fProductList"></datalist>
+    <label>ชื่อผู้ตรวจสอบ (QC Inspector)</label>
+    <input id="fInspector" placeholder="ชื่อ-นามสกุล">
+    <label>หมายเหตุ (Remark)</label>
+    <input id="fRemark" placeholder="ไม่บังคับ">
+    <div class="err-text" id="startModalErr"></div>
+    <div class="actions">
+      <button class="btn" id="btnStartCancel">ยกเลิก</button>
+      <button class="btn primary" id="btnStartConfirm">เริ่ม</button>
+    </div>
+  </div>
+</div>
+
+<!-- ---------------- modal: แก้ไขเวลาเอกสาร ---------------- -->
+<div class="modal-backdrop" id="editTimeModal">
+  <div class="modal">
+    <h3>แก้ไขเวลาเอกสาร</h3>
+    <label>เวลาเริ่ม</label>
+    <input type="datetime-local" id="eStart" step="1">
+    <label>เวลาหยุด (เว้นว่างถ้ายังไม่หยุด)</label>
+    <input type="datetime-local" id="eEnd" step="1">
+    <label>ชื่อผู้ตรวจสอบ</label>
+    <input id="eInspector">
+    <label>หมายเหตุ (Remark)</label>
+    <input id="eRemark">
+    <div class="err-text" id="editTimeErr"></div>
+    <div class="actions">
+      <button class="btn" id="btnEditTimeCancel">ยกเลิก</button>
+      <button class="btn primary" id="btnEditTimeSave">บันทึก</button>
+    </div>
+  </div>
+</div>
+
+
+<script>
+const API_BASE = '';
+async function api(path, opts){
+  const res = await fetch(API_BASE + path, Object.assign({cache:'no-store', headers:{'accept':'application/json','content-type':'application/json'}}, opts||{}));
+  let payload = null;
+  try{ payload = await res.json(); }catch(e){}
+  if(!res.ok) throw new Error((payload && payload.error) || `HTTP ${res.status}`);
+  return payload || {};
+}
+const $ = (id) => document.getElementById(id);
+
+let scales = [];
+let groupsCache = null;
+let editingScaleId = null;   // null = โหมดเพิ่มใหม่
+let startingScaleId = null;
+let editingTimeSessionId = null;
+let viewMode = localStorage.getItem('monitor-view') || 'card';
+
+function statusLevel(cs){
+  if(cs === 'connected' || cs === 'simulating') return 'ok';
+  if(cs === 'error' || cs === 'stopped') return 'down';
+  return 'warn';
+}
+function statusLabel(cs){
+  return { connected:'เชื่อมต่ออยู่', simulating:'จำลอง (SIM)', connecting:'กำลังเชื่อมต่อ',
+           reconnecting:'กำลังเชื่อมต่อใหม่', error:'ผิดพลาด', stopped:'ปิดอยู่' }[cs] || cs;
+}
+function scaleTitle(s){
+  // ไม่เก็บ "ชื่อเครื่องชั่ง" แยกแล้ว — ใช้ Line เป็นหัวข้อหลัก (หรือ ip ถ้ายังไม่ตั้ง Line)
+  return s.line || s.ip;
+}
+function fmtStart(iso){
+  if(!iso) return '-';
+  const d = new Date(iso);
+  const p=(n)=>String(n).padStart(2,'0');
+  return `${p(d.getDate())}/${p(d.getMonth()+1)} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+}
+
+function cardHtml(s){
+  const lvl = statusLevel(s.connection_status);
+  const running = !!s.active_session_id;
+  return `
+  <div class="card" data-scale-id="${s.scale_id}">
+    <div class="card-head">
+      <div>
+        <h3>${scaleTitle(s)}</h3>
+        <div class="meta">${s.ip}:${s.port}</div>
+      </div>
+      <span class="status-pill ${lvl}"><span class="dot"></span>${statusLabel(s.connection_status)}</span>
+    </div>
+    <div class="row-line">
+      <span>S/N: <b>${s.serial_no || '-'}</b></span>
+      <span>น้ำหนักล่าสุด: <b>${s.last_weight != null ? s.last_weight.toFixed(1)+' g' : '-'}</b></span>
+    </div>
+
+    ${running ? `
+      <div class="session-box">
+        <div class="lbl">กำลังทำเอกสาร</div>
+        <div class="running-tag">
+          <span class="code">${s.active_group_code} / ${s.active_product_code}</span>
+          <span class="elapsed">เริ่มเมื่อ ${fmtStart(s.active_session_start)}</span>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn danger small" data-action="stop" data-scale="${s.scale_id}">■ หยุด (ปิดเอกสาร)</button>
+        <button class="btn small" data-action="edittime" data-scale="${s.scale_id}" data-session="${s.active_session_id}">แก้ไขเวลา</button>
+        <a class="btn small" href="dashboard.html?scale=${s.scale_id}">ดูกราฟ →</a>
+      </div>
+    ` : `
+      <div class="actions">
+        <button class="btn primary small" data-action="start" data-scale="${s.scale_id}">▶ เริ่มเอกสารใหม่</button>
+        <a class="btn small" href="dashboard.html?scale=${s.scale_id}">ดูกราฟ →</a>
+        <button class="btn small" data-action="edit" data-scale="${s.scale_id}">แก้ไข</button>
+        <button class="btn danger small" data-action="delete" data-scale="${s.scale_id}">ลบ</button>
+      </div>
+    `}
+  </div>`;
+}
+
+function tableRowHtml(s){
+  const lvl = statusLevel(s.connection_status);
+  const running = !!s.active_session_id;
+  const docCell = running ? `${s.active_group_code} / ${s.active_product_code}` : '-';
+  const startCell = running ? fmtStart(s.active_session_start) : '-';
+  const actions = running
+    ? `<button class="btn danger small" data-action="stop" data-scale="${s.scale_id}">หยุด</button>
+       <button class="btn small" data-action="edittime" data-scale="${s.scale_id}" data-session="${s.active_session_id}">แก้ไขเวลา</button>
+       <a class="btn small" href="dashboard.html?scale=${s.scale_id}">กราฟ</a>`
+    : `<button class="btn primary small" data-action="start" data-scale="${s.scale_id}">เริ่ม</button>
+       <a class="btn small" href="dashboard.html?scale=${s.scale_id}">กราฟ</a>
+       <button class="btn small" data-action="edit" data-scale="${s.scale_id}">แก้ไข</button>
+       <button class="btn danger small" data-action="delete" data-scale="${s.scale_id}">ลบ</button>`;
+  return `<tr data-scale-id="${s.scale_id}">
+    <td><b>${scaleTitle(s)}</b></td>
+    <td>${s.ip}:${s.port}</td>
+    <td>${s.serial_no || '-'}</td>
+    <td><span class="status-pill ${lvl}"><span class="dot"></span>${statusLabel(s.connection_status)}</span></td>
+    <td>${s.last_weight != null ? s.last_weight.toFixed(1)+' g' : '-'}</td>
+    <td>${docCell}</td>
+    <td>${startCell}</td>
+    <td style="display:flex; gap:6px; flex-wrap:wrap;">${actions}</td>
+  </tr>`;
+}
+
+function applyViewMode(){
+  const isTable = viewMode === 'table';
+  $('grid').style.display = isTable ? 'none' : '';
+  $('tableWrap').style.display = isTable ? '' : 'none';
+  $('viewCardBtn').classList.toggle('active', !isTable);
+  $('viewTableBtn').classList.toggle('active', isTable);
+}
+$('viewCardBtn').addEventListener('click', () => { viewMode = 'card'; localStorage.setItem('monitor-view','card'); applyViewMode(); });
+$('viewTableBtn').addEventListener('click', () => { viewMode = 'table'; localStorage.setItem('monitor-view','table'); applyViewMode(); });
+applyViewMode();
+
+async function loadScales(){
+  const data = await api('/api/scales');
+  scales = data.scales || [];
+  $('subLine').textContent = `${scales.length} เครื่อง · ทำงานอยู่ ${scales.filter(s=>s.connection_status==='connected'||s.connection_status==='simulating').length} เครื่อง`;
+  $('grid').innerHTML = scales.length
+    ? scales.map(cardHtml).join('')
+    : '<div class="empty">ยังไม่มีเครื่องชั่งในระบบ — กด "เพิ่มเครื่องชั่ง" เพื่อเริ่มต้น</div>';
+  $('tableBody').innerHTML = scales.length
+    ? scales.map(tableRowHtml).join('')
+    : '<tr><td colspan="8" class="empty">ยังไม่มีเครื่องชั่งในระบบ</td></tr>';
+}
+
+// ---------------- เพิ่ม/แก้ไขเครื่องชั่ง (ไม่มี "ชื่อเครื่องชั่ง" แยกแล้ว — ใช้ Line แทน) ----------------
+function openScaleModal(scale){
+  editingScaleId = scale ? scale.scale_id : null;
+  $('scaleModalTitle').textContent = scale ? `แก้ไข ${scaleTitle(scale)}` : 'เพิ่มเครื่องชั่ง';
+  $('fIp').value = scale ? scale.ip : '';
+  $('fPort').value = scale ? scale.port : '';
+  $('fLine').value = scale ? (scale.line || '') : '';
+  $('fSn').value = scale ? (scale.serial_no || '') : '';
+  $('scaleModalErr').textContent = '';
+  $('scaleModal').classList.add('open');
+}
+$('btnAddScale').addEventListener('click', () => openScaleModal(null));
+$('btnScaleCancel').addEventListener('click', () => $('scaleModal').classList.remove('open'));
+$('btnScaleSave').addEventListener('click', async () => {
+  const body = {
+    ip: $('fIp').value.trim(),
+    port: Number($('fPort').value),
+    line: $('fLine').value.trim(),
+    serialNo: $('fSn').value.trim(),
+  };
+  if(!body.ip || !body.port){
+    $('scaleModalErr').textContent = 'กรุณากรอก IP, Port ให้ครบ';
+    return;
+  }
+  try{
+    if(editingScaleId){
+      await api(`/api/scales/${editingScaleId}`, { method:'PUT', body: JSON.stringify(Object.assign({enabled:true}, body)) });
+    } else {
+      await api('/api/scales', { method:'POST', body: JSON.stringify(body) });
+    }
+    $('scaleModal').classList.remove('open');
+    await loadScales();
+  }catch(err){
+    $('scaleModalErr').textContent = err.message;
+  }
+});
+
+// ---------------- เริ่ม/หยุด เอกสาร ----------------
+async function ensureGroups(){
+  if(groupsCache) return groupsCache;
+  const data = await api('/api/codes/groups');
+  groupsCache = data.groups || [];
+  return groupsCache;
+}
+
+async function openStartModal(scaleId){
+  startingScaleId = scaleId;
+  const scale = scales.find(s => s.scale_id === scaleId);
+  $('startModalScaleName').textContent = scale ? `${scaleTitle(scale)} (${scale.ip}:${scale.port})` : '';
+  $('startModalErr').textContent = '';
+  $('fInspector').value = '';
+  $('fRemark').value = '';
+  $('fProduct').value = '';
+  $('fProduct').placeholder = 'เลือก Group ก่อน';
+  $('fProduct').disabled = true;
+  $('fProductList').innerHTML = '';
+  $('fGroup').value = '';
+  $('fGroup').placeholder = 'กำลังโหลด…';
+  $('startModal').classList.add('open');
+  try{
+    const groups = await ensureGroups();
+    $('fGroupList').innerHTML = groups.map(g => `<option value="${g}"></option>`).join('');
+    $('fGroup').placeholder = 'พิมพ์เพื่อค้นหา Group Code…';
+  }catch(err){
+    $('startModalErr').textContent = 'โหลด GroupCode ไม่ได้: ' + err.message;
+  }
+}
+$('btnStartCancel').addEventListener('click', () => $('startModal').classList.remove('open'));
+
+let PRODUCTS_CACHE = []; // {code, label} ของ group ที่กำลังเลือกอยู่ ไว้ validate ตอน submit
+$('fGroup').addEventListener('input', async () => {
+  const group = $('fGroup').value;
+  $('fProduct').value = '';
+  $('fProduct').disabled = true;
+  $('fProduct').placeholder = 'กำลังโหลด…';
+  if(!(await ensureGroups()).includes(group)) { $('fProduct').placeholder = 'เลือก Group ก่อน'; return; }
+  try{
+    const data = await api(`/api/codes/products?group=${encodeURIComponent(group)}`);
+    const products = data.products || [];
+    PRODUCTS_CACHE = products.map(p => ({ code: p.ProductCode, label: p.ProductCode + (p.PackageName ? ' — '+p.PackageName : '') }));
+    $('fProductList').innerHTML = PRODUCTS_CACHE.map(p => `<option value="${p.label}"></option>`).join('');
+    $('fProduct').placeholder = 'พิมพ์เพื่อค้นหา Product Code…';
+    $('fProduct').disabled = false;
+  }catch(err){
+    $('startModalErr').textContent = 'โหลด ProductCode ไม่ได้: ' + err.message;
+  }
+});
+
+$('btnStartConfirm').addEventListener('click', async () => {
+  const groupCode = $('fGroup').value.trim();
+  const productRaw = $('fProduct').value.trim();
+  const inspectorName = $('fInspector').value.trim();
+  const remark = $('fRemark').value.trim();
+  const matchedProduct = PRODUCTS_CACHE.find(p => p.label === productRaw || p.code === productRaw);
+  const productCode = matchedProduct ? matchedProduct.code : productRaw.split(' — ')[0];
+  if(!groupCode || !productCode){
+    $('startModalErr').textContent = 'กรุณาเลือก Group และ Product ให้ครบ';
+    return;
+  }
+  if(!matchedProduct){
+    $('startModalErr').textContent = 'กรุณาเลือก Product Code จากรายการที่ค้นหาให้ถูกต้อง';
+    return;
+  }
+  if(!inspectorName){
+    $('startModalErr').textContent = 'กรุณาใส่ชื่อผู้ตรวจสอบ';
+    return;
+  }
+  try{
+    await api('/api/sessions/start', { method:'POST', body: JSON.stringify({ scaleId: startingScaleId, groupCode, productCode, inspectorName, remark }) });
+    $('startModal').classList.remove('open');
+    await loadScales();
+  }catch(err){
+    $('startModalErr').textContent = err.message;
+  }
+});
+
+async function stopSession(scaleId){
+  if(!confirm('ยืนยันหยุด / ปิดเอกสารนี้?')) return;
+  try{
+    await api('/api/sessions/stop', { method:'POST', body: JSON.stringify({ scaleId }) });
+    await loadScales();
+  }catch(err){
+    alert('หยุดเอกสารไม่สำเร็จ: ' + err.message);
+  }
+}
+
+// ---------------- แก้ไขเวลาเริ่ม/หยุดของเอกสารที่กำลังทำ (ไม่ต้องรหัสผ่านในหน้านี้) ----------------
+function toDatetimeLocal(iso){
+  if(!iso) return '';
+  const d = new Date(iso);
+  const p=(n)=>String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+}
+async function openEditTimeModal(sessionId){
+  editingTimeSessionId = sessionId;
+  $('editTimeErr').textContent = '';
+  $('eStart').value = ''; $('eEnd').value = ''; $('eInspector').value = ''; $('eRemark').value = '';
+  try{
+    const data = await api(`/api/sessions/${sessionId}`);
+    const s = data.session;
+    $('eStart').value = toDatetimeLocal(s.start_time);
+    $('eEnd').value = toDatetimeLocal(s.end_time);
+    $('eInspector').value = s.inspector_name || '';
+    $('eRemark').value = s.remark || '';
+    $('editTimeModal').classList.add('open');
+  }catch(err){
+    alert('โหลดข้อมูลเอกสารไม่สำเร็จ: ' + err.message);
+  }
+}
+$('btnEditTimeCancel').addEventListener('click', () => $('editTimeModal').classList.remove('open'));
+$('btnEditTimeSave').addEventListener('click', async () => {
+  const startVal = $('eStart').value;
+  const endVal = $('eEnd').value;
+  const inspectorName = $('eInspector').value.trim();
+  const remark = $('eRemark').value.trim();
+  if(!startVal){ $('editTimeErr').textContent = 'กรุณาใส่เวลาเริ่ม'; return; }
+  try{
+    await api(`/api/sessions/${editingTimeSessionId}`, { method:'PUT', body: JSON.stringify({
+      startTime: startVal, endTime: endVal || null, inspectorName, remark,
+    })});
+    $('editTimeModal').classList.remove('open');
+    await loadScales();
+  }catch(err){
+    $('editTimeErr').textContent = err.message;
+  }
+});
+
+async function deleteScale(scaleId){
+  const scale = scales.find(s => s.scale_id === scaleId);
+  const label = scale ? `"${scaleTitle(scale)}" (${scale.ip}:${scale.port})` : `เครื่อง #${scaleId}`;
+  if(!confirm(`ยืนยันลบเครื่องชั่ง ${label}?\n\nถ้าเครื่องนี้ยังไม่มีประวัติเอกสาร/ค่าน้ำหนักเลย จะลบออกจากทะเบียนถาวร\nถ้ามีประวัติอยู่แล้ว ระบบจะ "ปิดใช้งาน" แทน (หยุดเชื่อมต่อ + ซ่อนจากรายการ) เพื่อไม่ให้ประวัติเก่าหาย`)) return;
+  try{
+    const result = await api(`/api/scales/${scaleId}`, { method:'DELETE' });
+    if(result.disabled) alert(`เครื่องนี้มีประวัติอยู่แล้ว จึงถูก "ปิดใช้งาน" แทนการลบถาวร (ข้อมูลเก่ายังอยู่ครบในหน้าประวัติ)`);
+    await loadScales();
+  }catch(err){
+    alert('ลบเครื่องชั่งไม่สำเร็จ: ' + err.message);
+  }
+}
+
+function handleAction(e){
+  const btn = e.target.closest('[data-action]');
+  if(!btn) return;
+  const scaleId = Number(btn.dataset.scale);
+  const action = btn.dataset.action;
+  if(action === 'start') openStartModal(scaleId);
+  else if(action === 'stop') stopSession(scaleId);
+  else if(action === 'edit') openScaleModal(scales.find(s => s.scale_id === scaleId));
+  else if(action === 'delete') deleteScale(scaleId);
+  else if(action === 'edittime') openEditTimeModal(Number(btn.dataset.session));
+}
+$('grid').addEventListener('click', handleAction);
+$('tableBody').addEventListener('click', handleAction);
+
+// ---------------- boot + auto-refresh ----------------
+async function tick(){
+  try{ await loadScales(); }catch(err){ $('grid').innerHTML = `<div class="empty">โหลดข้อมูลไม่สำเร็จ: ${err.message}</div>`; }
+}
+tick();
+setInterval(tick, 4000);
+</script>
+</body>
+</html>

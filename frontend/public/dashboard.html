@@ -1,0 +1,1815 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<title>Fill-Weight Live SPC Panel</title>
+<link rel="icon" type="image/png" href="icon.png">
+<link rel="apple-touch-icon" href="icon.png">
+<style>
+  :root{
+    --bg:        #ffffff;
+    --panel:     #ffffff;
+    --panel-2:   #f2f6fb;
+    --line:      #dbe4f0;
+    --text:      #000000;
+    --text-dim:  rgba(0,0,0,0.65);
+    --text-faint:rgba(0,0,0,0.45);
+
+    --ok:        #1d63e0;
+    --ok-dim:    rgba(29,99,224,0.10);
+    --target:    #e8720c;
+    --limit:     #d1453d;
+    --limit-dim: rgba(209,69,61,0.09);
+    --ctrl:      #5b7db8;
+
+    /* ---- brand — rainbow ---- */
+    --brand-1: #ff4d5e;  /* red */
+    --brand-2: #ff9f1c;  /* orange */
+    --brand-3: #ffd93d;  /* yellow */
+    --brand-4: #3ecf6e;  /* green */
+    --brand-5: #2f8fef;  /* blue */
+    --brand-6: #7c5cff;  /* violet */
+    --brand-gradient: linear-gradient(135deg,
+      var(--brand-1) 0%, var(--brand-2) 20%, var(--brand-3) 40%,
+      var(--brand-4) 60%, var(--brand-5) 80%, var(--brand-6) 100%);
+    --brand-text: #7238d6; /* อ่านง่ายบนพื้นขาว ใช้แทนสีจาก gradient โดยตรง */
+    --brand-dim: linear-gradient(135deg, rgba(255,77,94,0.09), rgba(124,92,255,0.09));
+    --brand-line: rgba(114,56,214,0.30);
+
+    --mono: Tahoma, Geneva, Verdana, sans-serif;
+    --sans: Tahoma, Geneva, Verdana, sans-serif;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html, body{height:100%;}
+  body{
+    background:
+      radial-gradient(720px 420px at 100% 0%, rgba(47,143,239,0.07), transparent 60%),
+      radial-gradient(620px 380px at 0% 100%, rgba(124,92,255,0.08), transparent 60%),
+      var(--bg);
+    color:var(--text);
+    font-family:var(--sans);
+    font-weight:700;
+    overflow:hidden;
+    display:flex;
+    flex-direction:column;
+  }
+  ::-webkit-scrollbar{width:9px; height:9px;}
+  ::-webkit-scrollbar-track{background:var(--panel-2);}
+  ::-webkit-scrollbar-thumb{background:var(--brand-gradient); border-radius:6px;}
+  svg text{font-family:var(--mono); font-weight:700;}
+  .wrap{
+    flex:1; min-height:0; display:flex; flex-direction:column;
+    max-width:1400px; width:100%; margin:0 auto;
+    padding:12px 16px 10px; gap:8px;
+  }
+
+  /* ---------- header ---------- */
+  header{
+    position:relative; overflow:hidden;
+    display:flex; flex-direction:row; align-items:center; justify-content:space-between;
+    flex:0 0 auto; gap:12px; flex-wrap:wrap;
+    background:var(--panel); border:1px solid var(--line); border-radius:8px;
+    padding:9px 14px; box-shadow:0 2px 5px rgba(0,0,0,0.07), 0 10px 24px -14px rgba(0,0,0,0.18);
+  }
+  header::before{
+    content:''; position:absolute; top:0; left:0; right:0; height:3px;
+    background:var(--brand-gradient);
+  }
+  .header-left{display:flex; align-items:center; gap:10px;}
+  .logo-badge{
+    width:34px; height:34px; flex:none; display:flex; align-items:center; justify-content:center;
+    border-radius:10px; background:linear-gradient(160deg,#ffffff,#f2f6fc);
+    border:1px solid var(--line); box-shadow:0 1px 2px rgba(16,24,40,0.08);
+  }
+  .brand-logo{width:19px; height:auto; display:block;}
+  .eyebrow{
+    font-family:var(--mono); font-size:9px; letter-spacing:.1em; text-transform:uppercase;
+    color:var(--text-faint);
+  }
+  h1{font-family:var(--mono); font-weight:600; font-size:16px; letter-spacing:-0.01em; margin-top:1px;}
+  h1 span{color:var(--brand-2);}
+  .header-right{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
+  .spec-chips{display:flex; gap:6px; font-family:var(--mono); font-size:11px; flex-wrap:wrap;}
+  .chip{
+    border:1px solid var(--line); background:var(--panel-2); border-radius:6px;
+    padding:3px 8px; display:flex; align-items:center; gap:4px;
+  }
+  .chip small{color:var(--text-faint); font-size:9px; letter-spacing:.06em;}
+  .chip b{font-size:12px;}
+  .chip.lsl b, .chip.usl b{color:var(--limit);}
+  .chip.tgt b{color:var(--target);}
+  .header-btns{display:flex; gap:6px;}
+  .btn{
+    font-family:var(--mono); font-size:10px; letter-spacing:.04em; text-transform:uppercase;
+    background:var(--panel-2); border:1px solid var(--line); color:var(--text);
+    padding:4px 9px; border-radius:6px; cursor:pointer; transition:background .15s;
+  }
+  .btn:hover{background:var(--line);}
+  .btn.accent{
+    background:var(--brand-2); border-color:transparent; color:#fff; font-weight:700;
+    box-shadow:0 2px 6px rgba(255,159,28,0.30);
+  }
+  .btn.accent:hover{filter:brightness(1.07);}
+  .btn.primary{background:var(--ok); border-color:transparent; color:#fff; font-weight:700;}
+  .btn.danger{background:var(--limit); border-color:transparent; color:#fff; font-weight:700;}
+  .btn.small{padding:5px 10px; font-size:10px;}
+
+  .doc-bar{
+    display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;
+    flex:0 0 auto; padding:8px 14px; background:var(--panel); border:1px solid var(--line);
+    border-radius:8px; box-shadow:0 2px 5px rgba(0,0,0,0.07); font-family:var(--mono); font-size:11px;
+  }
+  .doc-bar-info{display:flex; align-items:center; gap:8px; color:var(--text-dim);}
+  .doc-bar-lbl{color:var(--text-faint); text-transform:uppercase; letter-spacing:.05em; font-size:9.5px;}
+  .doc-bar-actions{display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+  .alert-badge{
+    font-family:var(--mono); font-size:10px; font-weight:700; padding:4px 10px; border-radius:20px;
+    background:rgba(209,69,61,0.12); color:var(--limit); animation:pulseAlert 1s infinite;
+  }
+  @keyframes pulseAlert{0%,100%{opacity:1;} 50%{opacity:.4;}}
+
+  .modal-backdrop{position:fixed; inset:0; background:rgba(10,14,26,0.45); display:none; align-items:center; justify-content:center; z-index:2000;}
+  .modal-backdrop.open{display:flex;}
+  .modal{background:#fff; border-radius:12px; padding:20px 22px; width:360px; max-width:92vw; box-shadow:0 20px 50px rgba(0,0,0,0.25); font-family:var(--sans);}
+  .modal h3{margin:0 0 12px; font-size:15px; color:var(--text);}
+  .modal label{display:block; font-size:11px; color:var(--text-faint); margin:8px 0 4px;}
+  .modal select, .modal input{width:100%; font-family:inherit; font-size:12.5px; padding:7px 8px; border:1px solid var(--line); border-radius:6px; background:#fff; color:var(--text);}
+  .modal .actions{display:flex; justify-content:flex-end; gap:8px; margin-top:14px;}
+  .err-text{color:var(--limit); font-size:11.5px; margin-top:6px; min-height:14px;}
+
+  .legend-bar{
+    display:flex; gap:16px; flex-wrap:wrap; align-items:center;
+    font-family:var(--mono); font-size:10px; color:var(--text-dim);
+    flex:0 0 auto; padding:5px 12px; background:var(--panel); border:1px solid var(--line);
+    border-radius:8px; box-shadow:0 2px 5px rgba(0,0,0,0.07);
+  }
+  .legend-bar i{display:inline-block; width:10px; height:2px; margin-right:5px; vertical-align:middle; position:relative; top:-2px;}
+  .legend-bar .d-dash{border-top:2px dashed var(--ctrl); width:10px; height:0; display:inline-block; margin-right:5px;}
+  .legend-bar strong{color:var(--text); font-weight:600; margin-right:2px;}
+
+  .range-switch{display:flex; align-items:center; gap:4px; font-family:var(--mono); font-size:10px;}
+  .range-btn{
+    font-family:var(--mono); font-size:10px; letter-spacing:.03em;
+    background:var(--panel-2); border:1px solid var(--line); color:var(--text-dim);
+    padding:3px 9px; border-radius:5px; cursor:pointer; transition:background .15s, color .15s, border-color .15s;
+  }
+  .range-btn:hover{background:var(--line);}
+  .range-btn.active{background:var(--brand-dim); border-color:var(--brand-line); color:var(--brand-text); font-weight:600;}
+  .range-sep{width:1px; height:14px; background:var(--line); margin:0 2px;}
+  .time-input{
+    font-family:var(--mono); font-size:10px; color:var(--text);
+    background:var(--panel-2); border:1px solid var(--line); border-radius:5px;
+    padding:2.5px 5px; width:82px;
+  }
+  .time-input:focus{outline:none; border-color:var(--brand-text);}
+
+  /* ---------- kpi row ---------- */
+  .kpis{display:grid; grid-template-columns:repeat(6,1fr); gap:8px; flex:0 0 auto;}
+  .kpi{background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:7px 11px; box-shadow:0 2px 5px rgba(0,0,0,0.07);}
+  .kpi .lbl{font-size:9px; letter-spacing:.06em; text-transform:uppercase; color:var(--text-faint); font-family:var(--mono);}
+  .kpi .val{font-family:var(--mono); font-size:16px; font-weight:600; margin-top:1px; transition:color .2s;}
+  .kpi .sub{font-family:var(--mono); font-size:9.5px; color:var(--text-dim); margin-top:1px; line-height:1.25; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .kpi.good .val{color:var(--ok);}
+  .kpi.warn .val{color:var(--target);}
+  .kpi.bad  .val{color:var(--limit);}
+
+  /* ---------- chart grid ---------- */
+  .main-grid{
+    flex:1.15; min-height:0; display:grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    gap:8px;
+  }
+  .hist-row{
+    flex:1.3; min-height:0; display:grid;
+    grid-template-columns: 1fr;
+  }
+  .panel{
+    background:var(--panel); border:1px solid var(--line); border-radius:8px;
+    padding:8px 12px 6px; box-shadow:0 2px 5px rgba(0,0,0,0.07), 0 10px 24px -14px rgba(0,0,0,0.18);
+    display:flex; flex-direction:column; min-height:0; min-width:0;
+  }
+  .panel h2{
+    font-family:var(--mono); font-size:10.5px; letter-spacing:.04em; text-transform:uppercase;
+    color:var(--text-dim); font-weight:700; margin-bottom:2px; flex:0 0 auto;
+    display:flex; justify-content:flex-start; align-items:baseline; gap:6px;
+    white-space:nowrap; overflow:hidden;
+  }
+  .panel h2 em{font-style:normal; color:var(--text-faint); font-size:9px; text-transform:none; letter-spacing:0; white-space:nowrap; flex:1 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis;}
+  .chart-body{flex:1; min-height:0; display:flex;}
+  .chart-body svg{width:100%; height:100%;}
+
+  .panel.expandable{cursor:zoom-in; transition:box-shadow .15s, border-color .15s;}
+  .panel.expandable:hover{border-color:var(--brand-line); box-shadow:0 1px 2px rgba(16,33,46,0.04), 0 10px 24px -14px rgba(16,33,46,0.25);}
+  .expand-hint{font-size:12px; color:var(--text-faint); margin-left:auto; flex:0 0 auto;}
+
+  .chart-body-wrap{flex:1; min-height:0; display:flex; flex-direction:column; min-width:0;}
+
+  /* ---------- modal zoom controls (zoom/pan only available once a chart is expanded) ---------- */
+  .zoom-tools{display:flex; align-items:center; gap:3px; flex:0 0 auto;}
+  .zoom-btn{
+    font-family:var(--mono); font-size:12px; line-height:1; width:22px; height:22px;
+    display:flex; align-items:center; justify-content:center;
+    background:var(--panel-2); border:1px solid var(--line); color:var(--text-dim);
+    border-radius:5px; cursor:pointer; user-select:none;
+  }
+  .zoom-btn:hover{background:var(--line); color:var(--text);}
+  .zoom-level{font-family:var(--mono); font-size:10.5px; color:var(--text-faint); min-width:32px; text-align:center;}
+  .modal-pan-slider{
+    flex:0 0 auto; -webkit-appearance:none; appearance:none; width:100%; height:14px;
+    background:transparent; margin:0 0 8px; display:none;
+  }
+  .modal-pan-slider.show{display:block;}
+  .modal-pan-slider::-webkit-slider-runnable-track{height:4px; background:var(--panel-2); border:1px solid var(--line); border-radius:3px;}
+  .modal-pan-slider::-webkit-slider-thumb{
+    -webkit-appearance:none; appearance:none; width:13px; height:13px; margin-top:-5px;
+    border-radius:50%; background:var(--brand-text); border:1.5px solid #fff; box-shadow:0 0 0 1px var(--brand-line);
+    cursor:pointer;
+  }
+  .modal-pan-slider::-moz-range-track{height:4px; background:var(--panel-2); border:1px solid var(--line); border-radius:3px;}
+  .modal-pan-slider::-moz-range-thumb{
+    width:13px; height:13px; border-radius:50%; background:var(--brand-text); border:1.5px solid #fff;
+    box-shadow:0 0 0 1px var(--brand-line); cursor:pointer;
+  }
+
+  .modal-overlay{
+    display:none; position:fixed; inset:0; background:rgba(16,26,36,0.55);
+    z-index:50; align-items:center; justify-content:center; padding:16px;
+  }
+  .modal-overlay.open{display:flex;}
+  .modal-box{
+    background:var(--panel); border-radius:12px; border:1px solid var(--line);
+    width:96vw; height:92vh; display:flex; flex-direction:column;
+    box-shadow:0 24px 60px rgba(16,26,36,0.35); overflow:hidden;
+  }
+  .modal-head{display:flex; justify-content:space-between; align-items:center; gap:14px; padding:14px 18px; border-bottom:1px solid var(--line); flex:0 0 auto;}
+  .modal-head h2{font-family:var(--mono); font-size:14px; color:var(--text); flex:0 0 auto;}
+  .modal-head .modal-head-spacer{flex:1 1 auto;}
+  .modal-body{flex:1; min-height:0; padding:18px; display:flex; flex-direction:column; cursor:default;}
+  .modal-body.zoomed{cursor:grab;}
+  .modal-body.panning{cursor:grabbing;}
+  .modal-body svg{width:100%; height:100%; display:block;}
+  .modal-body .chart-body-wrap{flex:1; min-height:0;}
+
+  svg text{font-family:var(--mono); font-weight:700;}
+  .axis{stroke:var(--line); stroke-width:1;}
+  .tick{fill:var(--text-faint); font-size:9px; font-weight:700;}
+
+  /* live feed */
+  .feed{display:flex; flex-direction:column; gap:0; font-family:var(--mono); font-size:11px; flex:1; min-height:0; overflow-y:auto;}
+  .feed-row{
+    display:grid; grid-template-columns:60px 60px 1fr 62px; gap:8px; align-items:center;
+    padding:3.5px 2px; border-bottom:1px solid rgba(223,230,238,0.8);
+  }
+  .feed-row:first-child{animation:slideIn .3s ease;}
+  @keyframes slideIn{from{opacity:0; transform:translateY(-6px);} to{opacity:1; transform:translateY(0);}}
+  .feed-row .sample{color:var(--text-faint); font-size:10px;}
+  .feed-row .value{font-weight:600; text-align:right;}
+  .feed-row .bar-bg{background:var(--panel-2); border-radius:2px; height:5px; position:relative; overflow:hidden;}
+  .feed-row .bar-fill{position:absolute; top:0; bottom:0; left:0; border-radius:2px;}
+  .tag{display:inline-block; padding:1.5px 6px; border-radius:5px; font-size:9px; letter-spacing:.02em; justify-self:end;}
+  .tag.OK{background:var(--ok-dim); color:var(--ok);}
+  .tag.WARNING{background:rgba(232,114,12,0.12); color:var(--target);}
+  .tag.OUT_OF_SPEC{background:var(--limit-dim); color:var(--limit);}
+
+  /* backend / device / db connection status chips */
+  .status-group{display:flex; gap:8px; flex-wrap:wrap;}
+  .conn-chip{
+    display:flex; align-items:center; gap:7px; font-size:11px;
+    padding:5px 10px; border-radius:7px; border:1px solid var(--line); background:var(--panel-2);
+    color:var(--text-dim); white-space:nowrap; cursor:default;
+  }
+  .conn-chip .dot{width:7px; height:7px; border-radius:50%; background:var(--text-faint); flex:none; margin-top:1px;}
+  .conn-chip .chip-text{display:flex; flex-direction:column; line-height:1.35;}
+  .conn-chip .chip-text b{font-weight:700; font-size:10.5px; letter-spacing:.02em;}
+  .conn-chip .chip-text small{font-family:var(--mono); color:var(--text-faint); font-size:10px; max-width:260px; overflow:hidden; text-overflow:ellipsis;}
+  .conn-chip.ok{border-color:rgba(22,163,74,0.35);} .conn-chip.ok .dot{background:var(--ok); animation:pulseDot 1.8s ease-in-out infinite;}
+  .conn-chip.wait{border-color:rgba(232,114,12,0.35);} .conn-chip.wait .dot{background:var(--target);}
+  .conn-chip.down{border-color:rgba(220,38,38,0.45);} .conn-chip.down .dot{background:var(--limit);}
+  .conn-chip.down .chip-text small{color:var(--limit);}
+  @keyframes pulseDot{0%,100%{opacity:1;} 50%{opacity:.35;}}
+</style>
+</head>
+<body data-page="dashboard">
+<script src="sidebar.js"></script>
+<script src="report.js"></script>
+<div id="app-sidebar-root"></div>
+<div class="wrap">
+
+  <header>
+    <div class="header-left">
+      <div class="logo-badge"><img class="brand-logo" src="icon.png" alt=""></div>
+      <div>
+        <div class="eyebrow" id="scaleEyebrow">Statistical Process Control · Live Feed</div>
+        <h1>SPC <span>Panel</span> — Real-Time</h1>
+      </div>
+    </div>
+    <div class="header-right">
+      <select id="scalePicker" title="เลือกเครื่องชั่ง" style="font-family:var(--mono); font-size:12px; padding:6px 8px; border:1px solid var(--line); border-radius:6px; background:var(--panel-2); color:var(--text);"></select>
+      <div class="spec-chips">
+        <div class="chip lsl"><small>LSL</small><b id="chipLsl">80.5 g</b></div>
+        <div class="chip tgt"><small>TARGET</small><b id="chipTgt">82 g</b></div>
+        <div class="chip usl"><small>USL</small><b id="chipUsl">85 g</b></div>
+      </div>
+      <div class="status-group">
+        <div class="conn-chip wait" id="scaleChip">
+          <span class="dot"></span>
+          <div class="chip-text"><b>เครื่องชั่ง</b><small id="scaleChipDetail">กำลังเชื่อมต่อ…</small></div>
+        </div>
+        <div class="conn-chip wait" id="dbChip">
+          <span class="dot"></span>
+          <div class="chip-text"><b>ฐานข้อมูล</b><small id="dbChipDetail">กำลังเชื่อมต่อ…</small></div>
+        </div>
+      </div>
+      <div class="header-btns">
+        <button class="btn accent" id="exportBtn">Export Report</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="doc-bar" id="docBar">
+    <div class="doc-bar-info">
+      <span class="doc-bar-lbl">เอกสาร:</span>
+      <span id="docBarText">ยังไม่มีเอกสารที่กำลังทำ</span>
+    </div>
+    <div class="doc-bar-actions">
+      <span class="alert-badge" id="alertBadge" style="display:none;"></span>
+      <button class="btn small" id="btnMuteAlert" style="display:none;">🔇 หยุดเสียงเตือน</button>
+      <button class="btn small" id="btnEditTime" style="display:none;">แก้ไขเวลา</button>
+      <button class="btn primary small" id="btnStartDoc">▶ เริ่มเอกสาร</button>
+      <button class="btn danger small" id="btnStopDoc" style="display:none;">■ หยุดเอกสาร</button>
+    </div>
+  </div>
+
+  <!-- ---------------- modal: เริ่มเอกสารใหม่ ---------------- -->
+  <div class="modal-backdrop" id="startDocModal">
+    <div class="modal">
+      <h3>เริ่มเอกสารใหม่</h3>
+      <label>Group Code</label>
+      <input id="dGroup" list="dGroupList" placeholder="พิมพ์เพื่อค้นหา Group Code…" autocomplete="off">
+      <datalist id="dGroupList"></datalist>
+      <label>Product Code</label>
+      <input id="dProduct" list="dProductList" placeholder="เลือก Group ก่อน" disabled autocomplete="off">
+      <datalist id="dProductList"></datalist>
+      <label>ชื่อผู้ตรวจสอบ (QC Inspector)</label>
+      <input id="dInspector" placeholder="ชื่อ-นามสกุล">
+      <label>หมายเหตุ (Remark)</label>
+      <input id="dRemark" placeholder="ไม่บังคับ">
+      <div class="err-text" id="startDocErr"></div>
+      <div class="actions">
+        <button class="btn" id="btnStartDocCancel">ยกเลิก</button>
+        <button class="btn primary" id="btnStartDocConfirm">เริ่ม</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ---------------- modal: แก้ไขเวลาเริ่ม/หยุด ---------------- -->
+  <div class="modal-backdrop" id="editTimeModal">
+    <div class="modal">
+      <h3>แก้ไขเวลาเอกสาร</h3>
+      <label>เวลาเริ่ม</label>
+      <input type="datetime-local" id="eStart" step="1">
+      <label>เวลาหยุด (เว้นว่างถ้ายังไม่หยุด)</label>
+      <input type="datetime-local" id="eEnd" step="1">
+      <label>ชื่อผู้ตรวจสอบ</label>
+      <input id="eInspector">
+      <label>หมายเหตุ (Remark)</label>
+      <input id="eRemark">
+      <div class="err-text" id="editTimeErr"></div>
+      <div class="actions">
+        <button class="btn" id="btnEditTimeCancel">ยกเลิก</button>
+        <button class="btn primary" id="btnEditTimeSave">บันทึก</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="legend-bar">
+    <span><strong>Legend</strong></span>
+    <span><i style="background:var(--ok)"></i>in-spec / actual value</span>
+    <span><i style="background:var(--target)"></i>warning zone / target / Cp,1.33 line</span>
+    <span><i style="background:var(--limit)"></i>out of spec / LSL,USL / &lt;1.00 zone</span>
+    <span><i class="d-dash"></i>control limit (UCL/LCL) / Cp (dashed)</span>
+    <div class="range-switch" id="rangeSwitch" style="margin-left:auto;">
+      <span style="color:var(--text-faint); margin-right:2px;">Range</span>
+      <button class="range-btn" data-ms="300000">5m</button>
+      <button class="range-btn" data-ms="600000">10m</button>
+      <button class="range-btn" data-ms="1800000">30m</button>
+      <button class="range-btn" data-ms="3600000">1h</button>
+      <button class="range-btn active" data-ms="all">All</button>
+      <span class="range-sep"></span>
+      <input type="text" id="rangeFrom" class="time-input" placeholder="HH:MM" inputmode="numeric" maxlength="5" autocomplete="off">
+      <span style="color:var(--text-faint);">–</span>
+      <input type="text" id="rangeTo" class="time-input" placeholder="HH:MM" inputmode="numeric" maxlength="5" autocomplete="off">
+      <button class="range-btn" id="applyCustomRange">Apply</button>
+    </div>
+  </div>
+
+  <div class="kpis" id="kpiRow"></div>
+
+  <div class="main-grid">
+    <div class="panel expandable" data-title="Individuals (X) Chart" data-src="ichart">
+      <h2>Individuals (X) Chart <em id="ichartMeta"></em>
+        <span class="expand-hint">⤢</span></h2>
+      <div class="chart-body-wrap">
+        <div class="chart-body"><svg id="ichart" viewBox="0 0 1120 250" preserveAspectRatio="xMidYMid meet"></svg></div>
+      </div>
+    </div>
+
+    <div class="panel expandable" data-title="X-bar Chart" data-src="xbarchart">
+      <h2>X-bar Chart <em id="xbarMeta"></em>
+        <span class="expand-hint">⤢</span></h2>
+      <div class="chart-body-wrap">
+        <div class="chart-body"><svg id="xbarchart" viewBox="0 0 1120 220" preserveAspectRatio="xMidYMid meet"></svg></div>
+      </div>
+    </div>
+
+    <div class="panel expandable" data-title="R Chart (Range)" data-src="rchart">
+      <h2>R Chart <em id="rMeta"></em>
+        <span class="expand-hint">⤢</span></h2>
+      <div class="chart-body-wrap">
+        <div class="chart-body"><svg id="rchart" viewBox="0 0 1120 220" preserveAspectRatio="xMidYMid meet"></svg></div>
+      </div>
+    </div>
+
+    <div class="panel expandable" data-title="Capability Trend — Cp / Cpk" data-src="trendchart">
+      <h2>Capability Trend <em id="trendMeta"></em>
+        <span class="expand-hint">⤢</span></h2>
+      <div class="chart-body-wrap">
+        <div class="chart-body"><svg id="trendchart" viewBox="0 0 1120 240" preserveAspectRatio="xMidYMid meet"></svg></div>
+      </div>
+    </div>
+
+    <div class="panel expandable" data-title="S Chart (Std Dev)" data-src="schart">
+      <h2>S Chart <em id="sMeta"></em>
+        <span class="expand-hint">⤢</span></h2>
+      <div class="chart-body-wrap">
+        <div class="chart-body"><svg id="schart" viewBox="0 0 1120 220" preserveAspectRatio="xMidYMid meet"></svg></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Live Feed <em>recent readings</em></h2>
+      <div class="feed" id="feed"></div>
+    </div>
+  </div>
+
+  <div class="hist-row">
+    <div class="panel expandable" data-title="Histogram" data-src="hist">
+      <h2>Histogram <em id="histMeta"></em>
+        <span class="expand-hint">⤢</span></h2>
+      <div class="chart-body-wrap">
+        <div class="chart-body"><svg id="hist" viewBox="0 0 1400 420" preserveAspectRatio="xMidYMid meet"></svg></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h2 id="modalTitle">Chart</h2>
+      <div class="modal-head-spacer"></div>
+      <span class="zoom-tools" id="modalZoomTools">
+        <span class="zoom-btn" data-act="out" title="Zoom out">−</span>
+        <span class="zoom-level" id="modalZoomLevel">1×</span>
+        <span class="zoom-btn" data-act="in" title="Zoom in">+</span>
+        <span class="zoom-btn" data-act="reset" title="Reset zoom">⟳</span>
+      </span>
+      <button class="btn" id="modalClose">✕ Close</button>
+    </div>
+    <div class="modal-body" id="modalBody">
+      <input type="range" class="modal-pan-slider" id="modalPanSlider" min="0" max="1000" value="0">
+      <div class="modal-chart-slot" id="modalChartSlot" style="flex:1; min-height:0; display:flex;"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const SPEC = { LSL:80.5, TARGET:82, USL:85 };
+let CURRENT_SESSION = null; // เอกสาร (session) ที่กำลังรันอยู่บนเครื่องที่กำลังดู — null ถ้าไม่มี
+const BUFFER_MAX = 4000;    // จำนวนแถวสูงสุดที่เก็บไว้ในหน้าเว็บ (= จำนวนที่ขอย้อนหลังตอนเปิดหน้า)
+const STRIP_WINDOW = 120;   // max points shown on the scrolling individuals chart when no range narrows it further
+
+// ---- backend ----
+// ปกติ frontend server จะ proxy /api ไปที่ backend ให้อยู่แล้ว จึงใช้ origin เดียวกัน ('')
+// ถ้าอยากชี้ไป backend เครื่องอื่นโดยตรง เปิดหน้าเว็บด้วย ?api=http://192.168.1.50:8000
+const API_BASE = new URLSearchParams(location.search).get('api') || '';
+
+// ---- เครื่องชั่งที่กำลังดูอยู่ ----
+// เข้าหน้านี้ด้วย dashboard.html?scale=3 (ลิงก์จากหน้า Monitor) — ถ้าไม่ระบุ จะใช้เครื่องแรกที่เจอ
+let SCALE_ID = (() => {
+  const raw = new URLSearchParams(location.search).get('scale');
+  const n = Number.parseInt(raw, 10);
+  return Number.isFinite(n) ? n : null;
+})();
+const scaleQS = () => (SCALE_ID != null ? `&scaleId=${SCALE_ID}` : '');
+
+const POLL_MS = 1000;         // ถามข้อมูลใหม่จาก backend ทุกกี่ ms
+const STATUS_POLL_MS = 5000;  // ถามสถานะเครื่องชั่ง/DB ทุกกี่ ms
+const POLL_LIMIT = 1000;      // จำนวนแถวสูงสุดต่อการ poll 1 ครั้ง
+const TIME_RANGES = [
+  {label:'5m',  ms:5*60*1000},
+  {label:'10m', ms:10*60*1000},
+  {label:'30m', ms:30*60*1000},
+  {label:'1h',  ms:60*60*1000},
+  {label:'All', ms:null},
+];
+let selectedRangeMs = null; // null = All
+let selectedRangeLabel = 'All';
+let useCustomRange = false;
+let customFrom = null, customTo = null; // Date objects, only when custom time range is applied
+
+function parseTimeToday(timeStr){
+  if(!timeStr) return null;
+  const [h,m] = timeStr.split(':').map(Number);
+  const d = new Date();
+  d.setHours(h, m, 0, 0);
+  return d;
+}
+
+/** กรองแถวให้เหลือเฉพาะ "ที่เกิดขึ้นหลังกดเริ่มเอกสารนี้จริงๆ" โดยใช้ ID ของแถว (ไม่ใช่เวลา)
+ *  เหตุผล: session.start_time (จาก backend) กับ weight.time_stamp อาจอยู่คนละ timezone/format กัน
+ *  (เช่นอันหนึ่งมี Z ต่อท้ายเป็น UTC อีกอันเป็นเวลาท้องถิ่นดิบๆ) เทียบกันตรงๆ ด้วย Date แล้วเพี้ยนได้
+ *  ID เป็น auto-increment เรียงจากน้อยไปมากเสมอ จึงใช้เทียบได้แม่นยำกว่า ไม่มีปัญหาเรื่อง timezone เลย
+ *  boundary ID ถูกจำไว้ตอนกด "เริ่มเอกสาร" (ดู btnStartDocConfirm) เก็บใน localStorage ต่อเครื่องชั่ง
+ *  เพื่อให้รอดจากการ reload/สลับหน้าไปมา ถ้าไม่มี boundary เก็บไว้ (เช่นเอกสารถูกเริ่มจากที่อื่น) จะไม่กรอง */
+function sessionScope(rows){
+  if(!CURRENT_SESSION) return rows;
+  let minId = null;
+  try{
+    const raw = localStorage.getItem(`spc_scope_minid_${SCALE_ID}`);
+    if(raw != null) minId = Number(raw);
+  }catch(err){ /* localStorage ใช้ไม่ได้ (เช่น private mode เก่ามาก) — ไม่กรอง ดีกว่าพังทั้งหน้า */ }
+  if(minId == null || !Number.isFinite(minId)) return rows;
+  return rows.filter(r => r.id > minId);
+}
+
+function getView(){
+  if(useCustomRange && customFrom && customTo){
+    // customBuffer = ชุดข้อมูลที่ดึงจาก backend เฉพาะช่วงเวลาที่เลือก (ย้อนได้ไกลกว่า buffer ปกติ)
+    // หมายเหตุ: custom range ผู้ใช้เลือกเวลาที่ต้องการดูเองตรงๆ แล้ว จึงไม่ sessionScope ซ้อนอีกชั้น
+    const src = customBuffer || buffer;
+    return src.filter(r=> r.ts>=customFrom && r.ts<=customTo);
+  }
+  const base = selectedRangeMs==null ? buffer : buffer.filter(r=>r.ts.getTime()>=Date.now()-selectedRangeMs);
+  return sessionScope(base);
+}
+
+let buffer = [];          // ข้อมูลจริงจาก backend เรียงเก่า -> ใหม่
+let customBuffer = null;  // ข้อมูลของช่วงเวลาที่ผู้ใช้เลือกเอง
+let lastId = 0;           // id ล่าสุดที่หน้าเว็บมีแล้ว ใช้ขอเฉพาะแถวใหม่
+let running = true;
+let intervalId = null;
+let statusIntervalId = null;
+let pollInFlight = false;
+let serverStatus = null;
+let connState = { level:'wait', msg:'กำลังเชื่อมต่อ…' };
+
+function mean(a){return a.reduce((s,x)=>s+x,0)/a.length;}
+function stdev(a){const m=mean(a); return a.length>1 ? Math.sqrt(a.reduce((s,x)=>s+(x-m)**2,0)/(a.length-1)) : 0;}
+function statusOf(v){
+  const band=(SPEC.USL-SPEC.LSL)*0.1;
+  if(v>SPEC.USL||v<SPEC.LSL) return 'OUT_OF_SPEC';
+  if(v>SPEC.USL-band||v<SPEC.LSL+band) return 'WARNING';
+  return 'OK';
+}
+
+/** จำกัดค่าที่จะ "วาดบนกราฟ" ให้อยู่ในช่วง [lo,hi] เท่านั้น — ใช้กันไม่ให้ค่าที่หลุดไปไกลมาก
+ *  ดึงแกน Y ยืดจนจุดข้อมูลปกติทั้งหมดถูกอัดแบนไปกองกัน ค่าที่ถูก clip จะถูกวาดเป็นสามเหลี่ยม
+ *  ที่ขอบกราฟแทนวงกลมปกติ — ไม่ได้ลบ/ซ่อนข้อมูลออกจากระบบ ยังนับใน KPI / Live Feed / Alert / Export ครบตามจริง */
+function clipVal(v, lo, hi){
+  if(v > hi) return { v: hi, off: 1 };
+  if(v < lo) return { v: lo, off: -1 };
+  return { v, off: 0 };
+}
+function clipMarker(svg, cx, cy, dir, color){
+  const s = 5.5;
+  const points = dir > 0
+    ? `${cx-s},${cy+s} ${cx+s},${cy+s} ${cx},${cy-s}`
+    : `${cx-s},${cy-s} ${cx+s},${cy-s} ${cx},${cy+s}`;
+  svg.appendChild(el('polygon',{points, fill:color, stroke:'var(--panel)','stroke-width':0.75}));
+}
+
+// ================= backend API =================
+async function api(path, opts){
+  const res = await fetch(API_BASE + path, Object.assign({
+    cache:'no-store',
+    headers:{'accept':'application/json','content-type':'application/json'},
+  }, opts||{}));
+  let payload = null;
+  try { payload = await res.json(); } catch(e){ /* ตอบกลับมาไม่ใช่ JSON */ }
+  if(!res.ok) throw new Error((payload && payload.error) || `HTTP ${res.status} ${res.statusText}`);
+  return payload || {};
+}
+
+/** แถวจาก backend {id, weight, time_stamp} -> รูปแบบที่กราฟใช้ */
+function mapRow(r){
+  const value = Number(r.weight);
+  return {
+    id: Number(r.id),
+    sample: 'S-' + String(r.id).padStart(4,'0'),
+    value,
+    status: statusOf(value),
+    ts: new Date(r.time_stamp),
+  };
+}
+
+/** ใส่แถวใหม่ลง buffer (ข้ามแถวซ้ำ/ค่าเสีย) แล้วคืนจำนวนที่เพิ่มจริง */
+function ingest(rows){
+  let added = 0;
+  for(const raw of rows){
+    const rec = mapRow(raw);
+    if(!Number.isFinite(rec.value) || !Number.isFinite(rec.id) || rec.id <= lastId) continue;
+    if(isNaN(rec.ts.getTime())) rec.ts = new Date();
+    buffer.push(rec);
+    lastId = rec.id;
+    added++;
+  }
+  if(buffer.length > BUFFER_MAX) buffer.splice(0, buffer.length - BUFFER_MAX);
+  return added;
+}
+
+// connState = เชื่อมต่อกับ backend (ผ่าน proxy) ได้ไหม — ใช้ตอนยังไม่มี serverStatus เลย
+function setConn(level, msg){
+  connState = { level, msg };
+  paintConn();
+}
+
+function timeAgo(iso){
+  if(!iso) return null;
+  const sec = Math.max(0, Math.round((Date.now() - new Date(iso).getTime())/1000));
+  if(sec < 3) return 'เมื่อครู่นี้';
+  if(sec < 60) return `${sec} วิ ที่แล้ว`;
+  const min = Math.round(sec/60);
+  if(min < 60) return `${min} นาที ที่แล้ว`;
+  return `${Math.round(min/60)} ชม. ที่แล้ว`;
+}
+
+function paintChip(id, detailId, level, title, detail){
+  const chip = document.getElementById(id);
+  if(!chip) return;
+  chip.className = 'conn-chip ' + level;
+  chip.title = title || '';
+  document.getElementById(detailId).textContent = detail;
+}
+
+/**
+ * วาดสถานะทั้งสองชิป (เครื่องชั่ง / ฐานข้อมูล) จาก serverStatus (GET /api/status)
+ * ถ้ายังต่อ backend เองไม่ได้เลย ให้ทั้งคู่ขึ้นแดงพร้อมเหตุผลจาก connState
+ */
+/** /api/status ตอนนี้คืนหลายเครื่อง { scales:[...], db, server_time } — หาเครื่องที่กำลังดูอยู่ */
+function currentScaleStatus(){
+  if(!serverStatus || !Array.isArray(serverStatus.scales)) return null;
+  if(SCALE_ID != null) return serverStatus.scales.find(s => s.scale_id === SCALE_ID) || null;
+  return serverStatus.scales[0] || null;
+}
+
+function paintConn(){
+  if(!serverStatus){
+    const msg = connState.msg || 'ยังไม่ได้เชื่อมต่อ';
+    paintChip('scaleChip','scaleChipDetail', connState.level, msg, connState.level==='down' ? 'ต่อ backend ไม่ได้' : msg);
+    paintChip('dbChip','dbChipDetail', connState.level, msg, connState.level==='down' ? 'ต่อ backend ไม่ได้' : msg);
+    return;
+  }
+
+  // ---- เครื่องชั่ง (เฉพาะเครื่องที่กำลังดูอยู่) ----
+  const sc = currentScaleStatus();
+  if(!sc){
+    paintChip('scaleChip','scaleChipDetail','wait','ยังไม่มีเครื่องชั่งในระบบ','ไม่พบเครื่องชั่ง — เพิ่มได้ที่หน้า Monitor');
+  } else {
+    const cs = sc.connection_status;
+    const scaleLevel = (cs === 'connected' || cs === 'simulating') ? 'ok' : (cs === 'error' || cs === 'stopped') ? 'down' : 'wait';
+    const wLabel = sc.last_weight != null ? `${sc.last_weight.toFixed(1)} g` : '--';
+    const ago = timeAgo(sc.last_received_at);
+    const simTag = sc.sim_mode ? ' (SIM)' : '';
+    const scaleDetail = `${sc.name} · ${sc.device}${simTag} · ${cs}${scaleLevel==='ok' ? ` · ${wLabel}${ago ? ' · '+ago : ''}` : ''}`;
+    const scaleTitle = [
+      `เครื่อง: ${sc.name} (${sc.line || '-'} / S-N ${sc.serial_no || '-'})`,
+      `สถานะ: ${cs}${simTag}`,
+      `อุปกรณ์: ${sc.device}`,
+      `น้ำหนักล่าสุด: ${wLabel}`,
+      ago ? `รับล่าสุด: ${ago}` : null,
+      `รับทั้งหมด: ${sc.total_received ?? 0} ค่า`,
+      sc.active_product_code ? `กำลังทำเอกสาร: ${sc.active_group_code} / ${sc.active_product_code}` : 'ไม่มีเอกสารที่กำลังทำ',
+      sc.last_error ? `ข้อผิดพลาดล่าสุด: ${sc.last_error}` : null,
+    ].filter(Boolean).join('\n');
+    paintChip('scaleChip','scaleChipDetail', scaleLevel, scaleTitle, scaleDetail);
+    document.getElementById('scaleEyebrow').textContent =
+      `Statistical Process Control · ${sc.name}${sc.line ? ' · '+sc.line : ''} · Live Feed`;
+  }
+
+  // ---- ฐานข้อมูล ----
+  const dbInfo = serverStatus.db || {};
+  const dbLevel = !dbInfo.enabled ? 'wait' : dbInfo.connected ? 'ok' : 'down';
+  const dbDetail = !dbInfo.enabled
+    ? 'ปิดใช้งาน (DB_ENABLED=false)'
+    : `${dbInfo.target} · ${dbInfo.connected ? 'เชื่อมต่ออยู่' : 'ต่อไม่ติด'}`;
+  const dbTitle = [
+    `เป้าหมาย: ${dbInfo.target || '-'}`,
+    `ตาราง: ${dbInfo.table || '-'}`,
+    `สถานะ: ${dbInfo.enabled ? (dbInfo.connected ? 'เชื่อมต่ออยู่' : 'ต่อไม่ติด') : 'ปิดใช้งาน'}`,
+    dbInfo.last_error ? `ข้อผิดพลาดล่าสุด: ${dbInfo.last_error}` : null,
+  ].filter(Boolean).join('\n');
+  paintChip('dbChip','dbChipDetail', dbLevel, dbTitle, dbDetail);
+}
+
+/** เติม dropdown เลือกเครื่องชั่งที่หัวหน้า — เปลี่ยนแล้วรีโหลดกราฟของเครื่องนั้นทันที */
+async function initScalePicker(){
+  const picker = document.getElementById('scalePicker');
+  try{
+    const data = await api('/api/scales');
+    const scales = data.scales || [];
+    if(!scales.length){
+      picker.innerHTML = '<option value="">ไม่มีเครื่องชั่ง</option>';
+      return;
+    }
+    if(SCALE_ID == null) SCALE_ID = scales[0].scale_id;
+    picker.innerHTML = scales.map(s =>
+      `<option value="${s.scale_id}" ${s.scale_id===SCALE_ID?'selected':''}>${s.name}${s.line? ' · '+s.line:''}</option>`
+    ).join('');
+    picker.addEventListener('change', () => {
+      const url = new URL(location.href);
+      url.searchParams.set('scale', picker.value);
+      location.href = url.toString();
+    });
+  }catch(err){
+    picker.innerHTML = '<option value="">โหลดรายชื่อเครื่องไม่ได้</option>';
+  }
+}
+
+/** โหลดข้อมูลย้อนหลังทั้งชุด (ใช้ตอนเปิดหน้าและตอนกด Reset) */
+async function loadHistory(){
+  setConn('wait','กำลังโหลดข้อมูลย้อนหลัง…');
+  const data = await api(`/api/weights/history?limit=${BUFFER_MAX}${scaleQS()}`);
+  buffer = []; lastId = 0;
+  ingest(data.rows || []);
+  renderAll();
+  setConn(
+    data.source === 'memory' ? 'wait' : 'ok',
+    data.source === 'memory'
+      ? 'DB มีปัญหา — กำลังใช้ข้อมูลสำรองใน memory'
+      : `โหลดแล้ว ${buffer.length} แถว`
+  );
+  return data;
+}
+
+/** ขอเฉพาะแถวใหม่ที่เกิดขึ้นหลัง lastId */
+async function poll(){
+  if(pollInFlight) return;
+  pollInFlight = true;
+  try{
+    const data = await api(`/api/weights?sinceId=${lastId}&limit=${POLL_LIMIT}${scaleQS()}`);
+    const added = ingest(data.rows || []);
+    if(added > 0 || !useCustomRange) renderAll();
+    if(data.source === 'memory') setConn('wait','DB มีปัญหา — กำลังใช้ข้อมูลสำรองใน memory');
+    else setConn('ok', added ? `+${added} แถวใหม่` : 'เชื่อมต่ออยู่');
+  }catch(err){
+    setConn('down','ต่อ backend ไม่ได้: ' + err.message);
+  }finally{
+    pollInFlight = false;
+  }
+}
+
+async function refreshStatus(){
+  try{
+    serverStatus = await api('/api/status');
+    paintConn();
+    loadCurrentSession(); // ไม่ต้องรอ ให้ SPEC อัปเดตแบบ background พอ
+  }catch(err){
+    serverStatus = null;
+    setConn('down','ต่อ backend ไม่ได้: ' + err.message);
+  }
+}
+
+/** ดึงเอกสาร (session) ที่กำลังรันอยู่บนเครื่องที่กำลังดู แล้วอัปเดต SPEC (LSL/TARGET/USL) ให้ตรงกับ ProductCode จริง */
+async function loadCurrentSession(){
+  if(SCALE_ID == null) return;
+  try{
+    const data = await api(`/api/sessions?scaleId=${SCALE_ID}&status=running&pageSize=1`);
+    const s = (data.rows && data.rows[0]) || null;
+    CURRENT_SESSION = s;
+    if(s && s.nw_target != null){
+      SPEC.TARGET = s.nw_target;
+      SPEC.LSL = s.nw_lcl != null ? s.nw_lcl : s.nw_target;
+      SPEC.USL = s.nw_ucl != null ? s.nw_ucl : s.nw_target;
+    }
+    document.getElementById('chipLsl').textContent = `${SPEC.LSL} g`;
+    document.getElementById('chipTgt').textContent = `${SPEC.TARGET} g`;
+    document.getElementById('chipUsl').textContent = `${SPEC.USL} g`;
+  }catch(err){
+    CURRENT_SESSION = null;
+  }
+  renderDocBar();
+  // CURRENT_SESSION เพิ่งเปลี่ยน (เช่น เพิ่งเริ่ม/หยุดเอกสาร) — สั่ง re-render ทันที ไม่ต้องรอ poll() รอบถัดไป
+  // เพื่อให้ sessionScope() ใน getView() มีผลกับกราฟ/KPI ที่เห็นอยู่ตอนนี้เลย
+  safeRender(renderAll, 'renderAll (after loadCurrentSession)');
+}
+
+// ================= แถบเอกสาร (เริ่ม/หยุด/แก้ไขเวลา) =================
+function fmtStart(iso){
+  if(!iso) return '-';
+  const d = new Date(iso);
+  const p=(n)=>String(n).padStart(2,'0');
+  return `${p(d.getDate())}/${p(d.getMonth()+1)} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+}
+
+function renderDocBar(){
+  const s = CURRENT_SESSION;
+  const textEl = document.getElementById('docBarText');
+  const btnStart = document.getElementById('btnStartDoc');
+  const btnStop = document.getElementById('btnStopDoc');
+  const btnEditTime = document.getElementById('btnEditTime');
+  if(s){
+    textEl.innerHTML = `<b>${s.group_code} / ${s.product_code}</b> · ผู้ตรวจสอบ: ${s.inspector_name || '-'} · เริ่มเมื่อ ${fmtStart(s.start_time)}`;
+    btnStart.style.display = 'none';
+    btnStop.style.display = '';
+    btnEditTime.style.display = '';
+  } else {
+    textEl.textContent = 'ยังไม่มีเอกสารที่กำลังทำ';
+    btnStart.style.display = '';
+    btnStop.style.display = 'none';
+    btnEditTime.style.display = 'none';
+  }
+}
+
+let GROUPS_CACHE = null;
+async function ensureGroupsForDoc(){
+  if(GROUPS_CACHE) return GROUPS_CACHE;
+  const data = await api('/api/codes/groups');
+  GROUPS_CACHE = data.groups || [];
+  return GROUPS_CACHE;
+}
+
+document.getElementById('btnStartDoc').addEventListener('click', async () => {
+  document.getElementById('startDocErr').textContent = '';
+  document.getElementById('dInspector').value = '';
+  document.getElementById('dRemark').value = '';
+  document.getElementById('dProduct').value = '';
+  document.getElementById('dProduct').placeholder = 'พิมพ์ Product Code เอง หรือเลือก Group ก่อนเพื่อค้นหา';
+  document.getElementById('dProduct').disabled = false;
+  document.getElementById('dProductList').innerHTML = '';
+  document.getElementById('dGroup').value = '';
+  document.getElementById('dGroup').placeholder = 'กำลังโหลด…';
+  document.getElementById('startDocModal').classList.add('open');
+  try{
+    const groups = await ensureGroupsForDoc();
+    document.getElementById('dGroupList').innerHTML = groups.map(g=>`<option value="${g}"></option>`).join('');
+    document.getElementById('dGroup').placeholder = 'พิมพ์เพื่อค้นหา Group Code…';
+  }catch(err){
+    document.getElementById('startDocErr').textContent = 'โหลด GroupCode ไม่ได้: ' + err.message;
+  }
+});
+document.getElementById('btnStartDocCancel').addEventListener('click', () => document.getElementById('startDocModal').classList.remove('open'));
+
+let DOC_PRODUCTS_CACHE = []; // เก็บ {ProductCode, label} ของ group ที่กำลังเลือกอยู่ ไว้ validate ตอน submit
+document.getElementById('dGroup').addEventListener('input', async () => {
+  const group = document.getElementById('dGroup').value.trim();
+  const productInput = document.getElementById('dProduct');
+  // ช่อง Product พิมพ์เองได้เสมอ ไม่ล็อกรอ Group match แล้ว — กันกรณี Group/Product หาไม่เจอในรายการที่ดึงมา (เช่น P695)
+  productInput.disabled = false;
+  if(!group){ productInput.placeholder = 'พิมพ์ Product Code เอง หรือเลือก Group ก่อนเพื่อค้นหา'; return; }
+  try{
+    const data = await api(`/api/codes/products?group=${encodeURIComponent(group)}`);
+    const products = data.products || [];
+    DOC_PRODUCTS_CACHE = products.map(p => ({ code: p.ProductCode, label: p.ProductCode + (p.PackageName ? ' — '+p.PackageName : '') }));
+    document.getElementById('dProductList').innerHTML = DOC_PRODUCTS_CACHE.map(p=>`<option value="${p.label}"></option>`).join('');
+    productInput.placeholder = products.length ? 'พิมพ์เพื่อค้นหา Product Code…' : 'ไม่พบในรายการ — พิมพ์โค้ดเองได้เลย';
+  }catch(err){
+    productInput.placeholder = 'ค้นหาไม่สำเร็จ — พิมพ์โค้ดเองได้เลย';
+  }
+});
+document.getElementById('btnStartDocConfirm').addEventListener('click', async () => {
+  const groupCode = document.getElementById('dGroup').value.trim();
+  const productRaw = document.getElementById('dProduct').value.trim();
+  const inspectorName = document.getElementById('dInspector').value.trim();
+  const remark = document.getElementById('dRemark').value.trim();
+  const matchedProduct = DOC_PRODUCTS_CACHE.find(p => p.label === productRaw || p.code === productRaw);
+  const productCode = matchedProduct ? matchedProduct.code : productRaw.split(' — ')[0];
+  if(!groupCode || !productCode){ document.getElementById('startDocErr').textContent = 'กรุณากรอก Group และ Product ให้ครบ'; return; }
+  if(!inspectorName){ document.getElementById('startDocErr').textContent = 'กรุณาใส่ชื่อผู้ตรวจสอบ'; return; }
+  // หมายเหตุ: ไม่บังคับ match กับรายการที่ค้นหาได้อีกต่อไป — พิมพ์โค้ดเองได้เลยแม้ระบบค้นหาไม่เจอ (เผื่อ datalist โหลดไม่ครบ/หาไม่เจอ)
+  try{
+    await api('/api/sessions/start', { method:'POST', body: JSON.stringify({ scaleId: SCALE_ID, groupCode, productCode, inspectorName, remark }) });
+  }catch(err){
+    // เริ่มเอกสารไม่สำเร็จจริงๆ (เช่น backend ปฏิเสธ) — แสดง error ในโมดัลตามปกติ แล้วหยุดตรงนี้
+    document.getElementById('startDocErr').textContent = err.message;
+    return;
+  }
+  // เริ่มเอกสารสำเร็จแล้ว ณ จุดนี้ — จำ "ID ล่าสุดที่มีอยู่ตอนนี้" ไว้เป็น boundary ของเอกสารนี้
+  // (แถวที่ id <= boundary ถือเป็นของเก่า/ก่อนเอกสารนี้ ไม่นับ) เก็บลง localStorage เพื่อให้รอดจากการ reload
+  try{ localStorage.setItem(`spc_scope_minid_${SCALE_ID}`, String(lastId)); }catch(err){ /* ignore */ }
+  // แล้ว reload หน้าทั้งหมดให้กราฟ/KPI/Range/zoom เริ่มนับใหม่จากศูนย์ชัดเจน
+  location.reload();
+});
+
+document.getElementById('btnStopDoc').addEventListener('click', async () => {
+  if(!confirm('ยืนยันหยุด / ปิดเอกสารนี้?')) return;
+  try{
+    await api('/api/sessions/stop', { method:'POST', body: JSON.stringify({ scaleId: SCALE_ID }) });
+  }catch(err){
+    alert('หยุดเอกสารไม่สำเร็จ: ' + err.message);
+    return;
+  }
+  // หยุดเอกสารสำเร็จแล้ว — ล้าง boundary ID ที่เก็บไว้ตอนเริ่มเอกสารนี้ทิ้งด้วย (จะได้ไม่ค้างไปกวนเอกสารถัดไป)
+  try{ localStorage.removeItem(`spc_scope_minid_${SCALE_ID}`); }catch(err){ /* ignore */ }
+  // ส่วนรีเฟรชหน้าจอแยกออกมา ไม่ให้ error ตรงนี้กลายเป็น "หยุดเอกสารไม่สำเร็จ" ที่หลอกผู้ใช้
+  // หมายเหตุ: ตอน "หยุด" เอกสาร ตั้งใจไม่ล้าง buffer เหมือนตอน "เริ่ม" เพราะผู้ใช้มักจะกด Export Report
+  // ดูสรุปผลของ batch ที่เพิ่งจบต่อทันที ถ้าล้างข้อมูลตรงนี้ไปด้วยจะกด Export ไม่ได้ผลลัพธ์ที่ถูกต้อง
+  await loadCurrentSession().catch(err => console.error('[btnStopDoc] loadCurrentSession error:', err));
+  safeRender(renderAll, 'renderAll (after stop doc)');
+});
+
+function toDatetimeLocal(iso){
+  if(!iso) return '';
+  const d = new Date(iso);
+  const p=(n)=>String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+}
+
+document.getElementById('btnEditTime').addEventListener('click', () => {
+  const s = CURRENT_SESSION;
+  if(!s) return;
+  document.getElementById('eStart').value = toDatetimeLocal(s.start_time);
+  document.getElementById('eEnd').value = toDatetimeLocal(s.end_time);
+  document.getElementById('eInspector').value = s.inspector_name || '';
+  document.getElementById('eRemark').value = s.remark || '';
+  document.getElementById('editTimeErr').textContent = '';
+  document.getElementById('editTimeModal').classList.add('open');
+});
+document.getElementById('btnEditTimeCancel').addEventListener('click', () => document.getElementById('editTimeModal').classList.remove('open'));
+document.getElementById('btnEditTimeSave').addEventListener('click', async () => {
+  const s = CURRENT_SESSION;
+  if(!s) return;
+  const startVal = document.getElementById('eStart').value;
+  const endVal = document.getElementById('eEnd').value;
+  const inspectorName = document.getElementById('eInspector').value.trim();
+  const remark = document.getElementById('eRemark').value.trim();
+  if(!startVal){ document.getElementById('editTimeErr').textContent = 'กรุณาใส่เวลาเริ่ม'; return; }
+  try{
+    await api(`/api/sessions/${s.id}`, { method:'PUT', body: JSON.stringify({
+      startTime: startVal, endTime: endVal || null, inspectorName, remark,
+    })});
+    document.getElementById('editTimeModal').classList.remove('open');
+  }catch(err){
+    document.getElementById('editTimeErr').textContent = err.message;
+    return;
+  }
+  // บันทึกสำเร็จแล้ว — ส่วนรีเฟรชหน้าจอแยกออกมาเช่นเดียวกับปุ่มเริ่ม/หยุดเอกสาร
+  await loadCurrentSession().catch(err => console.error('[btnEditTimeSave] loadCurrentSession error:', err));
+  safeRender(renderAll, 'renderAll (after edit time)');
+});
+
+// ================= CP/CPK/Ppk + OOS ย้อนหลัง + ค่าเฉลี่ยเบี่ยงเบน — เสียงเตือนต่อเนื่องถ้าเกินเกณฑ์ =================
+let ALERT_SETTINGS = {
+  cpMin:1.0, cpkMin:1.0, ppkMin:1.0, soundEnabled:true,
+  oosWindowMin:60, oosMaxCount:3, oosMaxPercent:5, meanDeviationMax:2,
+};
+let REPORT_FORM_CODE = 'F3QCPFB8-1-01/9/2025';
+let alertAudioCtx = null, alertOscInterval = null, alertMuted = false;
+
+async function loadAlertSettings(){
+  try{
+    const data = await api('/api/settings');
+    const s = data.settings || {};
+    ALERT_SETTINGS = {
+      cpMin: parseFloat(s['alert.cpMin']) || 1.0,
+      cpkMin: parseFloat(s['alert.cpkMin']) || 1.0,
+      ppkMin: parseFloat(s['alert.ppkMin']) || 1.0,
+      soundEnabled: s['alert.soundEnabled'] !== 'false',
+      oosWindowMin: parseFloat(s['alert.oosWindowMin']) || 60,
+      oosMaxCount: s['alert.oosMaxCount'] != null ? parseFloat(s['alert.oosMaxCount']) : 3,
+      oosMaxPercent: s['alert.oosMaxPercent'] != null ? parseFloat(s['alert.oosMaxPercent']) : 5,
+      meanDeviationMax: s['alert.meanDeviationMax'] != null ? parseFloat(s['alert.meanDeviationMax']) : 2,
+    };
+    if(s['report.formCode']) REPORT_FORM_CODE = s['report.formCode'];
+  }catch(err){ /* ใช้ค่า default ถ้าโหลดไม่ได้ */ }
+}
+
+function computeCpCpk(vals, lsl, usl){
+  if(vals.length < 2) return { cp:null, cpk:null };
+  const m = mean(vals);
+  const sd = stdev(vals);
+  if(!sd) return { cp:null, cpk:null };
+  const cp = (usl - lsl) / (6*sd);
+  const cpk = Math.min((usl - m)/(3*sd), (m - lsl)/(3*sd));
+  return { cp, cpk };
+}
+
+/** จำนวน/สัดส่วนค่าที่หลุด Spec (นอก LSL–USL) ย้อนหลังตามหน้าต่างเวลาที่ตั้งไว้ (นาที) */
+function computeOosWindow(view, windowMin, lsl, usl){
+  const cutoff = Date.now() - windowMin*60*1000;
+  const windowRows = view.filter(r => r.ts.getTime() >= cutoff);
+  const oosCount = windowRows.filter(r => r.value < lsl || r.value > usl).length;
+  const oosPercent = windowRows.length ? (oosCount/windowRows.length)*100 : 0;
+  return { count: windowRows.length, oosCount, oosPercent };
+}
+
+function startAlertSound(){
+  if(alertOscInterval || alertMuted || !ALERT_SETTINGS.soundEnabled) return;
+  try{
+    alertAudioCtx = alertAudioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    const beep = () => {
+      const osc = alertAudioCtx.createOscillator();
+      const gain = alertAudioCtx.createGain();
+      osc.type = 'square'; osc.frequency.value = 880;
+      gain.gain.value = 0.08;
+      osc.connect(gain); gain.connect(alertAudioCtx.destination);
+      osc.start(); osc.stop(alertAudioCtx.currentTime + 0.25);
+    };
+    beep();
+    alertOscInterval = setInterval(beep, 700);
+  }catch(err){ /* เบราว์เซอร์อาจบล็อก audio จนกว่าจะมี user interaction ครั้งแรก */ }
+}
+function stopAlertSound(){
+  if(alertOscInterval){ clearInterval(alertOscInterval); alertOscInterval = null; }
+}
+
+document.getElementById('btnMuteAlert').addEventListener('click', () => {
+  alertMuted = true;
+  stopAlertSound();
+  document.getElementById('btnMuteAlert').style.display = 'none';
+});
+
+function updateAlertBadge(){
+  const view = getView();
+  const badge = document.getElementById('alertBadge');
+  if(view.length < 2){
+    badge.style.display = 'none';
+    stopAlertSound();
+    return;
+  }
+
+  const vals = view.map(r=>r.value);
+  const { cp, cpk } = computeCpCpk(vals, SPEC.LSL, SPEC.USL);
+  const ppk = cpk; // หมายเหตุ: ระบบยังไม่แยก subgroup จริง จึงใช้สูตรเดียวกับ Cpk ไปก่อน (ดู README)
+  const oos = computeOosWindow(view, ALERT_SETTINGS.oosWindowMin, SPEC.LSL, SPEC.USL);
+  const meanDev = Math.abs(mean(vals) - SPEC.TARGET);
+
+  const reasons = [];
+  if(cp != null && cp < ALERT_SETTINGS.cpMin) reasons.push(`Cp ${cp.toFixed(2)} ต่ำกว่า ${ALERT_SETTINGS.cpMin}`);
+  if(cpk != null && cpk < ALERT_SETTINGS.cpkMin) reasons.push(`Cpk ${cpk.toFixed(2)} ต่ำกว่า ${ALERT_SETTINGS.cpkMin}`);
+  if(ppk != null && ppk < ALERT_SETTINGS.ppkMin) reasons.push(`Ppk ${ppk.toFixed(2)} ต่ำกว่า ${ALERT_SETTINGS.ppkMin}`);
+  if(oos.count > 0 && oos.oosCount > ALERT_SETTINGS.oosMaxCount) {
+    reasons.push(`หลุดสเปก ${oos.oosCount} ค่า ใน ${ALERT_SETTINGS.oosWindowMin} นาทีที่ผ่านมา (เกิน ${ALERT_SETTINGS.oosMaxCount})`);
+  }
+  if(oos.count > 0 && oos.oosPercent > ALERT_SETTINGS.oosMaxPercent) {
+    reasons.push(`หลุดสเปก ${oos.oosPercent.toFixed(1)}% ใน ${ALERT_SETTINGS.oosWindowMin} นาทีที่ผ่านมา (เกิน ${ALERT_SETTINGS.oosMaxPercent}%)`);
+  }
+  if(meanDev > ALERT_SETTINGS.meanDeviationMax) {
+    reasons.push(`ค่าเฉลี่ยเบี่ยงจาก Target ${meanDev.toFixed(2)} g (เกิน ${ALERT_SETTINGS.meanDeviationMax} g)`);
+  }
+
+  if(reasons.length){
+    badge.style.display = '';
+    badge.textContent = `⚠ ${reasons.join(' · ')}`;
+    if(!alertMuted){
+      document.getElementById('btnMuteAlert').style.display = '';
+      startAlertSound();
+    }
+  } else {
+    badge.style.display = 'none';
+    document.getElementById('btnMuteAlert').style.display = 'none';
+    alertMuted = false; // เกณฑ์กลับมาปกติแล้ว รีเซ็ต mute ไว้เผื่อรอบหน้า
+    stopAlertSound();
+  }
+}
+
+function el(tag, attrs){
+  const NS = 'http://www.w3.org/2000/svg';
+  const e=document.createElementNS(NS,tag);
+  for(const k in attrs) e.setAttribute(k, attrs[k]);
+  return e;
+}
+function clearSvg(svg){ while(svg.firstChild) svg.removeChild(svg.firstChild); }
+
+// ================= chart zoom / pan controller (modal-only) =================
+// zoom/pan is only ever adjusted from inside the expanded (modal) chart view — the
+// small panel thumbnails on the dashboard always render the full, unzoomed data.
+// สถานะ zoom ต่อกราฟ: level = ระดับการซูม (1 = แสดงทั้งหมด, ยิ่งมากยิ่งซูมเข้า)
+// start = ตำแหน่งเริ่มของหน้าต่างที่มองเห็น (สัดส่วน 0..1 ของข้อมูลทั้งหมดที่กราฟนั้น "จะ" แสดง)
+const ZOOM_MAX = 20;
+const zoomState = {
+  ichart:{level:1,start:0}, xbarchart:{level:1,start:0}, rchart:{level:1,start:0},
+  trendchart:{level:1,start:0}, schart:{level:1,start:0}, hist:{level:1,start:0},
+};
+const RENDER_FN = {}; // เติมทีหลัง หลังประกาศฟังก์ชัน render ของแต่ละกราฟ
+
+/** หั่น arr ให้เหลือเฉพาะช่วงที่ซูม/แพนอยู่ ตาม zoomState ของกราฟ id นั้น */
+function applyZoomWindow(id, arr){
+  const st = zoomState[id];
+  if(!st || st.level<=1 || arr.length<2) return arr;
+  const visible = Math.max(2, Math.round(arr.length/st.level));
+  const maxStart = Math.max(0, arr.length-visible);
+  const startIdx = Math.round(st.start * maxStart);
+  return arr.slice(startIdx, startIdx+visible);
+}
+
+function clampZoomStart(id){
+  const st = zoomState[id];
+  st.start = Math.min(1, Math.max(0, st.start));
+}
+
+/** อัปเดตปุ่ม/ตัวเลข/สไลเดอร์ซูมที่อยู่ใน modal เท่านั้น (ไม่มี zoom UI ที่การ์ดข้างนอกแล้ว) */
+function syncModalZoomUI(){
+  if(!expandedSrcId) return;
+  const st = zoomState[expandedSrcId];
+  document.getElementById('modalZoomLevel').textContent = st.level + '×';
+  const slider = document.getElementById('modalPanSlider');
+  slider.classList.toggle('show', st.level>1);
+  slider.value = Math.round(st.start*1000);
+  modalBody.classList.toggle('zoomed', st.level>1);
+}
+
+function syncZoomUI(id){
+  if(expandedSrcId===id) syncModalZoomUI();
+}
+
+function rerenderChart(id){
+  const fn = RENDER_FN[id];
+  if(fn) fn();
+  syncZoomUI(id);
+  if(expandedSrcId===id) syncModalSvg();
+}
+
+function zoomBy(id, factor, pivot){
+  const st = zoomState[id];
+  const oldLevel = st.level;
+  let newLevel = Math.min(ZOOM_MAX, Math.max(1, oldLevel*factor));
+  newLevel = Math.round(newLevel*100)/100;
+  if(newLevel===oldLevel) return;
+  // pivot (0..1, ตำแหน่งบนกราฟที่ต้องการให้เป็นจุดยึดตอนซูม) ถ้าไม่ระบุใช้จุดกึ่งกลางหน้าต่างปัจจุบัน
+  const p = pivot==null ? st.start + (1/oldLevel)/2 : st.start + (pivot/oldLevel);
+  st.level = newLevel;
+  st.start = newLevel<=1 ? 0 : p - (1/newLevel)/2;
+  clampZoomStart(id);
+  rerenderChart(id);
+}
+
+function resetZoom(id){
+  zoomState[id].level = 1;
+  zoomState[id].start = 0;
+  rerenderChart(id);
+}
+
+/** ปุ่ม +/-/⟳ และสไลเดอร์แพนใน modal — ผูกครั้งเดียว อ้างอิง expandedSrcId แบบไดนามิก
+ *  เพราะ modal เดียวถูกใช้ซ้ำสลับไปมากับกราฟหลายอัน */
+function initModalZoomControls(){
+  document.getElementById('modalZoomTools').addEventListener('click', (e)=>{
+    const btn = e.target.closest('.zoom-btn');
+    if(!btn || !expandedSrcId) return;
+    const act = btn.dataset.act;
+    if(act==='in') zoomBy(expandedSrcId, 1.6);
+    else if(act==='out') zoomBy(expandedSrcId, 1/1.6);
+    else resetZoom(expandedSrcId);
+  });
+
+  const slider = document.getElementById('modalPanSlider');
+  slider.addEventListener('input', ()=>{
+    if(!expandedSrcId) return;
+    zoomState[expandedSrcId].start = Number(slider.value)/1000;
+    clampZoomStart(expandedSrcId);
+    rerenderChart(expandedSrcId);
+  });
+
+  // scroll wheel over the expanded chart = zoom in/out, anchored at cursor x position
+  modalBody.addEventListener('wheel', (e)=>{
+    if(!expandedSrcId) return;
+    e.preventDefault();
+    const rect = modalChartSlot.getBoundingClientRect();
+    const pivot = rect.width>0 ? Math.min(1,Math.max(0,(e.clientX-rect.left)/rect.width)) : 0.5;
+    zoomBy(expandedSrcId, e.deltaY<0 ? 1.25 : 1/1.25, pivot);
+  }, { passive:false });
+
+  // drag = pan (only meaningful once zoomed in)
+  let dragging=false, dragStartX=0, dragStartVal=0;
+  modalBody.addEventListener('mousedown', (e)=>{
+    if(!expandedSrcId || zoomState[expandedSrcId].level<=1) return;
+    dragging = true;
+    dragStartX = e.clientX;
+    dragStartVal = zoomState[expandedSrcId].start;
+    modalBody.classList.add('panning');
+    e.preventDefault();
+  });
+  window.addEventListener('mousemove', (e)=>{
+    if(!dragging || !expandedSrcId) return;
+    const rect = modalChartSlot.getBoundingClientRect();
+    const dx = (e.clientX-dragStartX)/Math.max(1,rect.width);
+    zoomState[expandedSrcId].start = dragStartVal - dx/zoomState[expandedSrcId].level;
+    clampZoomStart(expandedSrcId);
+    rerenderChart(expandedSrcId);
+  });
+  window.addEventListener('mouseup', ()=>{
+    if(dragging){ dragging=false; modalBody.classList.remove('panning'); }
+  });
+}
+
+/** เรียก fn() แบบกันพัง — ถ้า fn() ตัวไหน error จะไม่ทำให้ทั้งหน้าค้าง/หยุดวาดกราฟตัวถัดไป
+ *  แค่ log ไว้ใน console (F12 > Console) ให้ตรวจสอบทีหลัง ส่วนหน้าจอทำงานต่อได้ปกติ */
+function safeRender(fn, label){
+  try{ fn(); }catch(err){ console.error(`[renderAll] ${label} error:`, err); }
+}
+
+function renderAll(latest){
+  safeRender(renderKPIs, 'renderKPIs');
+  safeRender(renderHistogram, 'renderHistogram');
+  safeRender(renderIndividuals, 'renderIndividuals');
+  safeRender(renderXbar, 'renderXbar');
+  safeRender(renderRChart, 'renderRChart');
+  safeRender(renderTrend, 'renderTrend');
+  safeRender(renderSChart, 'renderSChart');
+  safeRender(renderFeed, 'renderFeed');
+  safeRender(paintConn, 'paintConn');
+  safeRender(updateAlertBadge, 'updateAlertBadge');
+}
+
+// ================= KPI row =================
+function renderKPIs(){
+  const view = getView();
+  const vals = view.map(r=>r.value);
+  const m = mean(vals), sd = stdev(vals);
+  const cp = sd>0 ? (SPEC.USL-SPEC.LSL)/(6*sd) : 0;
+  const cpk = sd>0 ? Math.min(SPEC.USL-m, m-SPEC.LSL)/(3*sd) : 0;
+  const oos = view.filter(r=>r.status==='OUT_OF_SPEC').length;
+  const warn = view.filter(r=>r.status==='WARNING').length;
+
+  const kpis = [
+    {lbl:'Mean', val: view.length? m.toFixed(2)+' g':'--', cls:'', sub:`${selectedRangeLabel} · n=${view.length}`},
+    {lbl:'Std Dev (s)', val: view.length>1? sd.toFixed(3):'--', cls:'', sub:`rolling`},
+    {lbl:'Cp', val: view.length>1? cp.toFixed(2):'--', cls: cp>=1.33?'good':cp>=1?'warn':'bad', sub:'potential capability'},
+    {lbl:'Cpk', val: view.length>1? cpk.toFixed(2):'--', cls: cpk>=1.33?'good':cpk>=1?'warn':'bad', sub:'actual capability'},
+    {lbl:'Min / Max', val: view.length? `${Math.min(...vals).toFixed(1)} / ${Math.max(...vals).toFixed(1)}`:'--', cls:'', sub:'g'},
+    {lbl:'Out of Spec', val: oos, cls: oos>0?'bad':'good', sub:`${warn} warning`},
+  ];
+  document.getElementById('kpiRow').innerHTML = kpis.map(k=>`
+    <div class="kpi ${k.cls}">
+      <div class="lbl">${k.lbl}</div>
+      <div class="val">${k.val}</div>
+      <div class="sub">${k.sub}</div>
+    </div>`).join('');
+}
+
+// ================= histogram =================
+function renderHistogram(targetSvg, forceW, forceH){
+  const svg = targetSvg || document.getElementById('hist');
+  clearSvg(svg);
+  const allVals = applyZoomWindow('hist', getView().map(r=>r.value));
+  const W=forceW||1400, H=forceH||420, padL=60,padR=28,padT=50,padB=54;
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`); // ต้องเซ็ตใหม่ทุกครั้ง เพราะ modal ใช้ W/H ที่คำนวณจากขนาดจอจริง ไม่ใช่ 1400x420 ตายตัว
+
+  // ตัดค่าผิดปกติที่เกินช่วง Spec ไปไกลมากออกจากกราฟ (เข้ม/แคบ = ±0.5 เท่าของความกว้าง Spec รอบ LSL–USL)
+  // กันไม่ให้ค่า outlier ตัวเดียวดึงแกน X ยืดจนแท่งปกติทั้งหมดถูกบีบไปกองมุมซ้าย
+  const specWidth = Math.max(SPEC.USL - SPEC.LSL, 0.01);
+  const clipBand = specWidth * 0.5;
+  const clipLo = SPEC.LSL - clipBand, clipHi = SPEC.USL + clipBand;
+  const vals = allVals.filter(v => v >= clipLo && v <= clipHi);
+  const hiddenCount = allVals.length - vals.length;
+
+  document.getElementById('histMeta').textContent =
+    `n=${vals.length} · ${selectedRangeLabel}` + (hiddenCount > 0 ? ` · ⚠ ซ่อน ${hiddenCount} ค่าผิดปกติ (นอกช่วงแสดงผล)` : '');
+  if(vals.length<2) return;
+  const plotW=W-padL-padR, plotH=H-padT-padB;
+  const binW=1.0;
+  const lo=Math.floor(Math.min(...vals,SPEC.LSL)), hi=Math.ceil(Math.max(...vals,SPEC.USL));
+  const nBins=Math.max(1,Math.ceil((hi-lo)/binW));
+  const bins=new Array(nBins).fill(0);
+  vals.forEach(v=>{ let idx=Math.floor((v-lo)/binW); if(idx>=nBins) idx=nBins-1; if(idx<0) idx=0; bins[idx]++; });
+  const maxCount=Math.max(...bins,1);
+  const x=(v)=> padL + ((v-lo)/(hi-lo))*plotW;
+  const y=(c)=> padT + plotH - (c/maxCount)*plotH;
+
+  svg.appendChild(el('rect',{x:x(SPEC.LSL),y:padT,width:x(SPEC.USL)-x(SPEC.LSL),height:plotH,fill:'var(--ok-dim)'}));
+  bins.forEach((c,i)=>{
+    if(c===0) return;
+    const bx0=lo+i*binW, bx1=bx0+binW;
+    const barX=x(bx0), barW=x(bx1)-x(bx0)-3;
+    svg.appendChild(el('rect',{x:barX,y:y(c),width:Math.max(barW,2),height:padT+plotH-y(c),fill:'var(--ok)',opacity:0.88,rx:2}));
+    svg.appendChild(el('text',{x:barX+barW/2,y:y(c)-8,'font-size':'15','font-weight':'600',fill:'var(--text-dim)','text-anchor':'middle'})).textContent=c;
+  });
+  [[SPEC.LSL,'LSL','var(--limit)'],[SPEC.USL,'USL','var(--limit)'],[SPEC.TARGET,'Target','var(--target)']].forEach(([val,lbl,color])=>{
+    svg.appendChild(el('line',{x1:x(val),x2:x(val),y1:padT,y2:padT+plotH,stroke:color,'stroke-width':2.4,'stroke-dasharray': lbl==='Target'?'6 4':'0'}));
+    svg.appendChild(el('text',{x:x(val),y:padT-14,'font-size':'15','font-weight':'600','text-anchor':'middle',fill:color})).textContent=lbl+' '+val;
+  });
+  svg.appendChild(el('line',{x1:padL,x2:W-padR,y1:padT+plotH,y2:padT+plotH,stroke:'var(--line)','stroke-width':1.5}));
+  for(let v=lo; v<=hi; v+=2){
+    svg.appendChild(el('text',{x:x(v),y:H-16,'font-size':'14',fill:'var(--text-faint)','text-anchor':'middle'})).textContent=v;
+  }
+}
+
+// ================= individuals (scrolling strip) =================
+function renderIndividuals(){
+  const svg=document.getElementById('ichart');
+  clearSvg(svg);
+  const view = getView();
+  const baseWin = (selectedRangeMs==null && !useCustomRange) ? view.slice(-STRIP_WINDOW) : view;
+  const win = applyZoomWindow('ichart', baseWin);
+  const highCount = win.filter(r=>r.value>SPEC.USL).length;
+  const lowCount = win.filter(r=>r.value<SPEC.LSL).length;
+  const highPct = win.length? (highCount/win.length*100).toFixed(1) : '0.0';
+  const lowPct = win.length? (lowCount/win.length*100).toFixed(1) : '0.0';
+  if(win.length<2){
+    document.getElementById('ichartMeta').textContent = `${selectedRangeLabel} · ${win.length} samples · High ${highPct}% · Low ${lowPct}%`;
+    return;
+  }
+  const vals = win.map(r=>r.value);
+  const allVals = view.map(r=>r.value);
+  const m = mean(allVals);
+  const mr=[]; for(let i=1;i<allVals.length;i++) mr.push(Math.abs(allVals[i]-allVals[i-1]));
+  const mrBar = mr.length? mean(mr) : 0;
+  const UCL=m+2.66*mrBar, LCL=m-2.66*mrBar;
+
+  const W=1120,H=250,padL=48,padR=20,padT=16,padB=30;
+  const plotW=W-padL-padR, plotH=H-padT-padB;
+  // จำกัดขอบเขตแกน Y ไว้ที่ระยะห่างคงที่จาก Spec/Control limit — กันไม่ให้ค่าที่หลุดสเปคไปไกลมาก
+  // ดึงแกนยืดจนจุดปกติทั้งหมดถูกอัดแบนไปกองกลาง ค่าที่เกินขอบเขตนี้จะถูก clip แล้วมาร์คด้วยสามเหลี่ยมแทน
+  const refLo = Math.min(SPEC.LSL, LCL), refHi = Math.max(SPEC.USL, UCL);
+  const band = Math.max(refHi-refLo, 1) * 0.6;
+  const yMin = refLo - band, yMax = refHi + band;
+  const x=(i)=> padL + (i/(Math.max(win.length-1,1)))*plotW;
+  const y=(v)=> padT + plotH - ((v-yMin)/(yMax-yMin))*plotH;
+
+  let hiddenAbove=0, hiddenBelow=0;
+  const clipped = win.map(r=>{
+    const c = clipVal(r.value, yMin, yMax);
+    if(c.off===1) hiddenAbove++; else if(c.off===-1) hiddenBelow++;
+    return { r, cv:c.v, off:c.off };
+  });
+  document.getElementById('ichartMeta').textContent = `${selectedRangeLabel} · ${win.length} samples · High ${highPct}% · Low ${lowPct}%` +
+    (hiddenAbove+hiddenBelow>0 ? ` · ⚠ ${hiddenAbove+hiddenBelow} ค่าเกินช่วงแสดงผล (▲${hiddenAbove} ▼${hiddenBelow})` : '');
+
+  svg.appendChild(el('rect',{x:padL,y:y(SPEC.USL),width:plotW,height:Math.max(y(SPEC.LSL)-y(SPEC.USL),0),fill:'var(--ok-dim)'}));
+  [[SPEC.LSL,'LSL','var(--limit)'],[SPEC.USL,'USL','var(--limit)'],[SPEC.TARGET,'Target','var(--target)']].forEach(([val,lbl,color])=>{
+    svg.appendChild(el('line',{x1:padL,x2:W-padR,y1:y(val),y2:y(val),stroke:color,'stroke-width':1.2,'stroke-dasharray': lbl==='Target'?'4 3':'0'}));
+    svg.appendChild(el('text',{x:W-padR+4,y:y(val)+3,class:'tick',fill:color})).textContent=lbl;
+  });
+  [[UCL,'UCL'],[LCL,'LCL'],[m,'x̄']].forEach(([val,lbl])=>{
+    svg.appendChild(el('line',{x1:padL,x2:W-padR,y1:y(val),y2:y(val),stroke: lbl==='x̄'?'var(--target)':'var(--ctrl)','stroke-width':1,'stroke-dasharray':'5 4'}));
+    svg.appendChild(el('text',{x:padL-6,y:y(val)+3,class:'tick','text-anchor':'end'})).textContent=lbl;
+  });
+  svg.appendChild(el('line',{x1:padL,x2:W-padR,y1:padT+plotH,y2:padT+plotH,class:'axis'}));
+  svg.appendChild(el('text',{x:padL,y:H-8,class:'tick'})).textContent='S-'+win[0].id;
+  svg.appendChild(el('text',{x:W-padR,y:H-8,class:'tick','text-anchor':'end'})).textContent='S-'+win[win.length-1].id;
+
+  // high / low % badges directly on the chart
+  svg.appendChild(el('text',{x:padL+4,y:padT+2,'font-size':'12','font-weight':'600',fill:'var(--limit)'})).textContent=`▲ High ${highPct}%`;
+  svg.appendChild(el('text',{x:padL+4,y:padT+16,'font-size':'12','font-weight':'600',fill:'var(--limit)'})).textContent=`▼ Low ${lowPct}%`;
+
+  let d='';
+  clipped.forEach((c,i)=>{ d += (i===0?'M':'L') + x(i) + ' ' + y(c.cv) + ' '; });
+  svg.appendChild(el('path',{d, fill:'none', stroke:'var(--ok)', 'stroke-width':1.6, opacity:0.9}));
+  clipped.forEach((c,i)=>{
+    const r = c.r;
+    const bad = r.status==='OUT_OF_SPEC';
+    const warn = r.status==='WARNING';
+    const isLast = i===clipped.length-1;
+    if(c.off!==0){
+      clipMarker(svg, x(i), y(c.cv), c.off, 'var(--limit)');
+    } else {
+      svg.appendChild(el('circle',{cx:x(i),cy:y(c.cv),r: isLast?5:(bad?3.6:2.4),
+        fill: bad?'var(--limit)':(warn?'var(--target)':'var(--ok)'), stroke:'var(--panel)','stroke-width':isLast?1.5:0.75}));
+    }
+  });
+}
+
+// ================= X-bar =================
+function renderXbar(){
+  const svg=document.getElementById('xbarchart');
+  clearSvg(svg);
+  const vals = getView().map(r=>r.value);
+  const nSub = Math.floor(vals.length/5);
+  if(nSub<2){
+    document.getElementById('xbarMeta').textContent = `${nSub} subgroups × n=5 · ${selectedRangeLabel}`;
+    return;
+  }
+  const subMeans=[]; for(let s=0;s<nSub;s++) subMeans.push(mean(vals.slice(s*5,s*5+5)));
+  const subRanges=[]; for(let s=0;s<nSub;s++){ const g=vals.slice(s*5,s*5+5); subRanges.push(Math.max(...g)-Math.min(...g)); }
+  const shown = applyZoomWindow('xbarchart', subMeans.slice(-40));
+  const xbb=mean(subMeans), rBar=mean(subRanges), A2=0.577;
+  const UCL=xbb+A2*rBar, LCL=xbb-A2*rBar;
+
+  const W=1120,H=220,padL=48,padR=20,padT=16,padB=30;
+  const plotW=W-padL-padR, plotH=H-padT-padB;
+  // จำกัดขอบเขตแกน Y เหมือน Individuals — กันจุดที่หลุดไปไกลตัวเดียวดึงแกนยืดจนจุดอื่นแบน
+  const refLo = Math.min(SPEC.LSL,LCL), refHi = Math.max(SPEC.USL,UCL);
+  const band = Math.max(refHi-refLo, 1) * 0.6;
+  const yMin = refLo - band, yMax = refHi + band;
+  const x=(i)=> padL + (i/(Math.max(shown.length-1,1)))*plotW;
+  const y=(v)=> padT + plotH - ((v-yMin)/(yMax-yMin))*plotH;
+
+  let hiddenAbove=0, hiddenBelow=0;
+  const clipped = shown.map(v=>{
+    const c = clipVal(v, yMin, yMax);
+    if(c.off===1) hiddenAbove++; else if(c.off===-1) hiddenBelow++;
+    return c;
+  });
+  document.getElementById('xbarMeta').textContent = `${nSub} subgroups × n=5 · ${selectedRangeLabel}` +
+    (hiddenAbove+hiddenBelow>0 ? ` · ⚠ ${hiddenAbove+hiddenBelow} จุดเกินช่วงแสดงผล (▲${hiddenAbove} ▼${hiddenBelow})` : '');
+
+  svg.appendChild(el('rect',{x:padL,y:y(SPEC.USL),width:plotW,height:Math.max(y(SPEC.LSL)-y(SPEC.USL),0),fill:'var(--ok-dim)'}));
+  [[SPEC.LSL,'LSL','var(--limit)'],[SPEC.USL,'USL','var(--limit)']].forEach(([val,lbl,color])=>{
+    svg.appendChild(el('line',{x1:padL,x2:W-padR,y1:y(val),y2:y(val),stroke:color,'stroke-width':1.2}));
+    svg.appendChild(el('text',{x:W-padR+4,y:y(val)+3,class:'tick',fill:color})).textContent=lbl;
+  });
+  [[UCL,'UCL'],[LCL,'LCL'],[xbb,'x̿']].forEach(([val,lbl])=>{
+    svg.appendChild(el('line',{x1:padL,x2:W-padR,y1:y(val),y2:y(val),stroke: lbl==='x̿'?'var(--target)':'var(--ctrl)','stroke-width':1,'stroke-dasharray':'5 4'}));
+    svg.appendChild(el('text',{x:padL-6,y:y(val)+3,class:'tick','text-anchor':'end'})).textContent=lbl;
+  });
+  svg.appendChild(el('line',{x1:padL,x2:W-padR,y1:padT+plotH,y2:padT+plotH,class:'axis'}));
+  svg.appendChild(el('text',{x:padL,y:H-8,class:'tick'})).textContent='SG'+(nSub-shown.length+1);
+  svg.appendChild(el('text',{x:W-padR,y:H-8,class:'tick','text-anchor':'end'})).textContent='SG'+nSub;
+
+  let d='';
+  clipped.forEach((c,i)=>{ d += (i===0?'M':'L') + x(i) + ' ' + y(c.v) + ' '; });
+  svg.appendChild(el('path',{d, fill:'none', stroke:'var(--ok)', 'stroke-width':1.6}));
+  clipped.forEach((c,i)=>{
+    const isLast = i===clipped.length-1;
+    if(c.off!==0){
+      clipMarker(svg, x(i), y(c.v), c.off, 'var(--limit)');
+    } else {
+      const oob = shown[i]>UCL||shown[i]<LCL;
+      svg.appendChild(el('circle',{cx:x(i),cy:y(c.v),r: isLast?5.5:3.2, fill: oob?'var(--limit)':'var(--ok)',stroke:'var(--panel)','stroke-width':1}));
+    }
+  });
+}
+
+// ================= R chart (subgroup range, n=5 per point) =================
+function renderRChart(){
+  const svg=document.getElementById('rchart');
+  clearSvg(svg);
+  const vals = getView().map(r=>r.value);
+  const nSub = Math.floor(vals.length/5);
+  if(nSub<2){
+    document.getElementById('rMeta').textContent = `${nSub} subgroups × n=5 · ${selectedRangeLabel}`;
+    return;
+  }
+  const subRanges=[]; for(let s=0;s<nSub;s++){ const g=vals.slice(s*5,s*5+5); subRanges.push(Math.max(...g)-Math.min(...g)); }
+  const shown = applyZoomWindow('rchart', subRanges.slice(-40));
+  const rBar = mean(subRanges);
+  // D3/D4 control-limit constants for subgroup size n=5
+  const D3=0, D4=2.114;
+  const UCL = D4*rBar, LCL = D3*rBar;
+
+  const W=1120,H=220,padL=48,padR=20,padT=16,padB=30;
+  const plotW=W-padL-padR, plotH=H-padT-padB;
+  // จำกัด yMax ไว้ที่ ~2.5 เท่าของ UCL/R̄ — กันไม่ให้ subgroup ที่เหวี่ยงแรงผิดปกติจุดเดียวดึงแกนยืดจนจุดอื่นแบนหมด
+  const yMax = Math.max(UCL, rBar, 0.01) * 2.5;
+  const x=(i)=> padL + (i/(Math.max(shown.length-1,1)))*plotW;
+  const y=(v)=> padT + plotH - ((v-0)/(yMax-0))*plotH;
+
+  let hiddenAbove=0;
+  const clipped = shown.map(v=>{ const c=clipVal(v, 0, yMax); if(c.off===1) hiddenAbove++; return c; });
+  document.getElementById('rMeta').textContent = `${nSub} subgroups × n=5 · ${selectedRangeLabel}` +
+    (hiddenAbove>0 ? ` · ⚠ ${hiddenAbove} จุดเกินช่วงแสดงผล` : '');
+
+  [[UCL,'UCL'],[LCL,'LCL'],[rBar,'R̄']].forEach(([val,lbl])=>{
+    svg.appendChild(el('line',{x1:padL,x2:W-padR,y1:y(val),y2:y(val),stroke: lbl==='R̄'?'var(--target)':'var(--ctrl)','stroke-width':1,'stroke-dasharray':'5 4'}));
+    svg.appendChild(el('text',{x:padL-6,y:y(val)+3,class:'tick','text-anchor':'end'})).textContent=lbl;
+  });
+  svg.appendChild(el('line',{x1:padL,x2:W-padR,y1:padT+plotH,y2:padT+plotH,class:'axis'}));
+  svg.appendChild(el('text',{x:padL,y:H-8,class:'tick'})).textContent='SG'+(nSub-shown.length+1);
+  svg.appendChild(el('text',{x:W-padR,y:H-8,class:'tick','text-anchor':'end'})).textContent='SG'+nSub;
+
+  let d=''; clipped.forEach((c,i)=>{ d += (i===0?'M':'L') + x(i) + ' ' + y(c.v) + ' '; });
+  svg.appendChild(el('path',{d, fill:'none', stroke:'var(--ok)', 'stroke-width':1.6}));
+  clipped.forEach((c,i)=>{
+    const isLast = i===clipped.length-1;
+    if(c.off!==0){
+      clipMarker(svg, x(i), y(c.v), c.off, 'var(--limit)');
+    } else {
+      const oob = shown[i]>UCL||shown[i]<LCL;
+      svg.appendChild(el('circle',{cx:x(i),cy:y(c.v),r: isLast?5.5:3.2, fill: oob?'var(--limit)':'var(--ok)',stroke:'var(--panel)','stroke-width':1}));
+    }
+  });
+}
+
+// ================= capability trend =================
+function renderTrend(){
+  const svg=document.getElementById('trendchart');
+  clearSvg(svg);
+  const vals = getView().map(r=>r.value);
+  const batchSize = 20;
+  const nBatches = Math.floor(vals.length/batchSize);
+  document.getElementById('trendMeta').textContent = `${nBatches} batches × n=${batchSize} (rolling)`;
+  if(nBatches<2) return;
+
+  const batches=[];
+  for(let b=0;b<nBatches;b++){
+    const grp = vals.slice(b*batchSize,(b+1)*batchSize);
+    const gm=mean(grp), gs=stdev(grp);
+    batches.push({ cp: gs>0?(SPEC.USL-SPEC.LSL)/(6*gs):0, cpk: gs>0?Math.min(SPEC.USL-gm,gm-SPEC.LSL)/(3*gs):0 });
+  }
+  const shown = applyZoomWindow('trendchart', batches.slice(-20));
+
+  const W=1120,H=240,padL=42,padR=20,padT=16,padB=30;
+  const plotW=W-padL-padR, plotH=H-padT-padB;
+  const allVals = shown.flatMap(b=>[b.cp,b.cpk]);
+  const yMax = Math.max(2.0, Math.max(...allVals)*1.1);
+  const x=(i)=> padL + (i/(Math.max(shown.length-1,1)))*plotW;
+  const y=(v)=> padT + plotH - ((v-0)/(yMax-0))*plotH;
+
+  svg.appendChild(el('rect',{x:padL,y:y(Math.min(1.0,yMax)),width:plotW,height:y(0)-y(Math.min(1.0,yMax)),fill:'var(--limit-dim)'}));
+  if(yMax>1.0) svg.appendChild(el('rect',{x:padL,y:y(Math.min(1.33,yMax)),width:plotW,height:y(1.0)-y(Math.min(1.33,yMax)),fill:'rgba(232,176,75,0.10)'}));
+  if(yMax>1.33) svg.appendChild(el('rect',{x:padL,y:padT,width:plotW,height:y(1.33)-padT,fill:'var(--ok-dim)'}));
+
+  [[1.0,'1.00','var(--limit)'],[1.33,'1.33','var(--target)']].forEach(([val,lbl,color])=>{
+    if(val>yMax) return;
+    svg.appendChild(el('line',{x1:padL,x2:W-padR,y1:y(val),y2:y(val),stroke:color,'stroke-width':1,'stroke-dasharray':'3 3'}));
+    svg.appendChild(el('text',{x:padL-6,y:y(val)+3,class:'tick','text-anchor':'end'})).textContent=lbl;
+  });
+  for(let t=0; t<=yMax; t+=0.5){
+    svg.appendChild(el('text',{x:padL-6,y:y(t)+3,class:'tick','text-anchor':'end',fill:'var(--text-faint)'})).textContent=t.toFixed(1);
+  }
+  svg.appendChild(el('line',{x1:padL,x2:W-padR,y1:padT+plotH,y2:padT+plotH,class:'axis'}));
+  svg.appendChild(el('text',{x:padL,y:H-8,class:'tick'})).textContent='B'+(nBatches-shown.length+1);
+  svg.appendChild(el('text',{x:W-padR,y:H-8,class:'tick','text-anchor':'end'})).textContent='B'+nBatches;
+
+  function path(key){
+    let d=''; shown.forEach((b,i)=>{ d += (i===0?'M':'L') + x(i) + ' ' + y(b[key]) + ' '; }); return d;
+  }
+  svg.appendChild(el('path',{d:path('cp'), fill:'none', stroke:'var(--ctrl)', 'stroke-width':1.6, 'stroke-dasharray':'5 4'}));
+  svg.appendChild(el('path',{d:path('cpk'), fill:'none', stroke:'var(--ok)', 'stroke-width':2}));
+  shown.forEach((b,i)=>{
+    svg.appendChild(el('circle',{cx:x(i),cy:y(b.cpk),r: i===shown.length-1?4.5:2.6,
+      fill: b.cpk<1.0?'var(--limit)':(b.cpk<1.33?'var(--target)':'var(--ok)'), stroke:'var(--panel)','stroke-width':0.75}));
+  });
+}
+
+// ================= S chart (subgroup std-dev, n=30 per point) =================
+function renderSChart(){
+  const svg=document.getElementById('schart');
+  clearSvg(svg);
+  const vals = getView().map(r=>r.value);
+  const groupSize = 30;
+  const nSub = Math.floor(vals.length/groupSize);
+  if(nSub<2){
+    document.getElementById('sMeta').textContent = `${nSub} subgroups × n=${groupSize} · ${selectedRangeLabel}`;
+    return;
+  }
+
+  const subS=[]; for(let s=0;s<nSub;s++) subS.push(stdev(vals.slice(s*groupSize,s*groupSize+groupSize)));
+  const shown = applyZoomWindow('schart', subS.slice(-30));
+  const sBar = mean(subS);
+
+  // B3/B4 control-limit constants derived from c4, valid for any subgroup size n
+  const n = groupSize;
+  const c4 = 4*(n-1)/(4*n-3);
+  const term = 3*Math.sqrt(Math.max(0,1-c4*c4))/c4;
+  const B3 = Math.max(0, 1-term), B4 = 1+term;
+  const UCL = B4*sBar, LCL = B3*sBar;
+
+  const W=1120,H=220,padL=48,padR=20,padT=16,padB=30;
+  const plotW=W-padL-padR, plotH=H-padT-padB;
+  // จำกัด yMax ไว้ที่ ~2.5 เท่าของ UCL/s̄ เหมือน R chart — กันจุดที่เหวี่ยงแรงตัวเดียวดึงแกนยืดจนจุดอื่นแบนหมด
+  const yMax = Math.max(UCL, sBar, 0.01) * 2.5;
+  const x=(i)=> padL + (i/(Math.max(shown.length-1,1)))*plotW;
+  const y=(v)=> padT + plotH - ((v-0)/(yMax-0))*plotH;
+
+  let hiddenAbove=0;
+  const clipped = shown.map(v=>{ const c=clipVal(v, 0, yMax); if(c.off===1) hiddenAbove++; return c; });
+  document.getElementById('sMeta').textContent = `${nSub} subgroups × n=${groupSize} · ${selectedRangeLabel}` +
+    (hiddenAbove>0 ? ` · ⚠ ${hiddenAbove} จุดเกินช่วงแสดงผล` : '');
+
+  [[UCL,'UCL'],[LCL,'LCL'],[sBar,'s̄']].forEach(([val,lbl])=>{
+    svg.appendChild(el('line',{x1:padL,x2:W-padR,y1:y(val),y2:y(val),stroke: lbl==='s̄'?'var(--target)':'var(--ctrl)','stroke-width':1,'stroke-dasharray':'5 4'}));
+    svg.appendChild(el('text',{x:padL-6,y:y(val)+3,class:'tick','text-anchor':'end'})).textContent=lbl;
+  });
+  svg.appendChild(el('line',{x1:padL,x2:W-padR,y1:padT+plotH,y2:padT+plotH,class:'axis'}));
+  svg.appendChild(el('text',{x:padL,y:H-8,class:'tick'})).textContent='SG'+(nSub-shown.length+1);
+  svg.appendChild(el('text',{x:W-padR,y:H-8,class:'tick','text-anchor':'end'})).textContent='SG'+nSub;
+
+  let d=''; clipped.forEach((c,i)=>{ d += (i===0?'M':'L') + x(i) + ' ' + y(c.v) + ' '; });
+  svg.appendChild(el('path',{d, fill:'none', stroke:'var(--ok)', 'stroke-width':1.6}));
+  clipped.forEach((c,i)=>{
+    const isLast = i===clipped.length-1;
+    if(c.off!==0){
+      clipMarker(svg, x(i), y(c.v), c.off, 'var(--limit)');
+    } else {
+      const oob = shown[i]>UCL||shown[i]<LCL;
+      svg.appendChild(el('circle',{cx:x(i),cy:y(c.v),r: isLast?5.5:3.2, fill: oob?'var(--limit)':'var(--ok)',stroke:'var(--panel)','stroke-width':1}));
+    }
+  });
+}
+
+RENDER_FN.ichart = renderIndividuals;
+RENDER_FN.xbarchart = renderXbar;
+RENDER_FN.rchart = renderRChart;
+RENDER_FN.trendchart = renderTrend;
+RENDER_FN.schart = renderSChart;
+RENDER_FN.hist = () => renderHistogram();
+
+// ================= live feed =================
+function renderFeed(){
+  const recent = getView().slice(-15).reverse();
+  document.getElementById('feed').innerHTML = recent.map(r=>{
+    const pct = Math.max(0,Math.min(100, ((r.value-(SPEC.LSL-5))/((SPEC.USL+5)-(SPEC.LSL-5)))*100));
+    const color = r.status==='OK'?'var(--ok)':r.status==='WARNING'?'var(--target)':'var(--limit)';
+    return `<div class="feed-row">
+      <span class="sample">${r.sample}</span>
+      <span class="value" style="color:${color}">${r.value.toFixed(1)} g</span>
+      <span class="bar-bg"><span class="bar-fill" style="width:${pct}%; background:${color}"></span></span>
+      <span class="tag ${r.status}">${r.status.replace('_',' ')}</span>
+    </div>`;
+  }).join('');
+}
+
+
+// ================= controls =================
+function startPolling(){
+  stopPolling();
+  intervalId = setInterval(poll, POLL_MS);
+  statusIntervalId = setInterval(refreshStatus, STATUS_POLL_MS);
+}
+function stopPolling(){
+  if(intervalId) clearInterval(intervalId);
+  if(statusIntervalId) clearInterval(statusIntervalId);
+  intervalId = null; statusIntervalId = null;
+}
+
+// ================= export report (ใช้แม่แบบเดียวกับ report.js) =================
+document.getElementById('exportBtn').addEventListener('click', exportNetWeightReport);
+
+function exportNetWeightReport(){
+  const view = getView();
+  if(view.length===0){ alert('ไม่มีข้อมูลในช่วงเวลาที่เลือก (ลองเปลี่ยน Range แล้วลองใหม่)'); return; }
+
+  const vals = view.map(r=>r.value);
+  const reportRows = view.map(r=>({ value:r.value, ts:r.ts })); // ใช้แบ่ง N/AVG/R ใน report ตามชั่วโมงจริง
+  const sess = CURRENT_SESSION;
+  const customerLabel = sess && sess.customer ? sess.customer + (sess.destination ? ` (${sess.destination})` : '') : '-';
+  const scStatus = currentScaleStatus();
+  const lineLabel = sess ? (sess.line || sess.scale_name || '-') : (scStatus ? (scStatus.line || scStatus.name) : '-');
+
+  const now = new Date();
+  const dd = String(now.getDate()).padStart(2,'0');
+  const mm = String(now.getMonth()+1).padStart(2,'0');
+  const beYear = now.getFullYear()+543;
+  const dateStr = `${dd}.${mm}.${beYear}${sess && sess.shift ? ' - ' + sess.shift : ''}`;
+  const timeStr = now.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit',hour12:false});
+
+  window.openWeightCheckReport({
+    productCode: sess ? sess.product_code : '-',
+    groupCode: sess ? sess.group_code : '-',
+    packageSize: sess ? sess.package : '', packageName: sess ? sess.package_name : '',
+    customerLabel, lineLabel,
+    inspectorName: sess ? sess.inspector_name : '-',
+    remark: sess ? sess.remark : '',
+    formCode: REPORT_FORM_CODE,
+    nwTarget: SPEC.TARGET, nwUcl: SPEC.USL, nwLcl: SPEC.LSL,
+    nwUwl: sess ? sess.nw_uwl : null, nwLwl: sess ? sess.nw_lwl : null,
+    values: vals, rows: reportRows, dateStr, timeStr, rangeLabel: selectedRangeLabel,
+    docLabel: sess ? sess.id : '',
+  });
+}
+
+document.querySelectorAll('.range-btn:not(#applyCustomRange)').forEach(b=>{
+  b.addEventListener('click', ()=>{
+    document.querySelectorAll('.range-btn').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    useCustomRange = false;
+    customFrom = null; customTo = null; customBuffer = null;
+    document.getElementById('rangeFrom').value = '';
+    document.getElementById('rangeTo').value = '';
+    selectedRangeMs = b.dataset.ms==='all' ? null : parseInt(b.dataset.ms,10);
+    selectedRangeLabel = b.textContent.trim();
+    renderAll();
+  });
+});
+
+document.getElementById('applyCustomRange').addEventListener('click', async ()=>{
+  const fromVal = document.getElementById('rangeFrom').value;
+  const toVal = document.getElementById('rangeTo').value;
+  const timeRe = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/;
+  if(!timeRe.test(fromVal) || !timeRe.test(toVal)){
+    alert('กรุณากรอกเวลาแบบ HH:MM ในรูปแบบ 24 ชั่วโมง เช่น 14:30');
+    return;
+  }
+  let from = parseTimeToday(fromVal);
+  let to = parseTimeToday(toVal);
+  if(from > to){ const tmp=from; from=to; to=tmp; }
+  customFrom = from; customTo = to;
+  useCustomRange = true;
+  selectedRangeMs = null;
+  selectedRangeLabel = `${fromVal}–${toVal}`;
+  document.querySelectorAll('.range-btn:not(#applyCustomRange)').forEach(x=>x.classList.remove('active'));
+
+  // ดึงข้อมูลช่วงนี้จาก backend โดยตรง จะได้ย้อนได้ไกลกว่าที่หน้าเว็บเก็บไว้
+  setConn('wait', `กำลังดึงข้อมูล ${fromVal}–${toVal} …`);
+  try{
+    const data = await api(`/api/weights/range?from=${encodeURIComponent(toLocalIso(from))}&to=${encodeURIComponent(toLocalIso(to))}&limit=20000${scaleQS()}`);
+    customBuffer = (data.rows || []).map(mapRow).filter(r=>Number.isFinite(r.value));
+    renderAll();
+    setConn(data.source === 'memory' ? 'wait' : 'ok', `ช่วง ${fromVal}–${toVal}: ${customBuffer.length} แถว`);
+  }catch(err){
+    customBuffer = null;   // ดึงไม่ได้ก็ใช้ข้อมูลที่มีอยู่ในหน้าเว็บกรองแทน
+    renderAll();
+    setConn('down','ดึงข้อมูลช่วงเวลาไม่สำเร็จ: ' + err.message);
+  }
+});
+
+/** ส่งเวลาเป็นสตริงแบบไม่มี timezone ให้ backend ตีความเป็นเวลาหน้าปัดเดียวกัน */
+function toLocalIso(d){
+  const p = (n,w=2)=>String(n).padStart(w,'0');
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+}
+
+// auto-insert ':' as the user types digits, e.g. "1430" -> "14:30" — pure 24h, no AM/PM anywhere
+['rangeFrom','rangeTo'].forEach(id=>{
+  const input = document.getElementById(id);
+  input.addEventListener('input', ()=>{
+    let digits = input.value.replace(/[^0-9]/g,'').slice(0,4);
+    if(digits.length>=3){
+      input.value = digits.slice(0,2)+':'+digits.slice(2);
+    } else {
+      input.value = digits;
+    }
+  });
+});
+
+// ================= expand-to-modal =================
+let expandedSrcId = null;
+const modalOverlay = document.getElementById('modalOverlay');
+const modalBody = document.getElementById('modalBody');
+const modalChartSlot = document.getElementById('modalChartSlot');
+const modalTitle = document.getElementById('modalTitle');
+
+function openModal(srcId, title){
+  expandedSrcId = srcId;
+  modalTitle.textContent = title;
+  modalOverlay.classList.add('open');
+  // รอ 1 เฟรมให้ modal เลย์เอาต์เสร็จก่อน ค่อยวัดขนาดจริง ไม่งั้น getBoundingClientRect จะได้ 0 (modal เพิ่งเปิด ยังไม่ได้จัดวาง)
+  requestAnimationFrame(()=>{ syncModalSvg(); syncModalZoomUI(); });
+}
+function closeModal(){
+  if(expandedSrcId){
+    resetZoom(expandedSrcId); // กลับไปมุมมองเต็มเสมอเวลาเปิดกราฟนี้ใน modal ครั้งต่อไป
+  }
+  expandedSrcId = null;
+  modalOverlay.classList.remove('open');
+  modalChartSlot.innerHTML = '';
+}
+/** Histogram: วาดใหม่ให้พอดีกับขนาด modal จริง (ไม่ยืดภาพเดิม) เพื่อไม่ให้มีขอบขาวเบ้อเริ่ม/ภาพบิดเวลาขยายเต็มจอ */
+function renderHistogramInModal(){
+  let modalSvg = document.getElementById('histModalSvg');
+  if(!modalSvg){
+    modalChartSlot.innerHTML = '';
+    modalSvg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+    modalSvg.setAttribute('id','histModalSvg');
+    modalChartSlot.appendChild(modalSvg);
+  }
+  const rect = modalChartSlot.getBoundingClientRect();
+  const W = Math.max(600, Math.round(rect.width) || 1400);
+  const H = Math.max(300, Math.round(rect.height) || 420);
+  renderHistogram(modalSvg, W, H);
+}
+function syncModalSvg(){
+  if(!expandedSrcId) return;
+  if(expandedSrcId === 'hist'){ renderHistogramInModal(); return; }
+  const source = document.getElementById(expandedSrcId);
+  if(!source) return;
+  modalChartSlot.innerHTML = '';
+  const clone = source.cloneNode(true);
+  clone.removeAttribute('id');
+  clone.setAttribute('preserveAspectRatio','xMidYMid meet'); // undistorted view in the big modal
+  modalChartSlot.appendChild(clone);
+}
+// modal เปิดค้างอยู่แล้วผู้ใช้ย่อ/ขยายหน้าต่างเบราว์เซอร์ — วาด Histogram ใหม่ให้พอดีขนาดใหม่ด้วย
+window.addEventListener('resize', ()=>{ if(expandedSrcId==='hist') renderHistogramInModal(); });
+
+document.querySelectorAll('.panel.expandable').forEach(p=>{
+  p.addEventListener('click', ()=> openModal(p.dataset.src, p.dataset.title));
+});
+document.getElementById('modalClose').addEventListener('click', closeModal);
+modalOverlay.addEventListener('click', (e)=>{ if(e.target===modalOverlay) closeModal(); });
+document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') closeModal(); });
+
+// keep the modal's chart in sync with the live-updating source chart
+const _renderAll = renderAll;
+renderAll = function(latest){
+  _renderAll(latest);
+  if(expandedSrcId) safeRender(syncModalSvg, 'syncModalSvg');
+};
+
+initModalZoomControls();
+
+// ================= start =================
+(async function boot(){
+  renderAll();                       // วาดหน้าเปล่าไว้ก่อน จะได้ไม่เห็นหน้าขาว
+  await initScalePicker();           // รู้ SCALE_ID ก่อน ค่อยไปโหลดข้อมูลของเครื่องนั้น
+  await loadAlertSettings();         // โหลดเกณฑ์ Cp/Cpk สำหรับแจ้งเตือนจากหน้าตั้งค่า
+  await refreshStatus();
+  try{
+    await loadHistory();
+  }catch(err){
+    setConn('down','โหลดข้อมูลจาก backend ไม่สำเร็จ: ' + err.message);
+  }
+  startPolling();                    // ต่อจากนี้ดึงเฉพาะแถวใหม่ทุก POLL_MS
+})();
+
+// พักหน้าเว็บไว้เบื้องหลังไม่ต้อง poll ถี่ กลับมาแล้วค่อยดึงรอบเดียวให้ทัน
+document.addEventListener('visibilitychange', ()=>{
+  if(!running) return;
+  if(document.hidden) stopPolling();
+  else { startPolling(); poll(); refreshStatus(); }
+});
+</script>
+</body>
+</html>

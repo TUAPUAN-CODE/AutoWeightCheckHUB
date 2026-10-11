@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ประวัติ — Auto Weight</title>
+<link rel="icon" type="image/png" href="icon.png">
+<style>
+  :root{
+    --bg:#f4f6fb; --panel:#ffffff; --panel-2:#f2f6fb; --line:#dbe4f0;
+    --text:#131a2b; --text-dim:rgba(19,26,43,0.65); --text-faint:rgba(19,26,43,0.45);
+    --ok:#1d9e5a; --down:#d1453d; --brand:#2f8fef; --warn:#e8720c;
+    --sans:Tahoma,Geneva,Verdana,sans-serif; --mono:Tahoma,Geneva,Verdana,sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); padding:18px 22px;}
+  .page-wrap{padding-left:16px;}
+  h1{font-size:16px; margin-top:1px; font-weight:600; letter-spacing:-0.01em;}
+  h1 span{color:#ff9f1c;}
+  .sub{font-size:12px; color:var(--text-faint); margin-bottom:14px;}
+
+  header{
+    position:relative; overflow:hidden;
+    display:flex; flex-direction:row; align-items:center; justify-content:space-between;
+    gap:12px; flex-wrap:wrap;
+    background:var(--panel); border:1px solid var(--line); border-radius:8px;
+    padding:9px 14px; box-shadow:0 2px 5px rgba(0,0,0,0.07), 0 10px 24px -14px rgba(0,0,0,0.18);
+    margin-bottom:14px;
+  }
+  header::before{
+    content:''; position:absolute; top:0; left:0; right:0; height:3px;
+    background:linear-gradient(135deg,#ff4d5e 0%, #ff9f1c 20%, #ffd93d 40%, #3ecf6e 60%, #2f8fef 80%, #7c5cff 100%);
+  }
+  .header-left{display:flex; align-items:center; gap:10px;}
+  .logo-badge{
+    width:34px; height:34px; flex:none; display:flex; align-items:center; justify-content:center;
+    border-radius:10px; background:linear-gradient(160deg,#ffffff,#f2f6fc);
+    border:1px solid var(--line); box-shadow:0 1px 2px rgba(16,24,40,0.08);
+  }
+  .brand-logo{width:19px; height:auto; display:block;}
+  .eyebrow{font-family:var(--mono); font-size:9px; letter-spacing:.1em; text-transform:uppercase; color:var(--text-faint);}
+
+  .filters{display:flex; flex-wrap:wrap; gap:8px; align-items:end; margin-bottom:14px; background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:12px 14px;}
+  .f-field{display:flex; flex-direction:column; gap:4px;}
+  .f-field label{font-size:10px; color:var(--text-faint); text-transform:uppercase; letter-spacing:.04em;}
+  select, input{font-family:inherit; font-size:12.5px; padding:7px 8px; border:1px solid var(--line); border-radius:6px; background:#fff; color:var(--text);}
+  button{font-family:inherit; cursor:pointer;}
+  .btn{border:1px solid var(--line); background:var(--panel); border-radius:7px; padding:8px 14px; font-size:12.5px; font-weight:700; color:var(--text);}
+  .btn:hover{background:var(--panel-2);}
+  .btn.primary{background:var(--brand); border-color:var(--brand); color:#fff;}
+  .btn.small{padding:5px 9px; font-size:11px; border-radius:6px;}
+
+  .table-wrap{background:var(--panel); border:1px solid var(--line); border-radius:10px; overflow:auto; max-height:70vh;}
+  table{border-collapse:collapse; width:100%; font-size:12px; min-width:1550px;}
+  thead th{position:sticky; top:0; background:var(--panel-2); z-index:1; text-align:left; padding:9px 10px; border-bottom:1px solid var(--line); white-space:nowrap; cursor:pointer; user-select:none;}
+  thead th:hover{color:var(--brand);}
+  thead th.active{color:var(--brand);}
+  thead th .arrow{font-size:10px; margin-left:3px; opacity:.7;}
+  tbody td{padding:8px 10px; border-bottom:1px solid var(--line); white-space:nowrap;}
+  tbody tr{cursor:pointer;}
+  tbody tr:hover{background:var(--panel-2);}
+  .pill{display:inline-block; padding:2px 8px; border-radius:20px; font-size:10.5px; font-weight:700;}
+  .pill.running{background:rgba(47,143,239,0.12); color:var(--brand);}
+  .pill.completed{background:rgba(29,158,90,0.12); color:var(--ok);}
+  .pill.aborted{background:rgba(209,69,61,0.12); color:var(--down);}
+  .pill.ds{background:rgba(232,114,12,0.12); color:var(--warn);}
+  .pill.ns{background:rgba(90,60,220,0.12); color:#5a3cdc;}
+  .oos{color:var(--down); font-weight:700;}
+  .link{color:var(--brand); font-weight:700; text-decoration:none; font-size:12px;}
+  .empty{padding:40px; text-align:center; color:var(--text-faint);}
+  .pagebar{display:flex; justify-content:space-between; align-items:center; margin-top:10px; font-size:12px; color:var(--text-dim);}
+  .pagebar .btns{display:flex; gap:6px;}
+
+  .modal-backdrop{position:fixed; inset:0; background:rgba(10,14,26,0.45); display:none; align-items:center; justify-content:center; z-index:2000;}
+  .modal-backdrop.open{display:flex;}
+  .modal{background:#fff; border-radius:12px; padding:20px 22px; width:360px; max-width:92vw; box-shadow:0 20px 50px rgba(0,0,0,0.25);}
+  .modal h3{margin:0 0 12px; font-size:15px;}
+  .modal label{display:block; font-size:11px; color:var(--text-faint); margin:8px 0 4px;}
+  .modal .actions{display:flex; justify-content:flex-end; gap:8px; margin-top:14px;}
+  .err-text{color:var(--down); font-size:11.5px; margin-top:6px; min-height:14px;}
+</style>
+</head>
+<body data-page="history">
+<script src="sidebar.js"></script>
+<script src="report.js"></script>
+<script src="histogram-modal.js"></script>
+<div id="app-sidebar-root"></div>
+<div class="page-wrap">
+
+<header>
+  <div class="header-left">
+    <div class="logo-badge"><img class="brand-logo" src="icon.png" alt=""></div>
+    <div>
+      <div class="eyebrow" id="subLine">กำลังโหลด…</div>
+      <h1>ประวัติ<span>เอกสาร</span></h1>
+    </div>
+  </div>
+</header>
+
+<div class="filters">
+  <div class="f-field"><label>เครื่องชั่ง (Line)</label><select id="fScale"><option value="">ทั้งหมด</option></select></div>
+  <div class="f-field"><label>Line</label><select id="fLine"><option value="">ทั้งหมด</option></select></div>
+  <div class="f-field"><label>S/N</label><select id="fSn"><option value="">ทั้งหมด</option></select></div>
+  <div class="f-field"><label>Group Code</label><input id="fGroup" placeholder="เช่น NNFB2UJ2A-TBG"></div>
+  <div class="f-field"><label>Product Code</label><input id="fProduct" placeholder="เช่น HAPPMM"></div>
+  <div class="f-field"><label>กะ</label><select id="fShift"><option value="">ทั้งหมด</option><option value="DS">DS</option><option value="NS">NS</option></select></div>
+  <div class="f-field"><label>สถานะ</label><select id="fStatus"><option value="">ทั้งหมด</option><option value="running">กำลังทำ</option><option value="completed">เสร็จแล้ว</option><option value="aborted">ยกเลิก</option></select></div>
+  <div class="f-field"><label>วันที่ (จาก)</label><input type="date" id="fFrom"></div>
+  <div class="f-field"><label>วันที่ (ถึง)</label><input type="date" id="fTo"></div>
+  <div class="f-field"><button class="btn primary" id="btnFilter">ค้นหา</button></div>
+  <div class="f-field"><button class="btn" id="btnClear">ล้างตัวกรอง</button></div>
+</div>
+
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr id="theadRow"></tr>
+    </thead>
+    <tbody id="tbody"><tr><td class="empty" colspan="17">กำลังโหลด…</td></tr></tbody>
+  </table>
+</div>
+
+<div class="pagebar">
+  <div id="pageInfo"></div>
+  <div class="btns">
+    <button class="btn" id="btnPrev">← ก่อนหน้า</button>
+    <button class="btn" id="btnNext">ถัดไป →</button>
+  </div>
+</div>
+
+</div><!-- /.page-wrap -->
+
+<!-- ---------------- modal: แก้ไขเวลา (ต้องใส่รหัสผ่าน) ---------------- -->
+<div class="modal-backdrop" id="editTimeModal">
+  <div class="modal">
+    <h3>แก้ไขเวลาเอกสาร #<span id="editDocId"></span></h3>
+    <label>รหัสผ่าน</label>
+    <input type="password" id="ePassword" placeholder="ใส่รหัสผ่านเพื่อแก้ไข">
+    <label>เวลาเริ่ม</label>
+    <input type="datetime-local" id="eStart" step="1">
+    <label>เวลาหยุด</label>
+    <input type="datetime-local" id="eEnd" step="1">
+    <label>ชื่อผู้ตรวจสอบ</label>
+    <input id="eInspector">
+    <label>หมายเหตุ (Remark)</label>
+    <input id="eRemark">
+    <div class="err-text" id="editTimeErr"></div>
+    <div class="actions">
+      <button class="btn" id="btnEditTimeCancel">ยกเลิก</button>
+      <button class="btn primary" id="btnEditTimeSave">บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+async function api(path, opts){
+  const res = await fetch(path, Object.assign({ cache:'no-store', headers:{accept:'application/json','content-type':'application/json'} }, opts||{}));
+  let payload = null;
+  try{ payload = await res.json(); }catch(e){}
+  if(!res.ok) throw new Error((payload && payload.error) || `HTTP ${res.status}`);
+  return payload || {};
+}
+
+const COLUMNS = [
+  { key:'id',                label:'เลขที่เอกสาร' },
+  { key:'report_date',       label:'วันที่ (กะ)' },
+  { key:'line',              label:'Line' },
+  { key:'serial_no',         label:'S/N' },
+  { key:'group_code',        label:'Group Code' },
+  { key:'product_code',      label:'Product Code' },
+  { key:'start_time',        label:'เริ่ม' },
+  { key:'end_time',          label:'หยุด' },
+  { key:'status',            label:'สถานะ' },
+  { key:'reading_count',     label:'จำนวนค่า' },
+  { key:'avg_weight',        label:'ค่าเฉลี่ย' },
+  { key:'min_weight',        label:'ต่ำสุด' },
+  { key:'max_weight',        label:'สูงสุด' },
+  { key:'out_of_spec_count', label:'เกินเกณฑ์' },
+];
+
+let state = { sortBy:'start_time', sortDir:'desc', page:1, pageSize:50, total:0 };
+let rowsCache = [];
+let historyEditPassword = '172480116';
+let REPORT_FORM_CODE = 'F3QCPFB8-1-01/9/2025';
+
+async function loadPassword(){
+  try{
+    const data = await api('/api/settings');
+    if(data.settings && data.settings['security.historyEditPassword']) {
+      historyEditPassword = data.settings['security.historyEditPassword'];
+    }
+    if(data.settings && data.settings['report.formCode']) {
+      REPORT_FORM_CODE = data.settings['report.formCode'];
+    }
+  }catch(err){ /* ใช้ค่า default ถ้าโหลดไม่ได้ */ }
+}
+
+function buildHead(){
+  $('theadRow').innerHTML = COLUMNS.map(c => `
+    <th data-key="${c.key}" class="${state.sortBy===c.key?'active':''}">
+      ${c.label}<span class="arrow">${state.sortBy===c.key ? (state.sortDir==='asc'?'▲':'▼') : ''}</span>
+    </th>
+  `).join('') + '<th>การจัดการ</th>';
+
+  $('theadRow').querySelectorAll('th[data-key]').forEach((th) => {
+    th.addEventListener('click', () => {
+      const key = th.dataset.key;
+      if(state.sortBy === key) state.sortDir = state.sortDir === 'asc' ? 'desc' : 'asc';
+      else { state.sortBy = key; state.sortDir = 'desc'; }
+      state.page = 1;
+      buildHead();
+      load();
+    });
+  });
+}
+
+function fmtDT(iso){
+  if(!iso) return '-';
+  const d = new Date(iso);
+  const p = (n)=>String(n).padStart(2,'0');
+  return `${p(d.getDate())}/${p(d.getMonth()+1)} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
+function rowHtml(r){
+  const statusLabel = { running:'กำลังทำ', completed:'เสร็จแล้ว', aborted:'ยกเลิก' }[r.status] || r.status;
+  return `<tr data-id="${r.id}">
+    <td>#${r.id}</td>
+    <td>${r.report_date_be || '-'} <span class="pill ${String(r.shift).toLowerCase()}">${r.shift || '-'}</span></td>
+    <td>${r.line || r.scale_name || '-'}</td>
+    <td>${r.serial_no || '-'}</td>
+    <td>${r.group_code}</td>
+    <td>${r.product_code}</td>
+    <td>${fmtDT(r.start_time)}</td>
+    <td>${fmtDT(r.end_time)}</td>
+    <td><span class="pill ${r.status}">${statusLabel}</span></td>
+    <td>${r.reading_count ?? '-'}</td>
+    <td>${r.avg_weight != null ? r.avg_weight.toFixed(2) : '-'}</td>
+    <td>${r.min_weight != null ? r.min_weight.toFixed(2) : '-'}</td>
+    <td>${r.max_weight != null ? r.max_weight.toFixed(2) : '-'}</td>
+    <td class="${r.out_of_spec_count ? 'oos' : ''}">${r.out_of_spec_count ?? '-'}</td>
+    <td style="display:flex; gap:6px; flex-wrap:wrap;">
+      <a class="link" href="session.html?id=${r.id}">รายละเอียด</a>
+      <button class="btn small" data-action="pdf" data-id="${r.id}">📄 PDF</button>
+      <button class="btn small" data-action="edittime" data-id="${r.id}">แก้ไขเวลา</button>
+    </td>
+  </tr>`;
+}
+
+async function loadFilterOptions(){
+  try{
+    const data = await api('/api/scales');
+    const scales = data.scales || [];
+    $('fScale').innerHTML = '<option value="">ทั้งหมด</option>' + scales.map(s => `<option value="${s.scale_id}">${s.line || s.ip}</option>`).join('');
+    const lines = [...new Set(scales.map(s => s.line).filter(Boolean))];
+    $('fLine').innerHTML = '<option value="">ทั้งหมด</option>' + lines.map(l => `<option value="${l}">${l}</option>`).join('');
+    const sns = [...new Set(scales.map(s => s.serial_no).filter(Boolean))];
+    $('fSn').innerHTML = '<option value="">ทั้งหมด</option>' + sns.map(s => `<option value="${s}">${s}</option>`).join('');
+  }catch(err){ /* ไม่ต้อง block หน้าเพราะแค่ dropdown ตัวกรอง */ }
+}
+
+function currentFilters(){
+  return {
+    scaleId: $('fScale').value, line: $('fLine').value, serialNo: $('fSn').value,
+    groupCode: $('fGroup').value.trim(), productCode: $('fProduct').value.trim(),
+    shift: $('fShift').value, status: $('fStatus').value,
+    from: $('fFrom').value, to: $('fTo').value,
+  };
+}
+
+async function load(){
+  const f = currentFilters();
+  const qs = new URLSearchParams();
+  qs.set('sortBy', state.sortBy); qs.set('sortDir', state.sortDir);
+  qs.set('page', state.page); qs.set('pageSize', state.pageSize);
+  Object.entries(f).forEach(([k,v]) => { if(v) qs.set(k, v); });
+
+  $('tbody').innerHTML = '<tr><td class="empty" colspan="17">กำลังโหลด…</td></tr>';
+  try{
+    const data = await api('/api/sessions?' + qs.toString());
+    state.total = data.total || 0;
+    rowsCache = data.rows || [];
+    $('tbody').innerHTML = rowsCache.length
+      ? rowsCache.map(rowHtml).join('')
+      : '<tr><td class="empty" colspan="17">ไม่พบเอกสาร</td></tr>';
+    const maxPage = Math.max(1, Math.ceil(state.total / state.pageSize));
+    $('pageInfo').textContent = `พบทั้งหมด ${state.total} เอกสาร · หน้า ${state.page}/${maxPage}`;
+    $('subLine').textContent = `เรียงตาม ${state.sortBy} (${state.sortDir === 'asc' ? 'น้อย→มาก' : 'มาก→น้อย'})`;
+    $('btnPrev').disabled = state.page <= 1;
+    $('btnNext').disabled = state.page >= maxPage;
+  }catch(err){
+    $('tbody').innerHTML = `<tr><td class="empty" colspan="17">โหลดข้อมูลไม่สำเร็จ: ${err.message}</td></tr>`;
+  }
+}
+
+async function exportRowPdf(docId){
+  const row = rowsCache.find(r => Number(r.id) === docId);
+  if(!row) { alert('ไม่พบข้อมูลเอกสารนี้ในตาราง — ลองกด "ค้นหา" ใหม่อีกครั้ง'); return; }
+  if(!row.end_time){
+    alert('เอกสารนี้ยังไม่ได้ "หยุด" — ยังไม่มีเวลาสิ้นสุดให้ export');
+    return;
+  }
+  try{
+    const sessionRes = await api(`/api/sessions/${docId}`);
+    const s = sessionRes.session;
+    const weightsRes = await api(`/api/weights/range?scaleId=${s.scale_id}&from=${encodeURIComponent(s.start_time)}&to=${encodeURIComponent(s.end_time)}&limit=20000`);
+    const values = (weightsRes.rows || []).map(r => r.weight).filter(v => Number.isFinite(v));
+
+    const startD = new Date(s.start_time);
+    const dd = String(startD.getDate()).padStart(2,'0');
+    const mm = String(startD.getMonth()+1).padStart(2,'0');
+    const beYear = startD.getFullYear()+543;
+    const dateStr = `${dd}.${mm}.${beYear}${s.shift ? ' - ' + s.shift : ''}`;
+    const timeStr = startD.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit',hour12:false});
+    const customerLabel = s.customer ? s.customer + (s.destination ? ` (${s.destination})` : '') : '-';
+
+    window.openWeightCheckReport({
+      productCode: s.product_code, groupCode: s.group_code,
+      packageSize: s.package, packageName: s.package_name,
+      customerLabel, lineLabel: s.line || s.scale_name || '-',
+      inspectorName: s.inspector_name || '-',
+      remark: s.remark || '',
+      formCode: REPORT_FORM_CODE,
+      nwTarget: s.nw_target, nwUcl: s.nw_ucl, nwLcl: s.nw_lcl, nwUwl: s.nw_uwl, nwLwl: s.nw_lwl,
+      values, dateStr, timeStr,
+      rangeLabel: `${fmtDT(s.start_time)} – ${fmtDT(s.end_time)}`,
+      docLabel: s.id,
+    });
+  }catch(err){
+    alert('สร้างรายงาน PDF ไม่สำเร็จ: ' + err.message);
+  }
+}
+
+let editingDocId = null;
+function toDatetimeLocal(iso){
+  if(!iso) return '';
+  const d = new Date(iso);
+  const p=(n)=>String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+}
+function openEditTimeModal(docId){
+  const row = rowsCache.find(r => Number(r.id) === docId);
+  if(!row) { alert('ไม่พบข้อมูลเอกสารนี้ในตาราง — ลองกด "ค้นหา" ใหม่อีกครั้ง'); return; }
+  editingDocId = docId;
+  $('editDocId').textContent = docId;
+  $('ePassword').value = '';
+  $('eStart').value = toDatetimeLocal(row.start_time);
+  $('eEnd').value = toDatetimeLocal(row.end_time);
+  $('eInspector').value = row.inspector_name || '';
+  $('eRemark').value = row.remark || '';
+  $('editTimeErr').textContent = '';
+  $('editTimeModal').classList.add('open');
+}
+$('btnEditTimeCancel').addEventListener('click', () => $('editTimeModal').classList.remove('open'));
+$('btnEditTimeSave').addEventListener('click', async () => {
+  const password = $('ePassword').value;
+  if(password !== historyEditPassword){
+    $('editTimeErr').textContent = 'รหัสผ่านไม่ถูกต้อง';
+    return;
+  }
+  const startVal = $('eStart').value;
+  const endVal = $('eEnd').value;
+  const inspectorName = $('eInspector').value.trim();
+  const remark = $('eRemark').value.trim();
+  if(!startVal){ $('editTimeErr').textContent = 'กรุณาใส่เวลาเริ่ม'; return; }
+  try{
+    await api(`/api/sessions/${editingDocId}`, { method:'PUT', body: JSON.stringify({
+      startTime: startVal, endTime: endVal || null, inspectorName, remark,
+    })});
+    $('editTimeModal').classList.remove('open');
+    await load();
+  }catch(err){
+    $('editTimeErr').textContent = err.message;
+  }
+});
+
+$('tbody').addEventListener('click', (e) => {
+  // ปุ่มการจัดการ (PDF / แก้ไขเวลา) ทำงานตามเดิม ไม่เปิด histogram
+  const btn = e.target.closest('[data-action]');
+  if(btn){
+    const docId = Number(btn.dataset.id);
+    if(btn.dataset.action === 'pdf') exportRowPdf(docId);
+    else if(btn.dataset.action === 'edittime') openEditTimeModal(docId);
+    return;
+  }
+  // ลิงก์ "รายละเอียด" ยังพาไปหน้า session.html ตามเดิม
+  const link = e.target.closest('a.link');
+  if(link) return;
+
+  // คลิกที่แถว (นอกเหนือจากปุ่ม/ลิงก์ข้างบน) → เปิด popup histogram แบบเต็มจอ
+  const tr = e.target.closest('tr[data-id]');
+  if(tr && typeof window.openHistogramModal === 'function'){
+    window.openHistogramModal(Number(tr.dataset.id));
+  }
+});
+
+$('btnFilter').addEventListener('click', () => { state.page = 1; load(); });
+$('btnClear').addEventListener('click', () => {
+  ['fScale','fLine','fSn','fGroup','fProduct','fShift','fStatus','fFrom','fTo'].forEach(id => $(id).value = '');
+  state.page = 1; load();
+});
+$('btnPrev').addEventListener('click', () => { if(state.page>1){ state.page--; load(); } });
+$('btnNext').addEventListener('click', () => { state.page++; load(); });
+
+buildHead();
+loadPassword();
+loadFilterOptions();
+load();
+</script>
+</body>
+</html>
