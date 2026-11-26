@@ -127,10 +127,10 @@ router.get('/scales', async (_req, res) => {
 });
 
 router.post('/scales', async (req, res) => {
-  const { name, ip, port, line, serialNo, note } = req.body || {};
+  const { name, ip, port, line, serialNo, note, deviceType } = req.body || {};
   if (!ip || !port) return res.status(400).json({ error: 'ต้องมี ip, port' });
   try {
-    const scale = await manager.addScale({ name, ip, port: Number(port), line, serialNo, note });
+    const scale = await manager.addScale({ name, ip, port: Number(port), line, serialNo, note, deviceType });
     res.status(201).json({ scale });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -251,12 +251,14 @@ router.get('/sessions/:id', requireIntParam('id'), async (req, res) => {
 router.put('/sessions/:id', requireIntParam('id'), async (req, res) => {
   const { startTime, endTime, inspectorName, remark } = req.body || {};
   try {
+    const current = await db.getSession(req.params.id);
+    if (!current) return res.status(404).json({ error: 'ไม่พบเอกสารนี้' });
     const session = await db.updateSessionTimes(req.params.id, {
       startTime: startTime ? new Date(startTime) : undefined,
       endTime: endTime === null ? null : endTime ? new Date(endTime) : undefined,
       inspectorName,
       remark,
-    });
+    }, manager.tableFor(current.scale_id));
     res.json({
       session: {
         ...session,
@@ -276,7 +278,9 @@ router.put('/sessions/:id', requireIntParam('id'), async (req, res) => {
 router.get('/sessions/:id/weights', requireIntParam('id'), async (req, res) => {
   const limit = clampLimit(req.query.limit, 20000);
   try {
-    const rows = await db.fetchWeightsBySession(req.params.id, limit);
+    const session = await db.getSession(req.params.id);
+    if (!session) return res.status(404).json({ error: 'ไม่พบเอกสารนี้' });
+    const rows = await db.fetchWeightsBySession(req.params.id, limit, manager.tableFor(session.scale_id));
     res.json({ count: rows.length, rows: rows.map(mapDbRow) });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -310,7 +314,7 @@ router.get('/weights/history', (req, res) => {
   const scaleId = parseScaleId(req.query.scaleId);
   return withFallback(
     res,
-    () => db.fetchHistory(limit, scaleId),
+    () => db.fetchHistory(limit, scaleId, manager.tableFor(scaleId)),
     () => memoryForScale(scaleId, (r) => r.memoryHistory(limit))
   );
 });
@@ -326,7 +330,7 @@ router.get('/weights/range', async (req, res) => {
   }
   return withFallback(
     res,
-    () => db.fetchRange(from, to, limit, scaleId),
+    () => db.fetchRange(from, to, limit, scaleId, manager.tableFor(scaleId)),
     () => memoryForScale(scaleId, (r) => r.memoryHistory(config.memoryBufferSize))
       .filter((r) => r.time_stamp >= from && r.time_stamp <= to)
       .slice(-limit)
@@ -339,11 +343,11 @@ router.get('/weights', (req, res) => {
   const limit = clampLimit(req.query.limit, 500);
   const scaleId = parseScaleId(req.query.scaleId);
   if (sinceId <= 0) {
-    return withFallback(res, () => db.fetchHistory(limit, scaleId), () => memoryForScale(scaleId, (r) => r.memoryHistory(limit)));
+    return withFallback(res, () => db.fetchHistory(limit, scaleId, manager.tableFor(scaleId)), () => memoryForScale(scaleId, (r) => r.memoryHistory(limit)));
   }
   return withFallback(
     res,
-    () => db.fetchSince(sinceId, limit, scaleId),
+    () => db.fetchSince(sinceId, limit, scaleId, manager.tableFor(scaleId)),
     () => memoryForScale(scaleId, (r) => r.memorySince(sinceId, limit))
   );
 });
@@ -354,7 +358,7 @@ router.get('/recent', (req, res) => {
   const scaleId = parseScaleId(req.query.scaleId);
   return withFallback(
     res,
-    () => db.fetchRecent(limit, scaleId),
+    () => db.fetchRecent(limit, scaleId, manager.tableFor(scaleId)),
     () => memoryForScale(scaleId, (r) => r.memoryHistory(limit)).slice().reverse()
   );
 });
@@ -376,5 +380,8 @@ router.post('/stop', (req, res) => {
   reader.stop();
   res.json({ message: 'reader stopped', status: reader.status });
 });
+
+// ---------------------------------------------------------- checkweigher (OPC UA)
+router.use('/cw', require('./cw-routes'));
 
 module.exports = router;

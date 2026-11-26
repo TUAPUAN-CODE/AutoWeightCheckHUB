@@ -23,6 +23,7 @@ const SPOUT_TABLE_BY_IP = {
  */
 class ScaleReader {
   constructor(scaleRow) {
+    this.deviceType = 'tcp';
     this.scaleId = scaleRow.id;
     this.name = scaleRow.name;
     this.ip = scaleRow.ip;
@@ -257,6 +258,7 @@ class ScaleReader {
   snapshot() {
     return {
       scale_id: this.scaleId,
+      device_type: this.deviceType,
       name: this.name,
       ip: this.ip,
       port: this.port,

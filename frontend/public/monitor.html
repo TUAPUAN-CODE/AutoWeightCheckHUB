@@ -100,6 +100,30 @@
   .modal label{display:block; font-size:11px; color:var(--text-faint); margin:8px 0 4px;}
   .modal .actions{justify-content:flex-end;}
   .err-text{color:var(--down); font-size:11.5px; margin-top:6px; min-height:14px;}
+
+  /* ---------- checkweigher (OPC UA) card ---------- */
+  .type-tag{display:inline-block; font-size:9.5px; font-weight:700; letter-spacing:.04em; padding:2px 7px; border-radius:10px; background:#eef2ff; color:#4b3fd1; margin-left:6px; vertical-align:middle;}
+  .cw-product{display:flex; justify-content:space-between; gap:8px; font-size:12px; color:var(--text-dim); margin:2px 0 8px; flex-wrap:wrap;}
+  .cw-product b{color:var(--text);}
+  .cw-main{display:flex; align-items:flex-end; justify-content:space-between; gap:10px; background:var(--panel-2); border:1px solid var(--line); border-radius:8px; padding:10px 12px; margin-bottom:8px;}
+  .cw-weight{font-size:30px; font-weight:700; line-height:1; letter-spacing:-0.02em;}
+  .cw-weight small{font-size:13px; font-weight:600; color:var(--text-faint); margin-left:3px;}
+  .cw-limits{font-size:11px; color:var(--text-faint); margin-top:5px;}
+  .band{display:inline-block; font-size:11px; font-weight:700; padding:4px 9px; border-radius:20px;}
+  .band.b0{background:var(--ok-dim); color:var(--ok);}
+  .band.b1,.band.b2{background:var(--warn-dim); color:var(--warn);}
+  .band.b3,.band.b4{background:var(--down-dim); color:var(--down);}
+  .band.bn{background:#eef1f6; color:var(--text-faint);}
+  .cw-counts{display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-bottom:8px;}
+  .cw-counts div{background:#fff; border:1px solid var(--line); border-radius:7px; padding:6px 8px;}
+  .cw-counts span{display:block; font-size:9.5px; color:var(--text-faint); text-transform:uppercase; letter-spacing:.04em;}
+  .cw-counts b{font-size:14px;}
+  .cw-counts .ok b{color:var(--ok);} .cw-counts .warn b{color:var(--warn);} .cw-counts .down b{color:var(--down);}
+  .cw-alert{font-size:11.5px; color:var(--down); background:var(--down-dim); border-radius:6px; padding:6px 9px; margin-bottom:8px;}
+  .cw-note{font-size:11px; color:var(--warn); margin-bottom:8px;}
+  .run-chip{font-size:10.5px; font-weight:700; padding:3px 8px; border-radius:20px; margin-top:5px; display:inline-block;}
+  .run-chip.running{background:var(--ok-dim); color:var(--ok);}
+  .run-chip.idle{background:#eef1f6; color:var(--text-dim);}
 </style>
 </head>
 <body data-page="monitor">
@@ -140,6 +164,11 @@
 <div class="modal-backdrop" id="scaleModal">
   <div class="modal">
     <h3 id="scaleModalTitle">เพิ่มเครื่องชั่ง</h3>
+    <label>ชนิดเครื่อง</label>
+    <select id="fType">
+      <option value="tcp">เครื่องชั่ง Spout (TCP)</option>
+      <option value="opcua">Checkweigher Yamato (OPC UA)</option>
+    </select>
     <div class="two-col">
       <div><label>IP</label><input id="fIp" placeholder="172.48.2.175"></div>
       <div><label>Port</label><input id="fPort" placeholder="1052"></div>
@@ -239,6 +268,7 @@ function fmtStart(iso){
 }
 
 function cardHtml(s){
+  if(s.device_type === 'opcua') return cwCardHtml(s);
   const lvl = statusLevel(s.connection_status);
   const running = !!s.active_session_id;
   return `
@@ -279,6 +309,87 @@ function cardHtml(s){
   </div>`;
 }
 
+const BAND_LABELS = ['Accept','Over','Under','HiHi','LoLo'];
+function bandChip(b){
+  if(b == null) return '<span class="band bn">-</span>';
+  return `<span class="band b${b}">${BAND_LABELS[b] || b}</span>`;
+}
+function esc(v){ return String(v ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function fmtW(v, d=1){ return v == null || isNaN(v) ? '-' : Number(v).toFixed(d); }
+function fmtInt(v){ return v == null ? '-' : Number(v).toLocaleString('en-US'); }
+const RUN_LABEL = { running:'กำลังผลิต', idle:'ว่าง / หยุดเดิน', connecting:'กำลังเชื่อมต่อ', reconnecting:'กำลังเชื่อมต่อใหม่', error:'ผิดพลาด', stopped:'ปิดอยู่' };
+
+function cwCardHtml(s){
+  const c = s.cw || {};
+  const lvl = statusLevel(s.connection_status);
+  const st = c.machine_stats || {};
+  const lim = c.limits || {};
+  const total = st.total || 0;
+  const passPct = total ? ((st.accept || 0) / total * 100) : null;
+  const running = !!s.active_session_id;
+  const speed = c.pass_speed || c.infeed_speed;
+  const alerts = [];
+  if((c.machine_errors || []).length) alerts.push('เครื่องแจ้ง error: ' + c.machine_errors.join(', '));
+  if(s.connection_status !== 'connected' && s.last_error) alerts.push(s.last_error);
+  return `
+  <div class="card" data-scale-id="${s.scale_id}">
+    <div class="card-head">
+      <div>
+        <h3>${scaleTitle(s)}<span class="type-tag">CHECKWEIGHER</span></h3>
+        <div class="meta">${s.ip}:${s.port} · OPC UA</div>
+      </div>
+      <div style="text-align:right;">
+        <span class="status-pill ${lvl}"><span class="dot"></span>${statusLabel(s.connection_status)}</span><br>
+        ${c.run_state ? `<span class="run-chip ${c.run_state}">${RUN_LABEL[c.run_state] || c.run_state}</span>` : ''}
+      </div>
+    </div>
+    <div class="cw-product">
+      <span>โปรแกรม <b>No.${c.program_no ?? '-'}</b> ${c.program_name ? `<b>${esc(c.program_name)}</b>` : ''}</span>
+      <span>ความเร็ว <b>${speed ?? '-'}</b> ชิ้น/นาที</span>
+    </div>
+    ${alerts.length ? `<div class="cw-alert">⚠ ${esc(alerts.join(' · '))}</div>` : ''}
+    <div class="cw-main">
+      <div>
+        <div class="cw-weight">${fmtW(s.last_weight)}<small>g</small></div>
+        <div class="cw-limits">Target ${fmtW(lim.target)} g · ช่วงผ่าน ${fmtW(lim.lo)}–${fmtW(lim.hi)} g</div>
+      </div>
+      <div>${bandChip(c.last_band)}</div>
+    </div>
+    <div class="cw-counts">
+      <div><span>Total</span><b>${fmtInt(st.total)}</b></div>
+      <div class="ok"><span>Accept</span><b>${fmtInt(st.accept)}</b></div>
+      <div class="warn"><span>Over</span><b>${fmtInt((st.over||0)+(st.hihi||0))}</b></div>
+      <div class="warn"><span>Under</span><b>${fmtInt((st.under||0)+(st.lolo||0))}</b></div>
+      <div class="down"><span>Metal</span><b>${fmtInt(st.metal)}</b></div>
+      <div><span>% ผ่าน</span><b>${passPct == null ? '-' : passPct.toFixed(1)+'%'}</b></div>
+      <div><span>Cp (เครื่อง)</span><b>${fmtW(st.cp,2)}</b></div>
+      <div><span>Cpk (เครื่อง)</span><b>${fmtW(st.cpk,2)}</b></div>
+    </div>
+    ${c.gaps_total ? `<div class="cw-note">อ่านค่าไม่ทัน ${fmtInt(c.gaps_total)} ชิ้น ตั้งแต่เปิดระบบ (ตัวนับของเครื่องยังครบ)</div>` : ''}
+    ${running ? `
+      <div class="session-box">
+        <div class="lbl">กำลังทำเอกสาร</div>
+        <div class="running-tag">
+          <span class="code">${s.active_group_code} / ${s.active_product_code}</span>
+          <span class="elapsed">เริ่มเมื่อ ${fmtStart(s.active_session_start)}</span>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn danger small" data-action="stop" data-scale="${s.scale_id}">■ หยุด (ปิดเอกสาร)</button>
+        <button class="btn small" data-action="edittime" data-scale="${s.scale_id}" data-session="${s.active_session_id}">แก้ไขเวลา</button>
+        <a class="btn small" href="checkweigher.html?scale=${s.scale_id}">รายละเอียด →</a>
+      </div>
+    ` : `
+      <div class="actions">
+        <button class="btn primary small" data-action="start" data-scale="${s.scale_id}">▶ เริ่มเอกสารใหม่</button>
+        <a class="btn small" href="checkweigher.html?scale=${s.scale_id}">รายละเอียด →</a>
+        <button class="btn small" data-action="edit" data-scale="${s.scale_id}">แก้ไข</button>
+        <button class="btn danger small" data-action="delete" data-scale="${s.scale_id}">ลบ</button>
+      </div>
+    `}
+  </div>`;
+}
+
 function tableRowHtml(s){
   const lvl = statusLevel(s.connection_status);
   const running = !!s.active_session_id;
@@ -293,11 +404,11 @@ function tableRowHtml(s){
        <button class="btn small" data-action="edit" data-scale="${s.scale_id}">แก้ไข</button>
        <button class="btn danger small" data-action="delete" data-scale="${s.scale_id}">ลบ</button>`;
   return `<tr data-scale-id="${s.scale_id}">
-    <td><b>${scaleTitle(s)}</b></td>
+    <td><b>${scaleTitle(s)}</b>${s.device_type==='opcua' ? `<span class="type-tag">CW</span> <a class="btn small" href="checkweigher.html?scale=${s.scale_id}">รายละเอียด</a>` : ''}</td>
     <td>${s.ip}:${s.port}</td>
     <td>${s.serial_no || '-'}</td>
     <td><span class="status-pill ${lvl}"><span class="dot"></span>${statusLabel(s.connection_status)}</span></td>
-    <td>${s.last_weight != null ? s.last_weight.toFixed(1)+' g' : '-'}</td>
+    <td>${s.last_weight != null ? s.last_weight.toFixed(1)+' g' : '-'}${s.device_type==='opcua' ? ' '+bandChip(s.cw && s.cw.last_band) : ''}</td>
     <td>${docCell}</td>
     <td>${startCell}</td>
     <td style="display:flex; gap:6px; flex-wrap:wrap;">${actions}</td>
@@ -331,6 +442,7 @@ async function loadScales(){
 function openScaleModal(scale){
   editingScaleId = scale ? scale.scale_id : null;
   $('scaleModalTitle').textContent = scale ? `แก้ไข ${scaleTitle(scale)}` : 'เพิ่มเครื่องชั่ง';
+  $('fType').value = scale ? (scale.device_type || 'tcp') : 'tcp';
   $('fIp').value = scale ? scale.ip : '';
   $('fPort').value = scale ? scale.port : '';
   $('fLine').value = scale ? (scale.line || '') : '';
@@ -339,6 +451,12 @@ function openScaleModal(scale){
   $('scaleModal').classList.add('open');
 }
 $('btnAddScale').addEventListener('click', () => openScaleModal(null));
+$('fType').addEventListener('change', () => {
+  // checkweigher Yamato ใช้ OPC UA port 4880 (ตั้งที่ COMM. > ETHERNET > OPC UA), เครื่องชั่ง Spout ใช้ 1052
+  const p = $('fPort').value.trim();
+  if($('fType').value === 'opcua' && (p === '' || p === '1052')) $('fPort').value = '4880';
+  if($('fType').value === 'tcp' && (p === '' || p === '4880')) $('fPort').value = '1052';
+});
 $('btnScaleCancel').addEventListener('click', () => $('scaleModal').classList.remove('open'));
 $('btnScaleSave').addEventListener('click', async () => {
   const body = {
@@ -346,6 +464,7 @@ $('btnScaleSave').addEventListener('click', async () => {
     port: Number($('fPort').value),
     line: $('fLine').value.trim(),
     serialNo: $('fSn').value.trim(),
+    deviceType: $('fType').value,
   };
   if(!body.ip || !body.port){
     $('scaleModalErr').textContent = 'กรุณากรอก IP, Port ให้ครบ';

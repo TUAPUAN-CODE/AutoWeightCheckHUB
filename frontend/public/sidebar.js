@@ -7,6 +7,7 @@
   const NAV_ITEMS = [
     { key: 'monitor', href: 'monitor.html', label: 'Monitor', icon: '📡', desc: 'สถานะเครื่องชั่งทั้งหมด' },
     { key: 'dashboard', href: 'dashboard.html', label: 'Dashboard', icon: '📊', desc: 'กราฟ SPC แบบเรียลไทม์' },
+    { key: 'checkweigher', href: 'checkweigher.html', label: 'Checkweigher', icon: '⚖️', desc: 'น้ำหนักรายชิ้น / ผลตัดสิน' },
     { key: 'history', href: 'history.html', label: 'ประวัติ', icon: '🗂️', desc: 'เอกสารย้อนหลัง / ค้นหา' },
     { key: 'config', href: 'config.html', label: 'ตั้งค่า', icon: '⚙️', desc: 'เกณฑ์แจ้งเตือน Cp/Cpk/Ppk' },
   ];

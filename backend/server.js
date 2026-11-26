@@ -52,6 +52,12 @@ app.get('/', (_req, res) => {
       'GET    /api/recent?limit=20&scaleId=1',
       'POST   /api/start { scaleId }',
       'POST   /api/stop  { scaleId }',
+      'GET    /api/cw/:id/live',
+      'GET    /api/cw/:id/pieces?sinceId=&limit=',
+      'GET    /api/cw/:id/range?from=ISO&to=ISO',
+      'GET    /api/cw/:id/summary?from=ISO&to=ISO',
+      'GET    /api/cw/:id/events?from=&to=&limit=',
+      'GET    /api/cw/:id/snapshots?from=&to=',
     ],
   });
 });

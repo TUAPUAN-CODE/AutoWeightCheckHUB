@@ -5,6 +5,12 @@ const dbWc = require('./db-wc');
 const logger = require('./logger');
 const shift = require('./shift');
 const ScaleReader = require('./scale-reader');
+const CheckweigherReader = require('./cw-reader');
+
+/** เลือก reader ตามชนิดเครื่อง: tcp = เครื่องชั่ง Spout เดิม, opcua = checkweigher Yamato */
+function createReader(row) {
+  return row.device_type === 'opcua' ? new CheckweigherReader(row) : new ScaleReader(row);
+}
 
 class ScaleManager {
   constructor() {
@@ -23,7 +29,7 @@ class ScaleManager {
     }
 
     for (const row of rows) {
-      const reader = new ScaleReader(row);
+      const reader = createReader(row);
       this.readers.set(row.id, reader);
       if (row.enabled) reader.start();
     }
@@ -55,12 +61,18 @@ class ScaleManager {
     return Array.from(this.readers.values()).map((r) => r.snapshot());
   }
 
+  /** ตารางที่เก็บค่าน้ำหนักของเครื่องนี้ (Spout n / CwPieces / ตารางเดิม) — null = ตารางเดิม */
+  tableFor(scaleId) {
+    const reader = scaleId != null ? this.get(scaleId) : null;
+    return reader ? reader.tableName || null : null;
+  }
+
   // ------------------------------------------------------------ CRUD เครื่องชั่ง
-  async addScale({ name, ip, port, line, serialNo, note }) {
-    const id = await db.createScale({ name, ip, port, line, serialNo, note });
+  async addScale({ name, ip, port, line, serialNo, note, deviceType }) {
+    const id = await db.createScale({ name, ip, port, line, serialNo, note, deviceType });
     const rows = await db.listScales();
     const row = rows.find((r) => r.id === id);
-    const reader = new ScaleReader(row);
+    const reader = createReader(row);
     this.readers.set(id, reader);
     if (row.enabled) reader.start();
     return reader.snapshot();
@@ -77,13 +89,17 @@ class ScaleManager {
       serialNo: patch.serialNo ?? existing.serialNo,
       note: patch.note,
       enabled: patch.enabled ?? true,
+      deviceType: patch.deviceType ?? existing.deviceType ?? 'tcp',
     });
     const rows = await db.listScales();
     const row = rows.find((r) => r.id === Number(id));
 
     // ip/port เปลี่ยน หรือ enabled เปลี่ยน -> ต้องสร้าง reader ใหม่ (ปิดตัวเก่าก่อน)
     existing.stop();
-    const reader = new ScaleReader(row);
+    const reader = createReader(row);
+    if (existing.activeSessionId) {
+      reader.attachSession(existing.activeSessionId, existing.activeGroupCode, existing.activeProductCode, existing.activeSessionStart);
+    }
     this.readers.set(row.id, reader);
     if (row.enabled) reader.start();
     return reader.snapshot();
@@ -109,6 +125,7 @@ class ScaleManager {
       await db.updateScale(id, {
         name: row.name, ip: row.ip, port: row.port,
         line: row.line, serialNo: row.serial_no ?? row.serialNo, note: row.note, enabled: false,
+        deviceType: row.device_type ?? row.deviceType,
       });
       this.readers.delete(Number(id));
       return { deleted: false, disabled: true };
@@ -157,7 +174,8 @@ class ScaleManager {
 
     const sessionId = reader.activeSessionId;
     reader.detachSession();
-    return db.closeSession(sessionId, new Date());
+    // สรุปผลจากตารางที่เครื่องนี้บันทึกจริง (Spout n / CwPieces) ไม่ใช่ตารางเดิมเสมอไป
+    return db.closeSession(sessionId, new Date(), reader.tableName || null);
   }
 }
 

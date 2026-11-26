@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Checkweigher — Auto Weight</title>
+<link rel="icon" type="image/png" href="icon.png">
+<style>
+  :root{
+    --bg:#f4f6fb; --panel:#ffffff; --panel-2:#f2f6fb; --line:#dbe4f0;
+    --text:#131a2b; --text-dim:rgba(19,26,43,0.65); --text-faint:rgba(19,26,43,0.45);
+    --ok:#1d9e5a; --ok-dim:rgba(29,158,90,0.10);
+    --warn:#e8720c; --warn-dim:rgba(232,114,12,0.10);
+    --down:#d1453d; --down-dim:rgba(209,69,61,0.10);
+    --brand:#2f8fef; --sans:Tahoma,Geneva,Verdana,sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); padding:18px 22px;}
+  .page-wrap{padding-left:16px;}
+  h1{font-size:16px; margin:1px 0 0; font-weight:600;}
+  h1 span{color:#ff9f1c;}
+  button,select,input{font-family:inherit;}
+  .btn{border:1px solid var(--line); background:var(--panel); border-radius:7px; padding:7px 12px; font-size:12px; font-weight:700; color:var(--text); cursor:pointer;}
+  .btn:hover{background:var(--panel-2);}
+  .btn.active{background:var(--brand); border-color:var(--brand); color:#fff;}
+  select,input{font-size:12px; padding:6px 8px; border:1px solid var(--line); border-radius:6px; background:#fff; color:var(--text);}
+
+  header{position:relative; overflow:hidden; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
+    background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:9px 14px; margin-bottom:12px;
+    box-shadow:0 2px 5px rgba(0,0,0,0.07), 0 10px 24px -14px rgba(0,0,0,0.18);}
+  header::before{content:''; position:absolute; top:0; left:0; right:0; height:3px;
+    background:linear-gradient(135deg,#ff4d5e 0%, #ff9f1c 20%, #ffd93d 40%, #3ecf6e 60%, #2f8fef 80%, #7c5cff 100%);}
+  .header-left{display:flex; align-items:center; gap:10px;}
+  .logo-badge{width:34px; height:34px; display:flex; align-items:center; justify-content:center; border-radius:10px; background:linear-gradient(160deg,#fff,#f2f6fc); border:1px solid var(--line);}
+  .logo-badge img{width:19px;}
+  .eyebrow{font-size:9px; letter-spacing:.1em; text-transform:uppercase; color:var(--text-faint);}
+  .controls{display:flex; align-items:center; gap:6px; flex-wrap:wrap;}
+  .seg{display:flex; border:1px solid var(--line); border-radius:7px; overflow:hidden;}
+  .seg button{border:none; border-right:1px solid var(--line); background:var(--panel); padding:7px 11px; font-size:11.5px; font-weight:700; color:var(--text-dim); cursor:pointer;}
+  .seg button:last-child{border-right:none;}
+  .seg button.active{background:var(--brand); color:#fff;}
+  #customRange{display:none; gap:6px; align-items:center;}
+  #customRange.open{display:flex;}
+
+  .panel{background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:12px 14px; box-shadow:0 2px 6px rgba(20,30,60,0.05);}
+  .panel h2{font-size:12px; margin:0 0 8px; text-transform:uppercase; letter-spacing:.05em; color:var(--text-dim);}
+  .panel h2 small{text-transform:none; letter-spacing:0; font-weight:400; color:var(--text-faint); margin-left:6px;}
+
+  .status-strip{display:flex; flex-wrap:wrap; gap:16px; align-items:center; font-size:12px; color:var(--text-dim); margin-bottom:12px;}
+  .status-strip b{color:var(--text);}
+  .pill{display:inline-flex; align-items:center; gap:6px; font-size:11px; font-weight:700; padding:4px 10px; border-radius:20px;}
+  .pill .dot{width:8px; height:8px; border-radius:50%;}
+  .pill.ok{background:var(--ok-dim); color:var(--ok);} .pill.ok .dot{background:var(--ok);}
+  .pill.warn{background:var(--warn-dim); color:var(--warn);} .pill.warn .dot{background:var(--warn);}
+  .pill.down{background:var(--down-dim); color:var(--down);} .pill.down .dot{background:var(--down);}
+  .pill.idle{background:#eef1f6; color:var(--text-dim);} .pill.idle .dot{background:#9aa3b5;}
+  .alert{background:var(--down-dim); color:var(--down); border-radius:8px; padding:8px 12px; font-size:12px; margin-bottom:12px; display:none;}
+  .alert.show{display:block;}
+
+  .kpis{display:grid; grid-template-columns:repeat(8,minmax(0,1fr)); gap:10px; margin-bottom:12px;}
+  .kpi{background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:10px 12px;}
+  .kpi span{display:block; font-size:9.5px; letter-spacing:.05em; text-transform:uppercase; color:var(--text-faint);}
+  .kpi b{display:block; font-size:20px; margin-top:3px; letter-spacing:-0.01em;}
+  .kpi small{font-size:10.5px; color:var(--text-faint);}
+  .kpi.ok b{color:var(--ok);} .kpi.warn b{color:var(--warn);} .kpi.down b{color:var(--down);}
+
+  .row{display:grid; gap:12px; margin-bottom:12px;}
+  .row.r1{grid-template-columns:minmax(0,3fr) minmax(0,1fr);}
+  .row.r2{grid-template-columns:repeat(3,minmax(0,1fr));}
+  .row.r3{grid-template-columns:minmax(0,1fr) minmax(0,1fr);}
+  canvas{width:100%; display:block;}
+  .last-box{display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; gap:8px;}
+  .last-weight{font-size:52px; font-weight:700; letter-spacing:-0.03em; line-height:1;}
+  .last-weight small{font-size:18px; color:var(--text-faint); margin-left:4px;}
+  .band{display:inline-block; font-size:12px; font-weight:700; padding:5px 12px; border-radius:20px;}
+  .band.b0{background:var(--ok-dim); color:var(--ok);}
+  .band.b1,.band.b2{background:var(--warn-dim); color:var(--warn);}
+  .band.b3,.band.b4{background:var(--down-dim); color:var(--down);}
+  .band.bn{background:#eef1f6; color:var(--text-faint);}
+  .lim-table{font-size:11.5px; color:var(--text-dim); width:100%; border-collapse:collapse; margin-top:6px;}
+  .lim-table td{padding:3px 6px; border-bottom:1px solid var(--line);}
+  .lim-table td:last-child{text-align:right; color:var(--text); font-weight:700;}
+
+  .bars{display:flex; flex-direction:column; gap:7px; font-size:12px;}
+  .bar-row{display:grid; grid-template-columns:70px 1fr 90px; gap:8px; align-items:center;}
+  .bar-track{height:14px; background:var(--panel-2); border-radius:4px; overflow:hidden;}
+  .bar-fill{height:100%; border-radius:4px;}
+  .bar-row .v{text-align:right; font-weight:700;}
+
+  table.list{width:100%; border-collapse:collapse; font-size:11.5px;}
+  table.list th{position:sticky; top:0; background:var(--panel-2); text-align:left; padding:6px 8px; border-bottom:1px solid var(--line); white-space:nowrap;}
+  table.list td{padding:5px 8px; border-bottom:1px solid var(--line); white-space:nowrap;}
+  .scroll{max-height:290px; overflow:auto;}
+  .sev-alarm{color:var(--down); font-weight:700;} .sev-warn{color:var(--warn); font-weight:700;} .sev-info{color:var(--text-dim);}
+  .muted{color:var(--text-faint); font-size:11px;}
+  .empty{padding:30px; text-align:center; color:var(--text-faint); font-size:13px;}
+  .cmp-table{width:100%; font-size:11.5px; border-collapse:collapse;}
+  .cmp-table th,.cmp-table td{padding:4px 6px; border-bottom:1px solid var(--line); text-align:right;}
+  .cmp-table th:first-child,.cmp-table td:first-child{text-align:left;}
+  @media (max-width:1200px){ .kpis{grid-template-columns:repeat(4,minmax(0,1fr));} .row.r1,.row.r2,.row.r3{grid-template-columns:1fr;} }
+</style>
+</head>
+<body data-page="checkweigher">
+<div id="app-sidebar-root"></div>
+<script src="sidebar.js"></script>
+<div class="page-wrap">
+
+<header>
+  <div class="header-left">
+    <div class="logo-badge"><img src="icon.png" alt=""></div>
+    <div>
+      <div class="eyebrow">Checkweigher · OPC UA · น้ำหนักรายชิ้น</div>
+      <h1>Checkweigher — <span id="titleLine">-</span></h1>
+    </div>
+  </div>
+  <div class="controls">
+    <select id="selScale" title="เลือกเครื่อง"></select>
+    <div class="seg" id="rangeSeg">
+      <button data-range="live" class="active">สด</button>
+      <button data-range="1h">1 ชม.</button>
+      <button data-range="shift">กะนี้</button>
+      <button data-range="custom">กำหนดเอง</button>
+    </div>
+    <div id="customRange">
+      <input type="datetime-local" id="fromInp" step="60">
+      <span class="muted">ถึง</span>
+      <input type="datetime-local" id="toInp" step="60">
+      <button class="btn" id="btnApply">ดู</button>
+    </div>
+  </div>
+</header>
+
+<div class="status-strip" id="statusStrip"><span class="muted">กำลังโหลด…</span></div>
+<div class="alert" id="alertBox"></div>
+
+<div class="kpis" id="kpis"></div>
+
+<div class="row r1">
+  <div class="panel">
+    <h2>น้ำหนักรายชิ้น <small id="chartSub"></small></h2>
+    <canvas id="cTrend" height="260"></canvas>
+  </div>
+  <div class="panel last-box">
+    <div class="muted">ชิ้นล่าสุด</div>
+    <div class="last-weight" id="lastWeight">-<small>g</small></div>
+    <div id="lastBand"><span class="band bn">-</span></div>
+    <div class="muted" id="lastMeta"></div>
+    <table class="lim-table" id="limTable"></table>
+  </div>
+</div>
+
+<div class="row r2">
+  <div class="panel">
+    <h2>Histogram <small id="histSub"></small></h2>
+    <canvas id="cHist" height="220"></canvas>
+  </div>
+  <div class="panel">
+    <h2>ผลตัดสิน <small>(ระบบเทียบ limit)</small></h2>
+    <div class="bars" id="bandBars"></div>
+    <h2 style="margin-top:14px;">ResultRankCode <small>(ค่าดิบจากเครื่อง)</small></h2>
+    <div class="bars" id="rankBars"></div>
+  </div>
+  <div class="panel">
+    <h2>ตัวนับบนเครื่อง เทียบกับที่ระบบบันทึก</h2>
+    <table class="cmp-table" id="cmpTable"></table>
+    <div class="muted" id="cmpNote" style="margin-top:8px;"></div>
+  </div>
+</div>
+
+<div class="row r3">
+  <div class="panel">
+    <h2>เหตุการณ์ <small>เชื่อมต่อ / สถานะ / โปรแกรม / error / ชิ้นหลุด</small></h2>
+    <div class="scroll"><table class="list"><thead><tr><th>เวลา</th><th>ประเภท</th><th>รายละเอียด</th></tr></thead><tbody id="evBody"></tbody></table></div>
+  </div>
+  <div class="panel">
+    <h2>ชิ้นล่าสุด 50 ชิ้น</h2>
+    <div class="scroll"><table class="list"><thead><tr><th>เวลา</th><th>น้ำหนัก (g)</th><th>ผล</th><th>RankCode</th><th>Target</th><th>TotalCount</th><th>หลุด</th></tr></thead><tbody id="pcBody"></tbody></table></div>
+  </div>
+</div>
+
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const BAND_LABELS = ['Accept','Over','Under','HiHi','LoLo'];
+const BAND_COLORS = ['#1d9e5a','#e8720c','#e8720c','#d1453d','#d1453d'];
+const LIVE_MAX = 600;
+const qs = new URLSearchParams(location.search);
+let scaleId = Number(qs.get('scale')) || null;
+let range = 'live';
+let pieces = [];
+let lastId = 0;
+let scale = null;
+let summary = null;
+let busy = false;
+
+async function api(path){
+  const res = await fetch(path, { cache:'no-store', headers:{ accept:'application/json' } });
+  let body = null; try { body = await res.json(); } catch (e) {}
+  if(!res.ok) throw new Error((body && body.error) || `HTTP ${res.status}`);
+  return body || {};
+}
+function esc(v){ return String(v ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+const f1 = (v, d=1) => v == null || isNaN(v) ? '-' : Number(v).toFixed(d);
+const fi = (v) => v == null ? '-' : Number(v).toLocaleString('en-US');
+const p2 = (n) => String(n).padStart(2,'0');
+function localIso(d){ return `${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}T${p2(d.getHours())}:${p2(d.getMinutes())}:${p2(d.getSeconds())}`; }
+function hms(s){ const d = new Date(s); return `${p2(d.getHours())}:${p2(d.getMinutes())}:${p2(d.getSeconds())}`; }
+function dhm(s){ const d = new Date(s); return `${p2(d.getDate())}/${p2(d.getMonth()+1)} ${p2(d.getHours())}:${p2(d.getMinutes())}:${p2(d.getSeconds())}`; }
+function bandChip(b){ return b == null ? '<span class="band bn">-</span>' : `<span class="band b${b}">${BAND_LABELS[b]}</span>`; }
+
+function shiftStart(now){
+  const d = new Date(now);
+  const m = d.getHours()*60 + d.getMinutes();
+  if(m >= 360 && m < 1050){ d.setHours(6,0,0,0); return d; }
+  if(m >= 1050){ d.setHours(17,30,0,0); return d; }
+  d.setDate(d.getDate()-1); d.setHours(17,30,0,0); return d;
+}
+function currentWindow(){
+  const now = new Date();
+  if(range === 'live' || range === '1h') return { from: new Date(now - 3600e3), to: now };
+  if(range === 'shift') return { from: shiftStart(now), to: now };
+  const from = new Date($('fromInp').value); const to = new Date($('toInp').value);
+  return { from: isNaN(from) ? new Date(now - 3600e3) : from, to: isNaN(to) ? now : to };
+}
+
+// ------------------------------------------------------------------ canvas helpers
+function setupCanvas(cv){
+  const dpr = window.devicePixelRatio || 1;
+  const w = cv.clientWidth; const h = Number(cv.getAttribute('height'));
+  cv.width = Math.round(w*dpr); cv.height = Math.round(h*dpr); cv.style.height = h+'px';
+  const ctx = cv.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,w,h); ctx.font = '11px Tahoma'; return { ctx, w, h };
+}
+function limitsOf(){ return (scale && scale.cw && scale.cw.limits) || {}; }
+
+function drawTrend(){
+  const { ctx, w, h } = setupCanvas($('cTrend'));
+  const pad = { l:46, r:70, t:10, b:22 };
+  const data = pieces;
+  if(!data.length){ ctx.fillStyle = 'rgba(19,26,43,0.45)'; ctx.fillText('ยังไม่มีข้อมูลชิ้นงานในช่วงนี้', pad.l, h/2); return; }
+  const L = limitsOf();
+  const vals = data.map(p => p.weight);
+  const refs = [L.lo, L.hi, L.target].filter(v => v != null);
+  let lo = Math.min(...vals, ...refs), hi = Math.max(...vals, ...refs);
+  const span = Math.max(hi - lo, 1); lo -= span*0.08; hi += span*0.08;
+  const X = (i) => pad.l + (data.length === 1 ? 0 : i/(data.length-1)) * (w - pad.l - pad.r);
+  const Y = (v) => pad.t + (1 - (v - lo)/(hi - lo)) * (h - pad.t - pad.b);
+  if(L.lo != null && L.hi != null){ ctx.fillStyle = 'rgba(29,158,90,0.07)'; ctx.fillRect(pad.l, Y(L.hi), w-pad.l-pad.r, Y(L.lo)-Y(L.hi)); }
+  ctx.strokeStyle = '#e3e9f2'; ctx.lineWidth = 1; ctx.fillStyle = 'rgba(19,26,43,0.5)';
+  for(let k=0;k<=4;k++){ const v = lo + (hi-lo)*k/4; const y = Y(v); ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(w-pad.r,y); ctx.stroke(); ctx.fillText(v.toFixed(1), 6, y+4); }
+  const line = (v, color, label, dash) => { if(v == null) return; const y = Y(v); ctx.save(); ctx.strokeStyle = color; ctx.setLineDash(dash || []); ctx.lineWidth = 1.3; ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(w-pad.r,y); ctx.stroke(); ctx.restore(); ctx.fillStyle = color; ctx.fillText(`${label} ${v.toFixed(1)}`, w-pad.r+4, y+4); };
+  line(L.hi, '#d1453d', 'Hi', [5,4]); line(L.lo, '#d1453d', 'Lo', [5,4]); line(L.target, '#e8720c', 'Target', [2,3]);
+  ctx.strokeStyle = 'rgba(47,143,239,0.45)'; ctx.lineWidth = 1; ctx.beginPath();
+  data.forEach((p,i) => { const x = X(i), y = Y(p.weight); i ? ctx.lineTo(x,y) : ctx.moveTo(x,y); }); ctx.stroke();
+  data.forEach((p,i) => { ctx.fillStyle = p.band == null ? '#2f8fef' : (p.band === 0 ? '#2f8fef' : BAND_COLORS[p.band]); ctx.beginPath(); ctx.arc(X(i), Y(p.weight), p.band ? 2.8 : 1.8, 0, Math.PI*2); ctx.fill(); });
+  ctx.fillStyle = 'rgba(19,26,43,0.5)';
+  ctx.fillText(hms(data[0].time_stamp), pad.l, h-6);
+  const t2 = hms(data[data.length-1].time_stamp); ctx.fillText(t2, w-pad.r-ctx.measureText(t2).width, h-6);
+}
+
+function drawHist(){
+  const { ctx, w, h } = setupCanvas($('cHist'));
+  const pad = { l:30, r:10, t:16, b:22 };
+  const vals = pieces.map(p => p.weight);
+  if(vals.length < 2){ ctx.fillStyle = 'rgba(19,26,43,0.45)'; ctx.fillText('ข้อมูลไม่พอ', pad.l, h/2); return; }
+  const L = limitsOf();
+  let lo = Math.min(...vals, L.lo ?? Infinity), hi = Math.max(...vals, L.hi ?? -Infinity);
+  const bins = 24; const step = (hi - lo) / bins || 1; lo -= step; hi += step;
+  const n = Math.ceil((hi - lo)/step); const cnt = new Array(n).fill(0);
+  vals.forEach(v => { cnt[Math.min(n-1, Math.floor((v-lo)/step))] += 1; });
+  const max = Math.max(...cnt);
+  const X = (v) => pad.l + (v - lo)/(hi - lo) * (w - pad.l - pad.r);
+  const bw = (w - pad.l - pad.r)/n;
+  cnt.forEach((c,i) => {
+    const x0 = lo + i*step + step/2;
+    const inSpec = L.lo == null || L.hi == null || (x0 >= L.lo && x0 <= L.hi);
+    ctx.fillStyle = inSpec ? '#2f8fef' : '#e8720c';
+    const bh = (c/max) * (h - pad.t - pad.b);
+    ctx.fillRect(pad.l + i*bw + 1, h - pad.b - bh, bw - 2, bh);
+  });
+  const vline = (v, color, label) => { if(v == null) return; const x = X(v); ctx.strokeStyle = color; ctx.setLineDash([4,3]); ctx.beginPath(); ctx.moveTo(x,pad.t); ctx.lineTo(x,h-pad.b); ctx.stroke(); ctx.setLineDash([]); ctx.fillStyle = color; ctx.fillText(label, x-ctx.measureText(label).width/2, 11); };
+  vline(L.lo, '#d1453d', 'Lo'); vline(L.hi, '#d1453d', 'Hi'); vline(L.target, '#e8720c', 'T');
+  ctx.fillStyle = 'rgba(19,26,43,0.5)'; ctx.fillText(lo.toFixed(1), pad.l, h-6); const t = hi.toFixed(1); ctx.fillText(t, w-pad.r-ctx.measureText(t).width, h-6);
+  $('histSub').textContent = `n=${fi(vals.length)}`;
+}
+
+// ------------------------------------------------------------------ render blocks
+function runPill(sc){
+  const cs = sc.connection_status; const run = sc.cw && sc.cw.run_state;
+  if(cs !== 'connected') return `<span class="pill ${cs === 'error' || cs === 'stopped' ? 'down' : 'warn'}"><span class="dot"></span>${{connecting:'กำลังเชื่อมต่อ',reconnecting:'กำลังเชื่อมต่อใหม่',error:'ผิดพลาด',stopped:'ปิดอยู่'}[cs] || cs}</span>`;
+  return run === 'running' ? '<span class="pill ok"><span class="dot"></span>กำลังผลิต</span>' : '<span class="pill idle"><span class="dot"></span>ว่าง / หยุดเดิน</span>';
+}
+
+function renderStatus(){
+  if(!scale) return;
+  const c = scale.cw || {};
+  $('titleLine').textContent = scale.line || scale.ip;
+  $('statusStrip').innerHTML = `
+    ${runPill(scale)}
+    <span>โปรแกรม <b>No.${c.program_no ?? '-'}</b> <b>${esc(c.program_name || '')}</b></span>
+    <span>ความเร็ว <b>${c.pass_speed ?? c.infeed_speed ?? '-'}</b> ชิ้น/นาที (ตั้งไว้ ${c.speed_setting ?? '-'})</span>
+    <span>อุปกรณ์ <b>${esc(scale.device)}</b></span>
+    <span>ชิ้นล่าสุด <b>${scale.last_received_at ? dhm(scale.last_received_at) : '-'}</b></span>
+    <span>บันทึกแล้ว <b>${fi(scale.total_received)}</b> ชิ้น ${scale.total_insert_failed ? `· <b style="color:var(--down)">DB ล้มเหลว ${fi(scale.total_insert_failed)}</b>` : ''}</span>`;
+  const alerts = [];
+  if((c.machine_errors || []).length) alerts.push('เครื่องแจ้ง error: ' + c.machine_errors.join(', '));
+  if(scale.connection_status !== 'connected' && scale.last_error) alerts.push(scale.last_error);
+  if(summary && summary.summary && summary.summary.cpk != null && summary.summary.cpk < 1) alerts.push(`Cpk ${summary.summary.cpk.toFixed(2)} ต่ำกว่า 1.00`);
+  $('alertBox').textContent = alerts.length ? '⚠ ' + alerts.join(' · ') : '';
+  $('alertBox').classList.toggle('show', alerts.length > 0);
+
+  const last = pieces[pieces.length-1];
+  $('lastWeight').innerHTML = `${last ? f1(last.weight) : '-'}<small>g</small>`;
+  $('lastBand').innerHTML = bandChip(last ? last.band : null);
+  $('lastMeta').textContent = last ? `${hms(last.time_stamp)} · RankCode ${last.rank_code ?? '-'} · TotalCount ${fi(last.total_count)}` : '';
+  const L = c.limits || {}; const raw = c.limits_raw || {};
+  $('limTable').innerHTML = `
+    <tr><td>HiHi</td><td>${f1(L.hihi)} g</td></tr>
+    <tr><td>Hi (บนสุดที่ผ่าน)</td><td>${f1(L.hi)} g</td></tr>
+    <tr><td>Target</td><td>${f1(L.target)} g</td></tr>
+    <tr><td>Lo (ล่างสุดที่ผ่าน)</td><td>${f1(L.lo)} g</td></tr>
+    <tr><td>LoLo</td><td>${f1(L.lolo)} g</td></tr>
+    <tr><td colspan="2" class="muted">${c.limits_relative ? `คำนวณจาก Target ± ค่าในโปรแกรม (Hi +${raw.hiLimit ?? '-'}, Lo −${raw.loLimit ?? '-'} หน่วยดิบ)` : 'ค่า limit ตามที่เครื่องส่งมา'}</td></tr>`;
+}
+
+function kpi(label, value, sub, cls){ return `<div class="kpi ${cls||''}"><span>${label}</span><b>${value}</b><small>${sub||''}</small></div>`; }
+function renderKpis(){
+  const s = summary && summary.summary;
+  if(!s){ $('kpis').innerHTML = ''; return; }
+  const cpCls = (v) => v == null ? '' : v < 1 ? 'down' : v < 1.33 ? 'warn' : 'ok';
+  const rejCls = s.reject_percent == null ? '' : s.reject_percent > 5 ? 'down' : s.reject_percent > 2 ? 'warn' : 'ok';
+  $('kpis').innerHTML = [
+    kpi('จำนวนชิ้น', fi(s.count), summary.source === 'db' ? 'จากฐานข้อมูล' : 'จาก memory'),
+    kpi('ค่าเฉลี่ย', `${f1(s.average,2)} g`, `Target ${f1(s.target)} g`),
+    kpi('SD', `${f1(s.sd,3)} g`, `min ${f1(s.min)} / max ${f1(s.max)}`),
+    kpi('Cp', f1(s.cp,2), 'ช่วงผ่าน ÷ 6σ', cpCls(s.cp)),
+    kpi('Cpk', f1(s.cpk,2), 'เทียบ limit ใกล้สุด', cpCls(s.cpk)),
+    kpi('% Reject', s.reject_percent == null ? '-' : s.reject_percent.toFixed(2)+'%', `${fi(s.reject_count)} ชิ้น`, rejCls),
+    kpi('Giveaway', s.giveaway_per_piece_g == null ? '-' : `${s.giveaway_per_piece_g.toFixed(2)} g`, `รวม ${f1(s.giveaway_total_kg,2)} kg (ชิ้นที่ผ่าน)`),
+    kpi('เวลาผลิต', `${fi(s.run_minutes)} นาที`, s.availability_percent == null ? '' : `${s.availability_percent.toFixed(0)}% ของช่วง · หลุด ${fi(s.gaps)} ชิ้น`),
+  ].join('');
+  $('chartSub').textContent = range === 'live' ? `ล่าสุด ${fi(pieces.length)} ชิ้น (KPI = 1 ชม.ล่าสุด)` : `${dhm(summary.from)} – ${dhm(summary.to)}`;
+}
+
+function bars(el, rows){
+  const total = rows.reduce((a,r) => a + r.count, 0) || 1;
+  el.innerHTML = rows.length ? rows.map(r => `
+    <div class="bar-row"><span>${esc(r.label)}</span>
+      <div class="bar-track"><div class="bar-fill" style="width:${(r.count/total*100).toFixed(1)}%; background:${r.color}"></div></div>
+      <span class="v">${fi(r.count)} · ${(r.count/total*100).toFixed(1)}%</span></div>`).join('') : '<div class="muted">ยังไม่มีข้อมูล</div>';
+}
+function renderBands(){
+  const s = summary && summary.summary;
+  if(!s){ bars($('bandBars'), []); bars($('rankBars'), []); return; }
+  const b = s.bands;
+  bars($('bandBars'), [
+    { label:'Accept', count:b.accept, color:BAND_COLORS[0] }, { label:'Over', count:b.over, color:BAND_COLORS[1] },
+    { label:'Under', count:b.under, color:BAND_COLORS[2] }, { label:'HiHi', count:b.hihi, color:BAND_COLORS[3] },
+    { label:'LoLo', count:b.lolo, color:BAND_COLORS[4] },
+  ]);
+  bars($('rankBars'), (summary.ranks || []).map(r => ({ label: r.label ? `${r.rank_code} ${r.label}` : `code ${r.rank_code ?? '-'}`, count:r.count, color:'#7c5cff' })));
+}
+function renderCompare(){
+  const m = (scale && scale.cw && scale.cw.machine_stats) || {};
+  const s = summary && summary.summary;
+  const rows = [
+    ['Total', m.total, s && s.count], ['Accept', m.accept, s && s.bands.accept], ['Over', m.over, s && s.bands.over],
+    ['Under', m.under, s && s.bands.under], ['HiHi', m.hihi, s && s.bands.hihi], ['LoLo', m.lolo, s && s.bands.lolo],
+    ['Metal', m.metal, null], ['ค่าเฉลี่ย (g)', m.average != null ? f1(m.average) : null, s && f1(s.average)],
+    ['SD (g)', m.sd != null ? f1(m.sd,2) : null, s && f1(s.sd,2)], ['Cp', m.cp != null ? f1(m.cp,2) : null, s && f1(s.cp,2)],
+    ['Cpk', m.cpk != null ? f1(m.cpk,2) : null, s && f1(s.cpk,2)],
+  ];
+  $('cmpTable').innerHTML = `<tr><th></th><th>เครื่อง (ยอดสะสม)</th><th>ระบบ (ช่วงที่เลือก)</th></tr>` +
+    rows.map(r => `<tr><td>${r[0]}</td><td>${r[1] == null ? '-' : (typeof r[1] === 'number' ? fi(r[1]) : r[1])}</td><td>${r[2] == null ? '-' : (typeof r[2] === 'number' ? fi(r[2]) : r[2])}</td></tr>`).join('');
+  $('cmpNote').textContent = 'ยอดของเครื่องนับตั้งแต่ล้างยอดบนเครื่องครั้งล่าสุด ส่วนของระบบนับเฉพาะช่วงเวลาที่เลือก จึงอาจไม่เท่ากัน';
+}
+function renderTables(events){
+  const last = pieces.slice(-50).reverse();
+  $('pcBody').innerHTML = last.length ? last.map(p => `<tr><td>${hms(p.time_stamp)}</td><td><b>${f1(p.weight)}</b></td><td>${bandChip(p.band)}</td><td>${p.rank_code ?? '-'}</td><td>${f1(p.target_weight)}</td><td>${fi(p.total_count)}</td><td>${p.gap ? `<span class="sev-warn">${p.gap}</span>` : ''}</td></tr>`).join('') : '<tr><td colspan="7" class="empty">ยังไม่มีข้อมูล</td></tr>';
+  if(events) $('evBody').innerHTML = events.length ? events.map(e => `<tr><td>${dhm(e.time_stamp)}</td><td class="sev-${e.severity}">${esc(e.event_type)}</td><td>${esc(e.detail)}</td></tr>`).join('') : '<tr><td colspan="3" class="empty">ไม่มีเหตุการณ์</td></tr>';
+}
+function renderAll(events){ renderStatus(); renderKpis(); drawTrend(); drawHist(); renderBands(); renderCompare(); renderTables(events); }
+
+// ------------------------------------------------------------------ data loading
+async function loadScales(){
+  const data = await api('/api/scales');
+  const cws = (data.scales || []).filter(s => s.device_type === 'opcua');
+  if(!cws.length){ $('statusStrip').innerHTML = '<span class="muted">ยังไม่มีเครื่อง checkweigher — เพิ่มได้ที่หน้า Monitor (ชนิดเครื่อง: Checkweigher Yamato (OPC UA))</span>'; return false; }
+  if(!scaleId || !cws.some(s => s.scale_id === scaleId)) scaleId = cws[0].scale_id;
+  $('selScale').innerHTML = cws.map(s => `<option value="${s.scale_id}" ${s.scale_id === scaleId ? 'selected' : ''}>${esc(s.line || s.ip)}</option>`).join('');
+  return true;
+}
+
+async function loadSummary(){
+  const { from, to } = currentWindow();
+  summary = await api(`/api/cw/${scaleId}/summary?from=${encodeURIComponent(localIso(from))}&to=${encodeURIComponent(localIso(to))}`);
+}
+
+async function loadFull(){
+  if(busy) return; busy = true;
+  try{
+    let events;
+    if(range === 'live'){
+      const live = await api(`/api/cw/${scaleId}/live?limit=${LIVE_MAX}`);
+      scale = live.scale; pieces = live.pieces || []; events = live.events;
+    } else {
+      const { from, to } = currentWindow();
+      const q = `from=${encodeURIComponent(localIso(from))}&to=${encodeURIComponent(localIso(to))}`;
+      const [sc, rg, ev] = await Promise.all([api(`/api/cw/${scaleId}/pieces?limit=1`), api(`/api/cw/${scaleId}/range?${q}&limit=20000`), api(`/api/cw/${scaleId}/events?${q}&limit=300`)]);
+      scale = sc.scale; pieces = rg.rows || []; events = ev.rows || [];
+    }
+    lastId = pieces.length ? pieces[pieces.length-1].id : 0;
+    await loadSummary();
+    renderAll(events);
+  }catch(err){
+    $('statusStrip').innerHTML = `<span class="pill down"><span class="dot"></span>โหลดข้อมูลไม่สำเร็จ</span> <span class="muted">${esc(err.message)}</span>`;
+  }finally{ busy = false; }
+}
+
+async function pollLive(){
+  if(range !== 'live' || busy || !scaleId) return;
+  try{
+    const data = await api(`/api/cw/${scaleId}/pieces?sinceId=${lastId}&limit=500`);
+    scale = data.scale;
+    if(data.rows && data.rows.length){
+      pieces = pieces.concat(data.rows).slice(-LIVE_MAX);
+      lastId = pieces[pieces.length-1].id;
+    }
+    renderStatus(); drawTrend(); renderTables(null);
+  }catch(err){ /* แสดงผลรอบถัดไป */ }
+}
+async function refreshLiveExtras(){
+  if(range !== 'live' || !scaleId) return;
+  try{
+    await loadSummary();
+    const ev = await api(`/api/cw/${scaleId}/live?limit=1`);
+    renderKpis(); drawHist(); renderBands(); renderCompare(); renderTables(ev.events);
+  }catch(err){ /* ignore */ }
+}
+
+$('rangeSeg').addEventListener('click', (e) => {
+  const b = e.target.closest('button[data-range]'); if(!b) return;
+  range = b.dataset.range;
+  document.querySelectorAll('#rangeSeg button').forEach(x => x.classList.toggle('active', x === b));
+  $('customRange').classList.toggle('open', range === 'custom');
+  if(range === 'custom'){
+    const now = new Date();
+    if(!$('fromInp').value) $('fromInp').value = localIso(shiftStart(now)).slice(0,16);
+    if(!$('toInp').value) $('toInp').value = localIso(now).slice(0,16);
+    return;
+  }
+  loadFull();
+});
+$('btnApply').addEventListener('click', loadFull);
+$('selScale').addEventListener('change', () => {
+  scaleId = Number($('selScale').value);
+  history.replaceState(null, '', `?scale=${scaleId}`);
+  pieces = []; lastId = 0; loadFull();
+});
+window.addEventListener('resize', () => { drawTrend(); drawHist(); });
+
+(async () => {
+  try{ if(!(await loadScales())) return; }catch(err){ $('statusStrip').textContent = 'โหลดรายชื่อเครื่องไม่สำเร็จ: ' + err.message; return; }
+  await loadFull();
+  setInterval(pollLive, 1000);
+  setInterval(refreshLiveExtras, 10000);
+  setInterval(() => { if(range === 'shift' || range === '1h') loadFull(); }, 30000);
+})();
+</script>
+</body>
+</html>

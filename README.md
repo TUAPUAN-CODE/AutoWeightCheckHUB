@@ -101,3 +101,72 @@ uvicorn main:app --host 0.0.0.0 --port 8000
 - **หมายเหตุ (Remark) ต่อเอกสาร**: กรอกได้ตอนเริ่มเอกสาร (หน้า Monitor/Dashboard) และแก้ไขได้ทีหลัง (ทั้ง 3 หน้า) จะไปแสดงในช่อง REMARK ของใบพิมพ์แทนข้อความอัตโนมัติเดิม ถ้าไม่กรอกอะไรไว้ ระบบจะ fallback ไปใช้ข้อความอัตโนมัติเหมือนเดิม
 - **รหัสฟอร์ม/Document No. บนใบพิมพ์**: ปรับได้ที่หน้าตั้งค่า (ค่า default `F3QCPFB8-1-01/9/2025`) แสดงแทนเลข session เดิมที่หัวใบ WEIGHT CHECK RECORD
 - **Size บนใบพิมพ์**: รวมทั้ง `Package` (ขนาด เช่น "3.7 Oz.") และ `PackageName` (คำอธิบาย เช่น "Round cup") จาก DB(WC) เข้าด้วยกัน
+
+## อัปเดต v3 — Checkweigher Yamato (CE3000 / I-series) ผ่าน OPC UA
+
+รับข้อมูล **น้ำหนักรายชิ้น + ผลตัดสิน + ตัวนับ + สถานะเครื่อง** จาก checkweigher ผ่าน OPC UA มาแสดงและบันทึก
+ระบบ **อ่านอย่างเดียว** ไม่เขียนค่าใด ๆ กลับไปที่เครื่อง เครื่องชั่ง Spout (TCP) เดิมทำงานเหมือนเดิม
+
+### หน้าจอ
+- **Monitor** — การ์ด checkweigher: สถานะเชื่อมต่อ/กำลังผลิต, โปรแกรมสินค้า, ความเร็ว, น้ำหนักชิ้นล่าสุด + ผล (Accept/Over/Under/HiHi/LoLo), ตัวนับ Total/Accept/Over/Under/Metal, % ผ่าน, Cp/Cpk ที่เครื่องคำนวณ
+- **Checkweigher** (`checkweigher.html?scale=<id>`, เมนูใหม่ใน sidebar) — เลือกช่วง สด / 1 ชม. / กะนี้ / กำหนดเอง
+  - KPI: จำนวนชิ้น, ค่าเฉลี่ย, SD, Cp, Cpk, % Reject, Giveaway (g/ชิ้น และ kg รวม), เวลาผลิต/availability, ชิ้นที่อ่านไม่ทัน
+  - กราฟน้ำหนักรายชิ้นพร้อมเส้น Target/Hi/Lo, histogram, สัดส่วนผลตัดสิน, ResultRankCode ดิบ, ตัวนับบนเครื่องเทียบกับที่ระบบบันทึก, เหตุการณ์, 50 ชิ้นล่าสุด
+- **Dashboard (SPC เดิม) / ประวัติ / รายละเอียดเอกสาร / ใบ WEIGHT CHECK RECORD** ใช้กับ checkweigher ได้ทันที (ข้อมูลอยู่ใน `dbo.CwPieces` ที่มีคอลัมน์ weight/time_stamp/scale_id/session_id แบบเดียวกับตาราง Spout)
+  ถ้ายังไม่เริ่มเอกสาร หน้า Dashboard จะใช้ Target/Lo/Hi ตามโปรแกรมบนเครื่องเป็น spec
+
+### ติดตั้ง
+1. รัน migration (เพิ่ม `Scales.device_type`, ตาราง `CwPieces`, `CwSnapshots`, `CwEvents` — รันซ้ำได้ ไม่แตะข้อมูลเดิม)
+   ```bash
+   sqlcmd -S <DB_SERVER> -d AUTO_WEIGHT -U <user> -i backend/sql/migrate_v8_checkweigher.sql
+   ```
+2. ติดตั้ง library OPC UA (`node-opcua-client` 2.182.2 — รองรับ Node 18 ขึ้นไป)
+   ```bash
+   cd backend && npm install
+   ```
+3. `pm2 reload auto-weight-backend` (ถ้ายังไม่ได้ติดตั้งข้อ 2 เครื่องชั่ง TCP ยังทำงานได้ แต่เครื่อง checkweigher จะขึ้น error บอกให้ติดตั้ง)
+4. ตั้งค่าที่เครื่อง checkweigher
+   - SYSTEM SETTING → OPTIONS → ข้อ 81 **OPC UA Server = ON (SECURE OFF)** (และ ETHERNET = ON)
+   - COMM. → ETHERNET: IP / Subnet `255.255.255.0` / Gateway ของวงนั้น (วง 10.246.145.x ใช้ `10.246.145.254`)
+   - ปุ่ม OPC UA → PORT No. `4880` → SAVE → รีสตาร์ทเครื่อง
+   - ทดสอบจาก server: `Test-NetConnection <IP> -Port 4880` ต้องได้ `TcpTestSucceeded : True`
+5. หน้า Monitor → **+ เพิ่มเครื่องชั่ง** → ชนิดเครื่อง **Checkweigher Yamato (OPC UA)** → IP, Port 4880, Line, S/N
+6. ดู log `pm2 logs auto-weight-backend` ต้องเห็น `OPC UA connected` และ `revised sampling interval (ms): weight=..., totalCount=...`
+   (ครั้งแรกที่เชื่อมต่อ library จะสร้าง certificate ของตัวเองไว้ในโฟลเดอร์ผู้ใช้ ใช้เวลาไม่กี่วินาที)
+   ถ้ารอบที่เครื่องอนุญาตช้ากว่าระยะห่างระหว่างชิ้น (170 ชิ้น/นาที ≈ 350 ms) ระบบจะบันทึก "ชิ้นที่อ่านไม่ทัน" (gap) ให้เห็นในหน้า Checkweigher
+
+### Tag ที่ใช้ (`backend/src/cw-tags.js`, namespace 2)
+| ข้อมูล | NodeId |
+|---|---|
+| น้ำหนักรายชิ้น `OperationInfo/Weighing/Weight` | `ns=2;i=652` |
+| ผลตัดสิน `ResultRankCode` / `SubResultRankCode` / `PassFlag` | `i=654` / `i=655` / `i=653` |
+| Target ปัจจุบัน `CurrentTargetWeight` | `i=657` |
+| สถานะเครื่อง `OperationStatus` / เลขโปรแกรม `CurrentProgramNo.` | `i=649` / `i=651` |
+| ตัวนับ `Statistics/Total/TotalCount` (ใช้จับว่ามีชิ้นใหม่) | `i=122` |
+| ชื่อโปรแกรม / ความเร็ว / Target / HiHi / Hi / Lo / LoLo | `i=0` / `i=1` / `i=12` / `i=13` / `i=14` / `i=15` / `i=16` |
+| ตัวนับสะสม HiHi/Over/Accept/Under/LoLo/Metal/Error, Average, SD, CP, CPK | `i=114–120`, `i=127`, `i=128`, `i=146`, `i=147` |
+| error ของเครื่อง `MachineStatusError1/2/9/10` | `i=660–663` |
+
+### ค่าตั้ง (.env — ไม่ตั้งก็ใช้ค่า default)
+| ตัวแปร | default | ความหมาย |
+|---|---|---|
+| `CW_WEIGHT_DECIMALS` | 1 | ค่าน้ำหนักดิบหาร 10^n (880 = 88.0 g) |
+| `CW_LIMITS_RELATIVE` | true | Hi/Lo/HiHi/LoLo ในโปรแกรมเป็นระยะห่างจาก Target (Hi 20 = +2.0 g) |
+| `CW_PIECE_TRIGGER` | count | `count` = จับชิ้นใหม่จาก TotalCount, `weight` = จากค่า Weight ที่เปลี่ยน |
+| `CW_PIECE_SETTLE_MS` | 150 | รอค่า Weight/RankCode ของชิ้นเดียวกันหลัง TotalCount เพิ่ม |
+| `CW_RANK_LABELS` | `{}` | ความหมายของ ResultRankCode เช่น `{"0":"Accept","1":"Over"}` (เมื่อได้ Tag list จาก Yamato) |
+| `CW_SD_DECIMALS` / `CW_CP_DECIMALS` | 2 / 2 | ตัวหารของ ProductSD และ CP/CPK ของเครื่อง |
+| `CW_PUBLISH_MS` / `CW_SAMPLING_MS` | 100 / 50 | รอบ subscription |
+| `CW_POLL_SEC` / `CW_SNAPSHOT_SEC` | 5 / 60 | รอบอ่านสถิติ / รอบบันทึก `CwSnapshots` |
+| `CW_IDLE_AFTER_SEC` | 15 | ไม่มีชิ้นใหม่นานเท่านี้ = สถานะ "ว่าง / หยุดเดิน" |
+
+### ต้องตรวจกับเครื่องจริงก่อนใช้งานจริง
+- **ช่วงผ่าน (Lo–Hi)**: เทียบตาราง limit ในหน้า Checkweigher กับหน้า PROGRAM SETTING บนเครื่อง ถ้าไม่ตรง ตั้ง `CW_LIMITS_RELATIVE=false`
+- **ResultRankCode**: ยังไม่มีเอกสารความหมายของแต่ละรหัส — ระบบแสดงค่าดิบ และคำนวณผล Accept/Over/Under จาก limit เอง
+- **ชิ้นที่อ่านไม่ทัน**: ดูจำนวน gap ในหน้า Checkweigher ระหว่างไลน์เดิน (ตัวนับของเครื่องยังครบเสมอ)
+
+### ปริมาณข้อมูล
+170 ชิ้น/นาที ≈ 245,000 แถว/วัน/เครื่อง (ประมาณ 30 MB/วัน รวม index) — ถ้าใช้ SQL Server Express (จำกัด 10 GB/ฐานข้อมูล) ต้องวางแผน archive/retention กับ DBA
+
+### แก้ไขเพิ่มเติม
+- หน้า Dashboard / ประวัติ / รายละเอียดเอกสาร / ใบพิมพ์ และการสรุปผลตอนกดหยุดเอกสาร อ่านค่าน้ำหนักจาก **ตารางของเครื่องนั้นจริง** (`Spout 1/2/3` หรือ `CwPieces`) — เดิมอ่านจาก `dbo.Auto` เสมอ ทำให้เครื่องที่บันทึกลงตาราง Spout ได้กราฟ/สรุปผลว่าง

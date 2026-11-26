@@ -781,6 +781,15 @@ async function refreshStatus(){
   }
 }
 
+/** checkweigher (OPC UA) ที่ยังไม่เริ่มเอกสาร — ใช้ Target / ช่วงผ่าน (Lo–Hi) ตามโปรแกรมบนเครื่องแทนค่าตั้งต้น */
+function applyCheckweigherSpec(){
+  const sc = serverStatus && (serverStatus.scales || []).find(x => Number(x.scale_id) === Number(SCALE_ID));
+  const L = sc && sc.device_type === 'opcua' && sc.cw && sc.cw.limits;
+  if(L && L.target != null && L.lo != null && L.hi != null){
+    SPEC.TARGET = L.target; SPEC.LSL = L.lo; SPEC.USL = L.hi;
+  }
+}
+
 /** ดึงเอกสาร (session) ที่กำลังรันอยู่บนเครื่องที่กำลังดู แล้วอัปเดต SPEC (LSL/TARGET/USL) ให้ตรงกับ ProductCode จริง */
 async function loadCurrentSession(){
   if(SCALE_ID == null) return;
@@ -792,13 +801,16 @@ async function loadCurrentSession(){
       SPEC.TARGET = s.nw_target;
       SPEC.LSL = s.nw_lcl != null ? s.nw_lcl : s.nw_target;
       SPEC.USL = s.nw_ucl != null ? s.nw_ucl : s.nw_target;
+    } else {
+      applyCheckweigherSpec();
     }
-    document.getElementById('chipLsl').textContent = `${SPEC.LSL} g`;
-    document.getElementById('chipTgt').textContent = `${SPEC.TARGET} g`;
-    document.getElementById('chipUsl').textContent = `${SPEC.USL} g`;
   }catch(err){
     CURRENT_SESSION = null;
+    applyCheckweigherSpec();
   }
+  document.getElementById('chipLsl').textContent = `${SPEC.LSL} g`;
+  document.getElementById('chipTgt').textContent = `${SPEC.TARGET} g`;
+  document.getElementById('chipUsl').textContent = `${SPEC.USL} g`;
   renderDocBar();
   // CURRENT_SESSION เพิ่งเปลี่ยน (เช่น เพิ่งเริ่ม/หยุดเอกสาร) — สั่ง re-render ทันที ไม่ต้องรอ poll() รอบถัดไป
   // เพื่อให้ sessionScope() ใน getView() มีผลกับกราฟ/KPI ที่เห็นอยู่ตอนนี้เลย

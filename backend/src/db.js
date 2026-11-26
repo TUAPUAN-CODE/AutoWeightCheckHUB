@@ -14,6 +14,7 @@ const ALLOWED_TABLES = new Set([
   '[dbo].[Spout 1]',
   '[dbo].[Spout 2]',
   '[dbo].[Spout 3]',
+  '[dbo].[CwPieces]', // checkweigher (OPC UA) — คอลัมน์ weight/time_stamp/scale_id/session_id เหมือนตาราง Spout
 ]);
 
 /** เช็คชื่อตารางกับ whitelist ก่อนนำไปใช้ใน query — ถ้าไม่ผ่านจะ throw ทันที */
@@ -193,17 +194,39 @@ async function fetchWeightsBySession(sessionId, limit = 20000, tableName = null)
 }
 
 // ============================================================== Scales (ทะเบียนเครื่องชั่ง)
+const DEVICE_TYPES = new Set(['tcp', 'opcua']);
+let deviceTypeColumn = null; // null = ยังไม่รู้, true/false = มี/ไม่มีคอลัมน์ Scales.device_type (migrate_v8)
+
+/** เช็คว่ารัน migrate_v8 แล้วหรือยัง — ถ้ายัง ระบบยังทำงานแบบเดิมได้ (ทุกเครื่องเป็น tcp) */
+async function hasDeviceTypeColumn(pool) {
+  if (deviceTypeColumn !== null) return deviceTypeColumn;
+  const r = await pool.request().query("SELECT COL_LENGTH('dbo.Scales', 'device_type') AS len");
+  deviceTypeColumn = r.recordset[0].len != null;
+  if (!deviceTypeColumn) logger.warn('ยังไม่ได้รัน migrate_v8_checkweigher.sql — รองรับเฉพาะเครื่องชั่ง TCP');
+  return deviceTypeColumn;
+}
+
+function normDeviceType(t) {
+  const v = String(t || 'tcp').toLowerCase();
+  return DEVICE_TYPES.has(v) ? v : 'tcp';
+}
+
 async function listScales() {
   const pool = await getPool();
+  const withType = await hasDeviceTypeColumn(pool);
   const result = await pool.request().query(
     `SELECT [id], [name], [ip], [port], [line], [serial_no], [enabled], [note], [created_at], [updated_at]
+            ${withType ? ', [device_type]' : ", 'tcp' AS [device_type]"}
      FROM [dbo].[Scales] ORDER BY [id] ASC`
   );
   return result.recordset;
 }
 
-async function createScale({ name, ip, port, line, serialNo, note }) {
+async function createScale({ name, ip, port, line, serialNo, note, deviceType }) {
   const pool = await getPool();
+  const withType = await hasDeviceTypeColumn(pool);
+  const type = normDeviceType(deviceType);
+  if (type !== 'tcp' && !withType) throw new Error('ต้องรัน backend/sql/migrate_v8_checkweigher.sql ก่อนเพิ่มเครื่อง checkweigher');
   const finalName = name || line || ip; // ไม่เก็บ "ชื่อเครื่องชั่ง" แยกอีกต่อไป — ใช้ Line (หรือ ip ถ้าไม่มี Line) แทน
   const result = await pool
     .request()
@@ -213,16 +236,22 @@ async function createScale({ name, ip, port, line, serialNo, note }) {
     .input('line', sql.NVarChar(50), line || null)
     .input('serialNo', sql.NVarChar(100), serialNo || null)
     .input('note', sql.NVarChar(255), note || null)
+    .input('deviceType', sql.VarChar(20), type)
     .query(
-      `INSERT INTO [dbo].[Scales] ([name], [ip], [port], [line], [serial_no], [note])
-       VALUES (@name, @ip, @port, @line, @serialNo, @note);
+      `INSERT INTO [dbo].[Scales] ([name], [ip], [port], [line], [serial_no], [note]${withType ? ', [device_type]' : ''})
+       VALUES (@name, @ip, @port, @line, @serialNo, @note${withType ? ', @deviceType' : ''});
        SELECT CAST(SCOPE_IDENTITY() AS INT) AS id;`
     );
   return result.recordset[0].id;
 }
 
-async function updateScale(id, { name, ip, port, line, serialNo, note, enabled }) {
+async function updateScale(id, { name, ip, port, line, serialNo, note, enabled, deviceType }) {
   const pool = await getPool();
+  const withType = await hasDeviceTypeColumn(pool);
+  // deviceType ไม่ส่งมา = ไม่เปลี่ยนชนิดเครื่อง
+  const type = deviceType === undefined || deviceType === null ? null : normDeviceType(deviceType);
+  if (type && type !== 'tcp' && !withType) throw new Error('ต้องรัน backend/sql/migrate_v8_checkweigher.sql ก่อนตั้งเป็นเครื่อง checkweigher');
+  const setType = withType && type !== null;
   const finalName = name || line || ip;
   await pool
     .request()
@@ -234,10 +263,12 @@ async function updateScale(id, { name, ip, port, line, serialNo, note, enabled }
     .input('serialNo', sql.NVarChar(100), serialNo || null)
     .input('note', sql.NVarChar(255), note || null)
     .input('enabled', sql.Bit, enabled ? 1 : 0)
+    .input('deviceType', sql.VarChar(20), type || 'tcp')
     .query(
       `UPDATE [dbo].[Scales] SET
          [name] = @name, [ip] = @ip, [port] = @port, [line] = @line,
          [serial_no] = @serialNo, [note] = @note, [enabled] = @enabled, [updated_at] = GETDATE()
+         ${setType ? ', [device_type] = @deviceType' : ''}
        WHERE [id] = @id`
     );
 }
@@ -523,6 +554,141 @@ async function setSettings(map) {
   return getSettings();
 }
 
+// ============================================================== Checkweigher (OPC UA)
+async function insertCwPiece(p) {
+  const pool = await getPool();
+  const result = await pool
+    .request()
+    .input('weight', sql.Float, p.weight)
+    .input('ts', sql.DateTime, p.time_stamp)
+    .input('scaleId', sql.Int, p.scale_id)
+    .input('sessionId', sql.BigInt, p.session_id ?? null)
+    .input('rawWeight', sql.Int, p.raw_weight ?? null)
+    .input('rankCode', sql.SmallInt, p.rank_code ?? null)
+    .input('subRankCode', sql.SmallInt, p.sub_rank_code ?? null)
+    .input('passFlag', sql.SmallInt, p.pass_flag ?? null)
+    .input('band', sql.TinyInt, p.band ?? null)
+    .input('target', sql.Float, p.target_weight ?? null)
+    .input('programNo', sql.SmallInt, p.program_no ?? null)
+    .input('totalCount', sql.Int, p.total_count ?? null)
+    .input('gap', sql.Int, p.gap || 0)
+    .query(
+      `INSERT INTO [dbo].[CwPieces]
+         ([weight],[time_stamp],[scale_id],[session_id],[raw_weight],[rank_code],[sub_rank_code],
+          [pass_flag],[band],[target_weight],[program_no],[total_count],[gap])
+       VALUES (@weight,@ts,@scaleId,@sessionId,@rawWeight,@rankCode,@subRankCode,
+          @passFlag,@band,@target,@programNo,@totalCount,@gap);
+       SELECT CAST(SCOPE_IDENTITY() AS BIGINT) AS id;`
+    );
+  const row = result.recordset && result.recordset[0];
+  return row && row.id != null ? Number(row.id) : null;
+}
+
+async function insertCwEvent(ev) {
+  const pool = await getPool();
+  await pool
+    .request()
+    .input('scaleId', sql.Int, ev.scale_id)
+    .input('ts', sql.DateTime, ev.time_stamp)
+    .input('type', sql.VarChar(30), ev.event_type)
+    .input('severity', sql.VarChar(10), ev.severity || 'info')
+    .input('detail', sql.NVarChar(400), ev.detail ? String(ev.detail).slice(0, 400) : null)
+    .query(
+      `INSERT INTO [dbo].[CwEvents] ([scale_id],[time_stamp],[event_type],[severity],[detail])
+       VALUES (@scaleId,@ts,@type,@severity,@detail)`
+    );
+}
+
+const SNAPSHOT_COLUMNS = [
+  ['connected', sql.Bit], ['operation_status', sql.Int], ['program_no', sql.Int], ['program_name', sql.NVarChar(100)],
+  ['speed_setting', sql.Int], ['target_weight', sql.Float], ['hi_limit', sql.Float], ['lo_limit', sql.Float],
+  ['hihi_limit', sql.Float], ['lolo_limit', sql.Float], ['total_count', sql.Int], ['accept_count', sql.Int],
+  ['over_count', sql.Int], ['under_count', sql.Int], ['hihi_count', sql.Int], ['lolo_count', sql.Int],
+  ['metal_count', sql.Int], ['error_count', sql.Int], ['average_weight', sql.Float], ['sd_weight', sql.Float],
+  ['machine_cp', sql.Float], ['machine_cpk', sql.Float], ['infeed_speed', sql.Int], ['pass_speed', sql.Int],
+  ['pieces_in_period', sql.Int], ['gaps_in_period', sql.Int],
+];
+
+async function insertCwSnapshot(s) {
+  const pool = await getPool();
+  const req = pool.request().input('scaleId', sql.Int, s.scale_id).input('ts', sql.DateTime, s.time_stamp);
+  for (const [col, type] of SNAPSHOT_COLUMNS) {
+    const v = s[col];
+    req.input(col, type, col === 'connected' ? (v ? 1 : 0) : (v ?? null));
+  }
+  const cols = SNAPSHOT_COLUMNS.map(([c]) => `[${c}]`).join(',');
+  const params = SNAPSHOT_COLUMNS.map(([c]) => `@${c}`).join(',');
+  await req.query(`INSERT INTO [dbo].[CwSnapshots] ([scale_id],[time_stamp],${cols}) VALUES (@scaleId,@ts,${params})`);
+}
+
+const CW_PIECE_COLS = `[id],[weight],[time_stamp],[scale_id],[session_id],[raw_weight],[rank_code],[sub_rank_code],
+  [pass_flag],[band],[target_weight],[program_no],[total_count],[gap]`;
+
+/** ชิ้นงานในช่วงเวลา (เก่า -> ใหม่) */
+async function fetchCwPieces(scaleId, { from, to, sinceId, limit = 5000 }) {
+  const pool = await getPool();
+  const req = pool.request().input('scaleId', sql.Int, scaleId).input('limit', sql.Int, limit);
+  const where = ['[scale_id] = @scaleId'];
+  if (from) { req.input('from', sql.DateTime, from); where.push('[time_stamp] >= @from'); }
+  if (to) { req.input('to', sql.DateTime, to); where.push('[time_stamp] <= @to'); }
+  if (sinceId) { req.input('sinceId', sql.BigInt, sinceId); where.push('[id] > @sinceId'); }
+  const result = await req.query(
+    `SELECT ${CW_PIECE_COLS} FROM (
+       SELECT TOP (@limit) ${CW_PIECE_COLS} FROM [dbo].[CwPieces]
+       WHERE ${where.join(' AND ')} ORDER BY [id] DESC
+     ) AS t ORDER BY [id] ASC`
+  );
+  return result.recordset;
+}
+
+async function fetchCwEvents(scaleId, { from, to, limit = 200 }) {
+  const pool = await getPool();
+  const req = pool.request().input('scaleId', sql.Int, scaleId).input('limit', sql.Int, limit);
+  const where = ['[scale_id] = @scaleId'];
+  if (from) { req.input('from', sql.DateTime, from); where.push('[time_stamp] >= @from'); }
+  if (to) { req.input('to', sql.DateTime, to); where.push('[time_stamp] <= @to'); }
+  const result = await req.query(
+    `SELECT TOP (@limit) [id],[scale_id],[time_stamp],[event_type],[severity],[detail]
+     FROM [dbo].[CwEvents] WHERE ${where.join(' AND ')} ORDER BY [id] DESC`
+  );
+  return result.recordset;
+}
+
+/** สรุปผลช่วงเวลา: จำนวน, ค่าเฉลี่ย, SD, แยกตามผล, giveaway, นาทีที่มีการผลิต, ชิ้นหลุด */
+async function cwSummary(scaleId, from, to) {
+  const pool = await getPool();
+  const req = pool.request().input('scaleId', sql.Int, scaleId).input('from', sql.DateTime, from).input('to', sql.DateTime, to);
+  const base = 'FROM [dbo].[CwPieces] WHERE [scale_id] = @scaleId AND [time_stamp] BETWEEN @from AND @to';
+  const result = await req.query(`
+    SELECT COUNT(*) AS n, AVG([weight]) AS avg_w, STDEV([weight]) AS sd_w, MIN([weight]) AS min_w, MAX([weight]) AS max_w,
+           SUM([gap]) AS gaps, AVG([target_weight]) AS avg_target,
+           SUM(CASE WHEN [band] = 0 THEN 1 ELSE 0 END) AS band_accept,
+           SUM(CASE WHEN [band] = 1 THEN 1 ELSE 0 END) AS band_over,
+           SUM(CASE WHEN [band] = 2 THEN 1 ELSE 0 END) AS band_under,
+           SUM(CASE WHEN [band] = 3 THEN 1 ELSE 0 END) AS band_hihi,
+           SUM(CASE WHEN [band] = 4 THEN 1 ELSE 0 END) AS band_lolo,
+           SUM(CASE WHEN [band] = 0 AND [target_weight] IS NOT NULL THEN [weight] - [target_weight] ELSE 0 END) AS giveaway_g,
+           SUM(CASE WHEN [band] = 0 AND [target_weight] IS NOT NULL THEN 1 ELSE 0 END) AS giveaway_n,
+           COUNT(DISTINCT DATEDIFF(MINUTE, '20000101', [time_stamp])) AS run_minutes,
+           MIN([time_stamp]) AS first_ts, MAX([time_stamp]) AS last_ts
+    ${base};
+    SELECT [rank_code], COUNT(*) AS n ${base} GROUP BY [rank_code] ORDER BY [rank_code];
+    SELECT [program_no], COUNT(*) AS n, AVG([weight]) AS avg_w, AVG([target_weight]) AS target ${base}
+    GROUP BY [program_no] ORDER BY [program_no];
+  `);
+  return { totals: result.recordsets[0][0], ranks: result.recordsets[1], programs: result.recordsets[2] };
+}
+
+async function fetchCwSnapshots(scaleId, from, to, limit = 2000) {
+  const pool = await getPool();
+  const result = await pool
+    .request()
+    .input('scaleId', sql.Int, scaleId).input('from', sql.DateTime, from).input('to', sql.DateTime, to).input('limit', sql.Int, limit)
+    .query(`SELECT TOP (@limit) * FROM [dbo].[CwSnapshots]
+            WHERE [scale_id] = @scaleId AND [time_stamp] BETWEEN @from AND @to ORDER BY [time_stamp] ASC`);
+  return result.recordset;
+}
+
 async function ping() {
   const pool = await getPool();
   await pool.request().query('SELECT 1 AS ok');
@@ -572,6 +738,13 @@ module.exports = {
   getSession,
   getSettings,
   setSettings,
+  insertCwPiece,
+  insertCwEvent,
+  insertCwSnapshot,
+  fetchCwPieces,
+  fetchCwEvents,
+  fetchCwSnapshots,
+  cwSummary,
   ping,
   status,
   close,
