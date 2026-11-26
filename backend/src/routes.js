@@ -10,7 +10,7 @@ const logger = require('./logger');
 
 const router = express.Router();
 
-const MAX_LIMIT = 10000;
+const MAX_LIMIT = 50000; // ปรับตามค่าที่ใช้งานจริงบน server (เดิม 10000)
 
 function clampLimit(raw, fallback) {
   const n = Number.parseInt(raw, 10);
