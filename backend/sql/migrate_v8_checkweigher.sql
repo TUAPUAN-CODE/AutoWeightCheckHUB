@@ -14,6 +14,9 @@
 */
 
 SET NOCOUNT ON;
+-- filtered index (IX_CwPieces_session) ต้องใช้ 2 ค่านี้ — sqlcmd ปิด QUOTED_IDENTIFIER เป็นค่าเริ่มต้น (หรือรันด้วย sqlcmd -I)
+SET QUOTED_IDENTIFIER ON;
+SET ANSI_NULLS ON;
 GO
 
 /* ---------- 1) dbo.Scales.device_type ---------- */

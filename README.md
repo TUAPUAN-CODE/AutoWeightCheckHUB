@@ -118,7 +118,7 @@ uvicorn main:app --host 0.0.0.0 --port 8000
 ### ติดตั้ง
 1. รัน migration (เพิ่ม `Scales.device_type`, ตาราง `CwPieces`, `CwSnapshots`, `CwEvents` — รันซ้ำได้ ไม่แตะข้อมูลเดิม)
    ```bash
-   sqlcmd -S <DB_SERVER> -d AUTO_WEIGHT -U <user> -i backend/sql/migrate_v8_checkweigher.sql
+   sqlcmd -S <DB_SERVER> -d AUTO_WEIGHT -U <user> -I -i backend/sql/migrate_v8_checkweigher.sql
    ```
 2. ติดตั้ง library OPC UA (`node-opcua-client` 2.182.2 — รองรับ Node 18 ขึ้นไป)
    ```bash
