@@ -1306,7 +1306,7 @@ const XL_RM = (()=>{ try{ return matchMedia('(prefers-reduced-motion: reduce)').
 const XL_FONT = '"IBM Plex Sans Thai","Leelawadee UI","Segoe UI","Myanmar Text","Khmer UI",system-ui,sans-serif';
 const xl = {
   cv:null, ctx:null, W:0, H:0,
-  d:null, tail:null, shiftFrom:0, shiftAt:0, vlo:null, vhi:null, pulseAt:-1e9, parts:[], raf:0, hits:[], machine:null, machineKey:'',
+  k:0, d:null, tail:null, shiftFrom:0, shiftAt:0, vlo:null, vhi:null, pulseAt:-1e9, parts:[], raf:0, hits:[], machine:null, machineKey:'',
   opt:(()=>{ const d = { sig:true, ew:true, ma:true }; try{ return Object.assign(d, JSON.parse(localStorage.getItem('xlive-opt') || '{}')); }catch(e){ return d; } })(),
 };
 const T_ = (s)=> (window.t ? window.t(s) : s);
@@ -1366,6 +1366,18 @@ function xlPrepare(){
     const m = mean(recent), s = stdev(recent) || 0.3, half = Math.max(4*s, sw*0.6, 0.5);
     lo = m - half; hi = m + half; specOff = true;
   }
+  // σ ของชิ้นที่อยู่ในแกน (ไม่รวมค่าที่หลุดไกลมาก เช่น 0 g / ชิ้นซ้อน) — ใช้กับเส้น ±σ และแท่งนับด้านซ้าย
+  let n0 = 0, a1 = 0, a2 = 0;
+  for(const v of vals){ if(v >= lo && v <= hi){ n0++; a1 += v; a2 += v*v; } }
+  const mu0 = n0 ? a1/n0 : tgt, sd0 = n0 > 1 ? Math.sqrt(Math.max(0, (a2 - n0*mu0*mu0)/(n0 - 1))) : 0;
+  // ±3σ เลยแกน → ขยายแกนให้เห็นเส้นครบ 6 เส้น ถ้าไม่ต้องขยายเกิน 2.2 เท่า (ข้อมูลกระจายมากผิดปกติจะไม่ขยาย แต่แสดงป้ายที่ขอบแทน)
+  if(sd0 > 0){
+    const nlo = Math.min(lo, mu0 - 3*sd0), nhi = Math.max(hi, mu0 + 3*sd0);
+    if(nlo < lo || nhi > hi){
+      const pad = (nhi - nlo)*0.03;
+      if(nhi - nlo + 2*pad <= 2.2*(hi - lo)){ lo = nlo - pad; hi = nhi + pad; }
+    }
+  }
   const ze = zoneEdges();
   const lines = [
     [usl, XL_C.RD, 'dash', `USL ${xlFmt(usl,2)}`, 3], [ze.rHi, XL_C.OR, 'dot', `ใกล้ขอบ ${xlFmt(ze.rHi,1)}`, 1], [ze.yHi, XL_C.YL, 'dot', `เตือน ${xlFmt(ze.yHi,1)}`, 1],
@@ -1387,11 +1399,13 @@ function xlPrepare(){
     bins.set(k, (bins.get(k) || 0) + 1); nIn++; s1 += v; s2 += v*v;
   }
   let maxc = 1; bins.forEach(c => { if(c > maxc) maxc = c; });
-  const mu = nIn ? s1/nIn : tgt, sdIn = nIn > 1 ? Math.sqrt(Math.max(0, (s2 - nIn*mu*mu)/(nIn - 1))) : 0;
+  const muIn = nIn ? s1/nIn : tgt, sdLoop = nIn > 1 ? Math.sqrt(Math.max(0, (s2 - nIn*muIn*muIn)/(nIn - 1))) : 0;     // สำหรับเส้นโค้งของการกระจาย
+  const mu = mu0, sdIn = sd0;                                                                                          // สำหรับเส้น ±σ / แท่งนับ
   const cap = computeCpCpk(vals, lsl, usl);
   // เกิน / ขาด จาก Target ทั้งช่วง: จำนวนชิ้น + กรัมรวม (ให้ของเกิน = ต้นทุน, ขาด = เสี่ยงลูกค้า/กฎหมาย)
-  const ou = { overN:0, overG:0, underN:0, underG:0, usN:0, lsN:0 };
+  const ou = { overN:0, overG:0, underN:0, underG:0, usN:0, lsN:0, offUp:over, offDn:under };
   for(const v of vals){
+    if(v < lo || v > hi) continue;                 // ชิ้นนอกกราฟนับแยก (ตรงกับแท่ง "นอกช่วง" ของการกระจาย)
     const dv = v - tgt;
     if(dv > 0){ ou.overN++; ou.overG += dv; if(v > usl) ou.usN++; }
     else if(dv < 0){ ou.underN++; ou.underG -= dv; if(v < lsl) ou.lsN++; }
@@ -1439,7 +1453,7 @@ function xlPrepare(){
   items.forEach((o, i)=>{ o.mr = offS + i >= 0 ? mrS[offS + i] : null; o.sig = (offS + i >= 0 && sigS[offS + i]) || []; });
   const wDec = res >= 1 ? 0 : res >= 0.1 ? 1 : 2;
   return { bucket, md, items, vals, n:vals.length, meta, title, rows, lsl, usl, tgt, lo, hi, specOff, lines,
-    dist:{ bins, bw, res, maxc, over, under, nIn, mu, sd:sdIn }, zc, cap, ew, ma, wDec, sig:{ mu, sd:sdIn }, lad, ou,
+    dist:{ bins, bw, res, maxc, over, under, nIn, mu:muIn, sd:sdLoop }, zc, cap, ew, ma, wDec, sig:{ mu, sd:sdIn }, lad, ou,
     mr:{ bar:mrBar, ucl:mrUcl }, spc, nSeries:nS, kpi:computeKpi(view) };
 }
 
@@ -1447,7 +1461,7 @@ function xlEnsureCanvas(){
   if(xl.cv) return true;
   xl.cv = document.getElementById('xlCanvas');
   if(!xl.cv) return false;
-  xl.ctx = xl.cv.getContext('2d');
+  xl.ctx = xl.cv.getContext('2d', { alpha:false });          // canvas ทึบ → เบราว์เซอร์ใช้ subpixel anti-alias กับตัวอักษร คมกว่า
   xl.cv.addEventListener('click', (ev)=>{
     const r = xl.cv.getBoundingClientRect(); const x = ev.clientX - r.left, y = ev.clientY - r.top;
     const h = xl.hits.find(o => x >= o.x0 && x <= o.x1 && y >= o.y0 && y <= o.y1);
@@ -1459,20 +1473,44 @@ function xlEnsureCanvas(){
     xl.cv.style.cursor = xl.hits.some(o => x >= o.x0 && x <= o.x1 && y >= o.y0 && y <= o.y1) ? 'pointer' : 'default';
   });
   if(window.ResizeObserver) new ResizeObserver(()=>{ xlSize(); xlKick(); }).observe(xl.cv.parentElement);
+  // เปลี่ยนระดับซูม / ย้ายหน้าต่างไปจอที่ความละเอียดต่างกัน → วาด bitmap ใหม่ให้คม
+  let rz = 0; const again = ()=>{ clearTimeout(rz); rz = setTimeout(()=>{ xlSize(); xlKick(); }, 140); };
+  window.addEventListener('resize', again);
+  if(window.visualViewport) window.visualViewport.addEventListener('resize', again);
   return true;
 }
 function xlSize(){
   const box = xl.cv.parentElement;
   const bw0 = Math.floor(box.clientWidth);
   const W = bw0 < 640 ? Math.max(320, bw0) : Math.max(560, bw0), H = Math.max(300, Math.floor(box.clientHeight));
-  if(W === xl.W && H === xl.H) return;
-  const dpr = window.devicePixelRatio || 1;
-  xl.W = W; xl.H = H;
-  xl.cv.width = Math.round(W*dpr); xl.cv.height = Math.round(H*dpr);
+  const k = xlScale(W, H);
+  if(W === xl.W && H === xl.H && k === xl.k) return;
+  xl.W = W; xl.H = H; xl.k = k;
+  xl.cv.width = Math.round(W*k); xl.cv.height = Math.round(H*k);
   xl.cv.style.width = W + 'px'; xl.cv.style.height = H + 'px';
-  xl.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  xl.ctx.setTransform(xl.cv.width/W, 0, 0, xl.cv.height/H, 0, 0);     // แมปพอดีกับพิกเซลจริง ไม่ถูกย่อ/ขยายซ้ำ
+}
+/** ความละเอียดของ bitmap = ความละเอียดจอ × ระดับ pinch-zoom (ไม่งั้นซูมแล้วภาพเบลอเพราะขยาย bitmap เดิม) */
+function xlScale(W, H){
+  const dpr = window.devicePixelRatio || 1;
+  const vv = (window.visualViewport && window.visualViewport.scale) || 1;
+  let k = dpr*Math.max(1, vv);
+  const maxPx = 36e6;                                     // กัน canvas ใหญ่เกินเมื่อซูมหลายเท่า
+  if(W*H*k*k > maxPx) k = Math.max(1, Math.sqrt(maxPx/(W*H)));
+  return Math.round(k*100)/100;
 }
 
+/** สัญลักษณ์สัญญาณ SPC วาดเป็นรูปทรง (ฟอนต์บางเครื่องไม่มีตัวอักษรลูกศร/⇕ จึงแสดงเพี้ยนเป็น "$") */
+function xlGlyph(ctx, kind, cx, cy, sz, color){
+  ctx.fillStyle = color; ctx.strokeStyle = color; ctx.lineWidth = 1.6; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  const head = (y, dir)=>{ ctx.beginPath(); ctx.moveTo(cx, y); ctx.lineTo(cx - sz*0.75, y + dir*sz*0.8); ctx.lineTo(cx + sz*0.75, y + dir*sz*0.8); ctx.closePath(); ctx.fill(); };
+  if(kind === 'out'){ ctx.beginPath(); ctx.moveTo(cx, cy - sz); ctx.lineTo(cx + sz*0.85, cy); ctx.lineTo(cx, cy + sz); ctx.lineTo(cx - sz*0.85, cy); ctx.closePath(); ctx.fill(); }
+  else if(kind === 'up'){ ctx.beginPath(); ctx.moveTo(cx, cy + sz); ctx.lineTo(cx, cy - sz*0.2); ctx.stroke(); head(cy - sz, 1); }
+  else if(kind === 'down'){ ctx.beginPath(); ctx.moveTo(cx, cy - sz); ctx.lineTo(cx, cy + sz*0.2); ctx.stroke(); head(cy + sz, -1); }
+  else if(kind === 'jump'){ ctx.beginPath(); ctx.moveTo(cx, cy - sz*0.25); ctx.lineTo(cx, cy + sz*0.25); ctx.stroke(); head(cy - sz, 1); head(cy + sz, -1); }
+  ctx.lineCap = 'butt';
+}
+const XL_GW = { out:11, run:17, up:10, down:10, jump:10 };      // ความกว้างที่แต่ละสัญลักษณ์ใช้
 /** วาดสถานะเครื่อง: ● สถานะ · โปรแกรม · ความเร็ว (+ คำเตือน) ในช่วง [x0, limit] — ถ้าที่ไม่พอ ลดขนาดตัวอักษร แล้วตัดโปรแกรม/ความเร็วออกตามลำดับ */
 function xlDrawMachine(ctx, m, x0, y, limit){
   if(!m || !m.state) return;
@@ -1540,7 +1578,7 @@ function xlText(ctx, s, x, y, color, size, align, weight){
   ctx.fillStyle = color || XL_C.TX;
   ctx.font = `${weight || 500} ${size || 12}px ${XL_FONT}`;
   ctx.textAlign = align || 'left';
-  ctx.fillText(T_(String(s)), x, y);
+  ctx.fillText(T_(String(s)), Math.round(x), Math.round(y));      // ปัดตำแหน่งเป็นพิกเซลเต็ม (ไม่งั้นตัวอักษรเบลอ)
 }
 
 /** วาด 1 เฟรม — คืนค่า true ถ้ายังมีแอนิเมชันค้าง */
@@ -1560,7 +1598,7 @@ function xlDraw(now){
   const compact = W < 640;                    // มือถือ: แสดงกราฟ + ส่วนต่าง + ตาราง (ไม่มีการกระจายด้านขวา)
   const twoLine = W < 900;                    // คำอธิบายเส้นลงบรรทัดที่สอง
   const lw = compact ? 0 : 118, rw = compact ? 0 : Math.max(140, Math.min(280, W*0.17));
-  const LAD = { x0:10, bw: W >= 1200 ? 44 : 40, gap:6 };          // แท่งนับ ±σ / นอกสเปก (ซ้ายสุด)
+  const LAD = { x0:10, bw: W >= 1200 ? 46 : 40, gap: W >= 1200 ? 4 : 6 };          // แท่งนับ ±σ / นอกสเปก (ซ้ายสุด)
   const ladW = compact ? 0 : 4*(LAD.bw + LAD.gap) + 4;
   const rx1 = W - lw - 6, rx0 = rx1 - rw, mx0 = compact ? 74 : Math.max(92, LAD.x0 + ladW + 50), mx1 = compact ? W - 8 : rx0 - 16;
   const RH = H >= 470 ? 24 : 20, tableH = RH*4;
@@ -1623,6 +1661,7 @@ function xlDraw(now){
   for(const [x0, x1] of compact ? [[mx0, mx1]] : [[mx0, mx1], [rx0, rx1]]){ ctx.fillStyle = zgBand; ctx.fillRect(x0, A.y0, x1 - x0, A.y1 - A.y0); }
 
   // ---- ±σ
+  let edgeTopCount = 0;
   if(xl.opt.sig && d.sig.sd > 0){
     const { mu, sd } = d.sig;
     ctx.fillStyle = XL_C.SIG;
@@ -1630,12 +1669,18 @@ function xlDraw(now){
     ctx.globalAlpha = 1;
     ctx.setLineDash([5, 4]); ctx.strokeStyle = XL_C.SIG; ctx.lineWidth = 1.3;
     ctx.beginPath(); ctx.moveTo(mx0, Y(mu)); ctx.lineTo(mx1, Y(mu)); ctx.stroke(); ctx.setLineDash([]);
+    const edgeTop = [], edgeBot = [];
     for(const k of [-3, -2, -1, 1, 2, 3]){
-      const v = mu + k*sd; if(v < vlo || v > vhi) continue;
+      const v = mu + k*sd, lab = `${k > 0 ? '+' : '−'}${Math.abs(k)}σ`;
+      if(v > vhi){ edgeTop.push([Math.abs(k), `${lab} ${xlFmt(v, 1)} g ▲`]); continue; }       // เลยแกน → ป้ายที่ขอบ (เห็นครบ 6 ตัวเสมอ)
+      if(v < vlo){ edgeBot.push([Math.abs(k), `${lab} ${xlFmt(v, 1)} g ▼`]); continue; }
       ctx.globalAlpha = 0.45; ctx.strokeStyle = XL_C.SIG; ctx.lineWidth = 1;
       ctx.beginPath(); ctx.moveTo(mx0, Y(v)); ctx.lineTo(mx0 + 8, Y(v)); ctx.stroke(); ctx.globalAlpha = 1;
-      xlText(ctx, `${k > 0 ? '+' : '−'}${Math.abs(k)}σ`, mx0 + 11, Y(v) + 3, XL_C.SIGT, 10);
+      xlText(ctx, lab, mx0 + 11, Y(v) + 3, XL_C.SIGT, 10.5);
     }
+    edgeTop.sort((a, b)=>a[0] - b[0]).forEach(([, t], i)=> xlText(ctx, t, mx0 + 11, A.y0 + 12 + i*13, XL_C.SIGT, 10.5, 'left', 600));
+    edgeBot.sort((a, b)=>a[0] - b[0]).forEach(([, t], i)=> xlText(ctx, t, mx0 + 11, A.y1 - 6 - i*13, XL_C.SIGT, 10.5, 'left', 600));
+    edgeTopCount = edgeTop.length;
     const lastIt = d.items[d.items.length - 1];
     const nearLast = lastIt && Math.abs(Y(lastIt.v) - Y(mu)) < 22;
     xlText(ctx, `x̄ ${xlFmt(mu, 2)}`, nearLast ? mx0 + 40 : mx1 - 4, Y(mu) - 5, XL_C.SIGT, 10.5, nearLast ? 'left' : 'right');
@@ -1666,7 +1711,7 @@ function xlDraw(now){
     xlText(ctx, s.label, rx1 + 28, s.y + 4, XL_C.INK, 12, 'left', 500);
   }
   if(d.specOff){
-    xlText(ctx, `⚠ สเปก ${xlFmt(d.lsl,2)}–${xlFmt(d.usl,2)} g อยู่นอกกราฟ (ไม่ตรงกับน้ำหนักที่ผลิตจริง)`, mx0 + 6, A.y0 + 16, XL_C.RD, 12, 'left', 600);
+    xlText(ctx, `⚠ สเปก ${xlFmt(d.lsl,2)}–${xlFmt(d.usl,2)} g อยู่นอกกราฟ (ไม่ตรงกับน้ำหนักที่ผลิตจริง)`, mx0 + 6, A.y0 + 16 + edgeTopCount*13, XL_C.RD, 12, 'left', 600);
   }
 
   // ---- ตัวเลขแกน Y
@@ -1683,30 +1728,34 @@ function xlDraw(now){
     const pct = (n)=> `${(n/tot*100).toFixed(n/tot >= 0.995 && n < tot ? 2 : 1)}%`;
     const colX = (i)=> LAD.x0 + i*(LAD.bw + LAD.gap);
     const cap = (x, y, w, col)=>{ ctx.strokeStyle = col; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(x - 3, y); ctx.lineTo(x + w + 3, y); ctx.stroke(); };
+    // ย่อขนาดตัวอักษรให้พอดีความกว้างแท่ง (กันข้อความชนแท่งข้าง ๆ โดยเฉพาะภาษาพม่า/เขมรที่ยาวกว่า)
+    const fit = (t, sz, wt)=>{
+      ctx.font = `${wt || 500} ${sz}px ${XL_FONT}`;
+      const w = ctx.measureText(T_(String(t))).width, maxW = LAD.bw - 4;
+      return w > maxW ? Math.max(8, Math.floor(sz*maxW/w*2)/2) : sz;
+    };
     const inside = (x, yTop, yBot, lines)=>{            // ข้อความกลางแท่ง (ถ้าแท่งเตี้ยเกินวางเหนือแท่ง)
       const h = yBot - yTop, need = lines.length*12 + 4;
       let y = h >= need ? (yTop + yBot)/2 - (lines.length - 1)*6 + 4 : yTop - 6 - (lines.length - 1)*12;
-      for(const [t, col, sz, wt] of lines){ xlText(ctx, t, x + LAD.bw/2, y, col, sz, 'center', wt); y += 12; }
+      for(const [t, col, sz, wt] of lines){ xlText(ctx, t, x + LAD.bw/2, y, col, fit(t, sz, wt), 'center', wt); y += 12; }
     };
-    // นอกสเปก: แท่งบน (เกิน USL ถึงขอบบนกราฟ) และแท่งล่าง (ต่ำกว่า LSL ถึงขอบล่าง) — นับรวมชิ้นที่หลุดไปไกลนอกกราฟด้วย
+    // นอกสเปก: แท่งเดียวสูงเต็มแกน — ส่วนบน (เกิน USL) กับส่วนล่าง (ต่ำกว่า LSL) เป็นสีแดง ช่วงในสเปกเป็นกรอบว่าง
+    // ตัวเลขรวมอยู่ตรงกลาง นับทุกชิ้นรวมที่หลุดไปไกลนอกกราฟ (ตรงกับ "ไม่ผ่าน" ในสถิติ)
     {
-      const x = colX(0), yU = Y(d.usl), yL = Y(d.lsl);
-      xlText(ctx, 'นอกสเปก', x + LAD.bw/2, A.y0 - 8, XL_C.RD, 10.5, 'center', 600);
-      ctx.fillStyle = XL_C.RD;
-      if(yU > A.y0){ ctx.globalAlpha = 0.55; ctx.fillRect(x, A.y0, LAD.bw, yU - A.y0); ctx.globalAlpha = 1; cap(x, yU, LAD.bw, XL_C.RD); }
-      if(yL < A.y1){ ctx.globalAlpha = 0.55; ctx.fillRect(x, yL, LAD.bw, A.y1 - yL); ctx.globalAlpha = 1; cap(x, yL, LAD.bw, XL_C.RD); }
-      ctx.strokeStyle = 'rgba(239,83,80,0.35)'; ctx.setLineDash([2, 3]); ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.moveTo(x + LAD.bw/2, Math.max(A.y0, yU)); ctx.lineTo(x + LAD.bw/2, Math.min(A.y1, yL)); ctx.stroke(); ctx.setLineDash([]);
-      // ตัวเลข: ▲ เกิน USL ใต้เส้น USL, ▼ ต่ำกว่า LSL เหนือเส้น LSL (พื้นที่ว่างตรงกลางแท่ง)
-      // ถ้าสเปกอยู่นอกกราฟ (แท่งชิดขอบ) ให้ตัวเลขยังอยู่ในกรอบและไม่ทับกัน
-      const top = Math.max(A.y0, yU), bot = Math.min(A.y1, yL);
-      const ovY = Math.min(Math.max(top + 14, A.y0 + 14), A.y1 - 44);
-      const unY = Math.max(Math.min(bot - 16, A.y1 - 16), ovY + 30);
-      xlText(ctx, `▲ ${L.over.toLocaleString('en-US')}`, x + LAD.bw/2, ovY, XL_C.OUTT1, 11, 'center', 700);
-      xlText(ctx, pct(L.over), x + LAD.bw/2, ovY + 12, XL_C.OUTT2, 10, 'center', 600);
-      xlText(ctx, `▼ ${L.under.toLocaleString('en-US')}`, x + LAD.bw/2, unY, XL_C.OUTT1, 11, 'center', 700);
-      xlText(ctx, pct(L.under), x + LAD.bw/2, unY + 12, XL_C.OUTT2, 10, 'center', 600);
+      const x = colX(0), yU = Y(d.usl), yL = Y(d.lsl), fail = L.over + L.under, cxm = x + LAD.bw/2;
+      xlText(ctx, 'นอกสเปก', cxm, A.y0 - 8, XL_C.RD, 10.5, 'center', 600);
+      const ya = Math.max(A.y0, Math.min(A.y1, yU)), yb = Math.max(A.y0, Math.min(A.y1, yL));
+      ctx.fillStyle = XL_C.RD; ctx.globalAlpha = 0.55;
+      if(ya > A.y0) ctx.fillRect(x, A.y0, LAD.bw, ya - A.y0);
+      if(yb < A.y1) ctx.fillRect(x, yb, LAD.bw, A.y1 - yb);
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = XL_C.RD; ctx.lineWidth = 1.2; ctx.strokeRect(x + 0.5, A.y0 + 0.5, LAD.bw - 1, A.y1 - A.y0 - 1);
+      ctx.beginPath(); if(ya > A.y0){ ctx.moveTo(x, Math.round(ya) + 0.5); ctx.lineTo(x + LAD.bw, Math.round(ya) + 0.5); } if(yb < A.y1){ ctx.moveTo(x, Math.round(yb) + 0.5); ctx.lineTo(x + LAD.bw, Math.round(yb) + 0.5); } ctx.stroke();
+      const mid = (ya + yb)/2, lines3 = [[fail.toLocaleString('en-US'), XL_C.INKW, 11.5, 700], [pct(fail), XL_C.PINKT, 10.5, 700], [`▲ ${L.over.toLocaleString('en-US')}`, XL_C.PINKT, 10, 600], [`▼ ${L.under.toLocaleString('en-US')}`, XL_C.PINKT, 10, 600]];
+      let ty = Math.max(A.y0 + 14, Math.min(A.y1 - lines3.length*13, mid - lines3.length*6.5 + 10));
+      for(const [t, col, sz, wt] of lines3){ xlText(ctx, t, cxm, ty, col, fit(t, sz, wt), 'center', wt); ty += 13; }
     }
+    if(sd > 0) xlText(ctx, `x̄ ${xlFmt(mu, 2)} · σ ${xlFmt(sd, 2)}`, LAD.x0, A.y0 - 24, XL_C.MUTE, 10.5, 'left', 500);
     // ±3σ, ±2σ, ±1σ (ในสุดอยู่ติดแกน)
     const EXP = { 1:'68.3%', 2:'95.4%', 3:'99.7%' };
     [3, 2, 1].forEach((k, i)=>{
@@ -1722,7 +1771,7 @@ function xlDraw(now){
       if(mu + k*sd > vhi) xlText(ctx, '▲', x + LAD.bw/2, A.y0 + 10, XL_C.SIGT, 9, 'center');
       if(mu - k*sd < vlo) xlText(ctx, '▼', x + LAD.bw/2, A.y1 - 3, XL_C.SIGT, 9, 'center');
       const n = L.k[k - 1];
-      inside(x, yT, yB, [[n.toLocaleString('en-US'), XL_C.INKW, 11, 700], [pct(n), XL_C.SIGSUB, 10, 600], [`ควร ${EXP[k]}`, XL_C.MUTE, 9, 500]]);
+      inside(x, yT, yB, [[n.toLocaleString('en-US'), XL_C.INKW, 11, 700], [pct(n), XL_C.SIGSUB, 10.5, 600], ['ควรเป็น', XL_C.MUTE, 9.5, 500], [EXP[k], XL_C.MUTE, 10, 500]]);
     });
   }
 
@@ -1756,15 +1805,21 @@ function xlDraw(now){
   // ไฮไลต์คอลัมน์ล่าสุด
   if(cols.length && pulse > 0){ const c = cols[cols.length - 1]; ctx.globalAlpha = 0.2*pulse; ctx.fillStyle = zcol(c.o.v); ctx.fillRect(c.x - cw/2, R.y0, cw, H - 8 - R.y0); ctx.globalAlpha = 1; }
   // ---- แถบสถานะ: สีโซนของชิ้น + สัญญาณ SPC
-  const GLYPH = { out:'◆', run:'8×', up:'↗', down:'↘', jump:'⇕' };
   for(const c of cols){
     const z = zoneOf(c.o.v);
     ctx.fillStyle = XL_ZC[z]; ctx.globalAlpha = z === 'GREEN' ? 0.5 : 0.85;
     ctx.fillRect(c.x - cw/2 + 1, R.y0, cw - 2, ribH); ctx.globalAlpha = 1;
-    const g = [...new Set((c.o.sig || []).map(k => GLYPH[k]))].join(' ');
-    if(g){
+    const kinds = [...new Set(c.o.sig || [])];
+    if(kinds.length){
       ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.fillRect(c.x - cw/2 + 1, R.y0, cw - 2, ribH);
-      xlText(ctx, g, c.x, R.y0 + 12, XL_C.ON, 11, 'center', 700);
+      const shown = []; let tw = 0;
+      for(const k of kinds){ if(tw + XL_GW[k] + 2 <= cw - 4 || !shown.length){ shown.push(k); tw += XL_GW[k] + 2; } }
+      let gx = c.x - tw/2 + 1;
+      for(const k of shown){
+        if(k === 'run') xlText(ctx, '8×', gx + XL_GW.run/2, R.y0 + 12, XL_C.ON, 11, 'center', 700);
+        else xlGlyph(ctx, k, gx + XL_GW[k]/2, R.y0 + ribH/2, 4.2, XL_C.ON);
+        gx += XL_GW[k] + 2;
+      }
     }
   }
   // ---- MR (ต่างจากชิ้นก่อน) / โหมดเฉลี่ย = จำนวนชิ้นต่อช่วง (แดง = ไม่ผ่าน)
@@ -1786,7 +1841,7 @@ function xlDraw(now){
         const g = ctx.createLinearGradient(0, base, 0, y); g.addColorStop(0, col + '66'); g.addColorStop(1, col);
         ctx.fillStyle = g; ctx.fillRect(c.x - bwM/2, y, bwM, Math.max(1.5, base - y));
         if(v > mxv){ ctx.fillStyle = XL_C.RING; ctx.beginPath(); ctx.moveTo(c.x, y - 6); ctx.lineTo(c.x - 4, y); ctx.lineTo(c.x + 4, y); ctx.closePath(); ctx.fill(); }
-        if(cw >= 46) xlText(ctx, v.toFixed(d.wDec), c.x, Math.max(M.y0 + 9, y - 3), over ? XL_C.PINKT : XL_C.TX, 10, 'center', 600);
+        if(cw >= 46) xlText(ctx, v.toFixed(d.wDec), c.x, Math.max(M.y0 + 9, y - 3), over ? XL_C.PINKT : XL_C.TX, 10.5, 'center', 600);
       }
     } else {
       const mxN = Math.max(1, ...cols.map(c => c.o.n || 0));
@@ -1795,7 +1850,7 @@ function xlDraw(now){
         const h = n/mxN*(base - top), hf = f/mxN*(base - top);
         ctx.fillStyle = XL_C.BLUE; ctx.globalAlpha = 0.75; ctx.fillRect(c.x - bwM/2, base - h, bwM, Math.max(1, h - hf)); ctx.globalAlpha = 1;
         if(f > 0){ ctx.fillStyle = XL_C.RD; ctx.fillRect(c.x - bwM/2, base - h, bwM, Math.max(1.5, hf)); }
-        if(cw >= 46) xlText(ctx, n.toLocaleString('en-US'), c.x, Math.max(M.y0 + 9, base - h - 3), XL_C.TX, 10, 'center', 600);
+        if(cw >= 46) xlText(ctx, n.toLocaleString('en-US'), c.x, Math.max(M.y0 + 9, base - h - 3), XL_C.TX, 10.5, 'center', 600);
       }
     }
   }
@@ -1908,48 +1963,50 @@ function xlDraw(now){
     const sx = rx0, S = d.spc;
     xlText(ctx, `สัญญาณ SPC ในช่วงนี้ (${d.nSeries.toLocaleString('en-US')} ${d.bucket ? 'ช่วง' : 'ชิ้น'})`, sx, R.y0 + 11, XL_C.INK, 11, 'left', 600);
     const rowsL = [
-      [`◆ นอกเส้นควบคุม: ${S.out.toLocaleString('en-US')}`, S.out], [`8× ฝั่งเดียวติดกัน 8 จุด: ${S.run.toLocaleString('en-US')}`, S.run],
-      [`↗↘ ขึ้น/ลงต่อเนื่อง 6 จุด: ${S.trend.toLocaleString('en-US')}`, S.trend], [`⇕ MR เกิน UCL: ${S.jump.toLocaleString('en-US')}`, S.jump],
+      { kinds:['out'], text:`นอกเส้นควบคุม: ${S.out.toLocaleString('en-US')}`, n:S.out },
+      { kinds:['run'], text:`ฝั่งเดียวติดกัน 8 จุด: ${S.run.toLocaleString('en-US')}`, n:S.run },
+      { kinds:['up', 'down'], text:`ขึ้น/ลงต่อเนื่อง 6 จุด: ${S.trend.toLocaleString('en-US')}`, n:S.trend },
+      { kinds:['jump'], text:`MR เกิน UCL: ${S.jump.toLocaleString('en-US')}`, n:S.jump },
     ];
     const colW = (rx1 + lw - 12 - sx)/2;
-    rowsL.forEach(([t, n], i)=>{
+    rowsL.forEach((r, i)=>{
       const x = sx + (i % 2)*colW, y = R.y0 + 27 + Math.floor(i/2)*14;
-      if(y < A.y0 - 14) xlText(ctx, t, x, y, n ? XL_C.ORT2 : XL_C.MUTE, 10.5, 'left', n ? 600 : 500);
+      if(y >= A.y0 - 14) return;
+      const col = r.n ? XL_C.ORT2 : XL_C.MUTE;
+      let gx = x;
+      for(const k of r.kinds){
+        if(k === 'run') xlText(ctx, '8×', gx, y, col, 10.5, 'left', 700); else xlGlyph(ctx, k, gx + 5, y - 4, 4, col);
+        gx += XL_GW[k] + 1;
+      }
+      xlText(ctx, r.text, gx + 3, y, col, 10.5, 'left', r.n ? 600 : 500);
     });
     if(R.y0 + 27 + 2*14 < A.y0 - 14) xlText(ctx, 'สีแถบ = โซนของชิ้น · สัญลักษณ์ = เหตุที่เตือน', sx, R.y0 + 27 + 2*14, XL_C.MUTE, 10, 'left', 500);
   }
   if(devH && !compact){
-    const O = d.ou, z0 = (D.y0 + D.y1)/2, half = (D.y1 - D.y0)/2 - 4;
-    const gTxt = (g)=> g >= 1000 ? `${(g/1000).toFixed(2)} kg` : `${g.toFixed(1)} g`;
-    xlText(ctx, 'เกิน / ขาด จาก Target (ทั้งช่วง)', LAD.x0, A.y1 + 19, XL_C.INK, 11.5, 'left', 600);
-    // เส้นศูนย์ต่อเนื่องกับกราฟส่วนต่าง
-    ctx.strokeStyle = XL_C.AXIS; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(LAD.x0, z0); ctx.lineTo(mx0, z0); ctx.stroke();
-    const bx = [LAD.x0 + 2, LAD.x0 + 30], bw = 22;
-    const bar = (x, valUp, valDn, specUp, specDn, scale)=>{
-      if(!(scale > 0)) return;
-      const hu = valUp/scale*half, hd = valDn/scale*half, su = specUp/scale*half, sdn = specDn/scale*half;
+    const O = d.ou, z0 = (D.y0 + D.y1)/2, half = (D.y1 - D.y0)/2 - 10;
+    const gTxt = (g)=> g >= 1000 ? `${(g/1000).toFixed(2)} kg` : `${g.toFixed(1)} g`, fmtN = (v)=> Number(v).toLocaleString('en-US');
+    xlText(ctx, 'น้ำหนักที่เกิน / ขาด จาก Target', LAD.x0, A.y1 + 19, XL_C.INK, 11.5, 'left', 600);
+    if(O.offUp + O.offDn > 0) xlText(ctx, `ไม่รวมนอกกราฟ ▲ ${fmtN(O.offUp)} · ▼ ${fmtN(O.offDn)} ชิ้น`, LAD.x0, A.y1 + 34, XL_C.MUTE, 10.5, 'left', 500);
+    ctx.strokeStyle = XL_C.AXIS; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(LAD.x0, z0 + 0.5); ctx.lineTo(mx0, z0 + 0.5); ctx.stroke();   // เส้นศูนย์ต่อเนื่องกับกราฟส่วนต่าง
+    // แท่งเดียว = น้ำหนักรวม (กรัม): ขึ้น = เกิน, ลง = ขาด
+    const bx = LAD.x0 + 2, bwid = 26, scale = Math.max(O.overG, O.underG);
+    if(scale > 0){
+      const hu = O.overG/scale*half, hd = O.underG/scale*half;
       let g = ctx.createLinearGradient(0, z0, 0, z0 - hu); g.addColorStop(0, '#1f9e47'); g.addColorStop(1, XL_C.GR);
-      ctx.fillStyle = g; ctx.fillRect(x, z0 - hu, bw, hu);
-      if(su > 0){ ctx.fillStyle = XL_C.RD; ctx.fillRect(x, z0 - hu, bw, Math.max(1.5, su)); }
+      ctx.fillStyle = g; ctx.fillRect(bx, z0 - hu, bwid, hu);
       g = ctx.createLinearGradient(0, z0, 0, z0 + hd); g.addColorStop(0, '#c9661f'); g.addColorStop(1, '#ff9d4d');
-      ctx.fillStyle = g; ctx.fillRect(x, z0, bw, hd);
-      if(sdn > 0){ ctx.fillStyle = XL_C.RD; ctx.fillRect(x, z0 + hd - Math.max(1.5, sdn), bw, Math.max(1.5, sdn)); }
-    };
-    // แท่ง 1 = จำนวนชิ้น (ส่วนแดง = นอกสเปก), แท่ง 2 = กรัมรวม
-    bar(bx[0], O.overN, O.underN, O.usN, O.lsN, Math.max(O.overN, O.underN));
-    bar(bx[1], O.overG, O.underG, 0, 0, Math.max(O.overG, O.underG));
-    xlText(ctx, 'ชิ้น', bx[0] + bw/2, D.y1 + 8, XL_C.MUTE, 9.5, 'center');
-    xlText(ctx, 'กรัม', bx[1] + bw/2, D.y1 + 8, XL_C.MUTE, 9.5, 'center');
-    const tx = bx[1] + bw + 8, tot = d.n || 1;
+      ctx.fillStyle = g; ctx.fillRect(bx, z0, bwid, hd);
+    }
+    const tx = bx + bwid + 10;
     const avgUp = O.overN ? O.overG/O.overN : 0, avgDn = O.underN ? O.underG/O.underN : 0;
-    if(half >= 30){       // มีที่พอ: 2 บรรทัดต่อฝั่ง
-      xlText(ctx, `▲ เกิน ${O.overN.toLocaleString('en-US')} ชิ้น (${(O.overN/tot*100).toFixed(0)}%)`, tx, z0 - 19, XL_C.GR, 11, 'left', 700);
-      xlText(ctx, `+${gTxt(O.overG)} · เฉลี่ย +${avgUp.toFixed(2)} g`, tx, z0 - 6, XL_C.GRT, 10, 'left', 500);
-      xlText(ctx, `▼ ขาด ${O.underN.toLocaleString('en-US')} ชิ้น (${(O.underN/tot*100).toFixed(0)}%)`, tx, z0 + 15, XL_C.ORT, 11, 'left', 700);
-      xlText(ctx, `−${gTxt(O.underG)} · เฉลี่ย −${avgDn.toFixed(2)} g`, tx, z0 + 28, XL_C.ORT2, 10, 'left', 500);
-    } else {              // ที่น้อย: บรรทัดเดียวต่อฝั่ง
-      xlText(ctx, `▲ ${O.overN.toLocaleString('en-US')} ชิ้น · +${gTxt(O.overG)}`, tx, z0 - 5, XL_C.GR, 10.5, 'left', 700);
-      xlText(ctx, `▼ ${O.underN.toLocaleString('en-US')} ชิ้น · −${gTxt(O.underG)}`, tx, z0 + 13, XL_C.ORT, 10.5, 'left', 700);
+    if(half >= 30){
+      xlText(ctx, `▲ เกิน +${gTxt(O.overG)}`, tx, z0 - 19, XL_C.GR, 12, 'left', 700);
+      xlText(ctx, `เฉลี่ย +${avgUp.toFixed(2)} g · ${fmtN(O.overN)} ชิ้น`, tx, z0 - 5, XL_C.GRT, 10.5, 'left', 500);
+      xlText(ctx, `▼ ขาด −${gTxt(O.underG)}`, tx, z0 + 17, XL_C.ORT, 12, 'left', 700);
+      xlText(ctx, `เฉลี่ย −${avgDn.toFixed(2)} g · ${fmtN(O.underN)} ชิ้น`, tx, z0 + 31, XL_C.ORT2, 10.5, 'left', 500);
+    } else {
+      xlText(ctx, `▲ +${gTxt(O.overG)} (เฉลี่ย +${avgUp.toFixed(2)} g)`, tx, z0 - 5, XL_C.GR, 10.5, 'left', 700);
+      xlText(ctx, `▼ −${gTxt(O.underG)} (เฉลี่ย −${avgDn.toFixed(2)} g)`, tx, z0 + 13, XL_C.ORT, 10.5, 'left', 700);
     }
   }
   if(!cols.length){
@@ -2036,7 +2093,7 @@ function xlDraw(now){
         };
         [['Mean', `${K.mean.toFixed(2)} g`, 'mean'], ['Std Dev', K.n > 1 ? K.sd.toFixed(3) : '-', 'sd'], ['Min / Max', `${K.min.toFixed(1)} / ${K.max.toFixed(1)}`, 'minmax']].forEach(([lab, val, key], i)=>{
           const x0 = px + i*cwid;
-          xlText(ctx, lab, x0, sy, XL_C.MUTE, 10, 'left', 500);
+          xlText(ctx, lab, x0, sy, XL_C.MUTE, 10.5, 'left', 500);
           xlText(ctx, val, x0, sy + 17, XL_C.INKW, fit(val, 14, 700, cwid - 8), 'left', 700);
           xl.hits.push({ kpi:key, x0:x0 - 2, x1:x0 + cwid - 4, y0:sy - 12, y1:sy + 24 });
         });
