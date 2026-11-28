@@ -27,35 +27,11 @@
   svg text{font-family:var(--font); font-weight:600;}
   .wrap{
     flex:1; min-height:0; display:flex; flex-direction:column;
-    max-width:none; width:100%; margin:0; padding:10px 0 0; gap:8px;
+    max-width:none; width:100%; margin:0; padding:0; gap:0;
   }
-  .wrap > .dash-head, .wrap > .doc-bar{margin-left:14px; margin-right:14px;}
+  .wrap > .spec-warn{margin:8px 14px 0;}
 
-  /* ---------- หัวหน้า ---------- */
-  .dash-head{
-    display:flex; align-items:center; justify-content:space-between; flex:0 0 auto; gap:12px 18px; flex-wrap:wrap;
-    background:var(--surface); border:1px solid var(--hairline); border-radius:var(--radius-lg); padding:8px 10px 8px 16px; box-shadow:var(--shadow-sm);
-  }
-  .header-left .eyebrow{font-size:12px; font-weight:500; color:var(--ink-3);}
-  .header-left h1{margin:0; font-size:18px; font-weight:700; letter-spacing:-0.015em; line-height:1.3;}
-  .header-left h1 span{color:var(--orange-500);}
-  .header-right{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
-  .spec-chips{display:flex; gap:6px; flex-wrap:wrap;}
-  .chip{display:flex; gap:6px; height:36px; padding:0 12px; border:1px solid var(--hairline); background:var(--surface-2); border-radius:10px; align-items:center;}
-  .chip small{color:var(--ink-3); font-size:11px; font-weight:600; letter-spacing:.04em;}
-  .chip b{font-size:14px; font-weight:700; font-variant-numeric:tabular-nums;}
-  .chip.lsl b, .chip.usl b{color:var(--limit);}
-  .chip.tgt b{color:var(--target);}
-  .header-btns{display:flex; gap:6px;}
-
-  .doc-bar{
-    display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; flex:0 0 auto;
-    padding:6px 8px 6px 16px; background:var(--surface); border:1px solid var(--hairline); border-radius:var(--radius); box-shadow:var(--shadow-xs); font-size:13px;
-  }
-  .doc-bar .alert-badge{order:10; flex:1 1 100%; animation:none; border-radius:10px; line-height:1.45; padding:7px 12px;}
-  .doc-bar .alert-badge::before{content:''; width:8px; height:8px; border-radius:50%; background:var(--limit); flex:none; animation:pulseAlert 1.2s infinite;}
-  .doc-bar-info{display:flex; align-items:center; gap:10px; color:var(--ink-2);}
-  .spec-warn{order:11; flex:1 1 100%; display:flex; align-items:center; flex-wrap:wrap; gap:8px 12px; padding:8px 12px; border-radius:10px;
+  .spec-warn{flex:0 0 auto; display:flex; align-items:center; flex-wrap:wrap; gap:8px 12px; padding:8px 12px; border-radius:10px;
     background:var(--orange-50, #FFF4EA); border:1px solid var(--orange-100); color:var(--ink); line-height:1.45;}
   .spec-warn[hidden]{display:none;}
   .spec-warn > .i{color:var(--orange-600); width:18px; height:18px; flex:none;}
@@ -65,17 +41,6 @@
   .spec-warn .sw-seg button{border:0; background:transparent; color:var(--ink-2); font:inherit; font-size:12.5px; font-weight:600; padding:6px 12px; cursor:pointer; min-height:32px;}
   .spec-warn .sw-seg button + button{border-left:1px solid var(--line);}
   .spec-warn .sw-seg button.on{background:var(--blue-600); color:#fff;}
-  .spec-src{font-style:normal; font-weight:600; color:var(--orange-600); letter-spacing:0;}
-  .doc-bar-lbl{display:inline-flex; align-items:center; gap:6px; color:var(--orange-600); font-weight:600; font-size:12.5px;}
-  #docBarText{color:var(--ink); font-weight:500;}
-  .doc-bar-actions{display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:flex-end;}
-  .doc-bar .conn-chip{height:34px;}
-  .alert-badge{
-    display:inline-flex; align-items:center; gap:6px; font-size:12.5px; font-weight:600; padding:6px 12px; border-radius:999px;
-    background:var(--bad-bg); color:var(--limit); border:1px solid var(--bad-line); animation:pulseAlert 1.2s infinite;
-  }
-  .alert-badge .i{width:15px; height:15px;}
-  @keyframes pulseAlert{0%,100%{opacity:1;} 50%{opacity:.5;}}
 
   .range-switch{display:flex; align-items:center; gap:4px; font-size:12px;}
   .range-btn{
@@ -113,14 +78,6 @@
   .kd-rows div{display:flex; justify-content:space-between; gap:10px; padding:7px 0; border-bottom:1px solid var(--hairline-2); font-size:13px;}
   .kd-rows span{color:var(--ink-3);} .kd-rows b{font-variant-numeric:tabular-nums; text-align:right;}
   .kd-tip{margin:8px 0 0; padding:10px 12px; background:var(--orange-50); border:1px solid var(--orange-100); border-radius:10px; font-size:13px; line-height:1.6;}
-  /* สถานะเครื่องในแถวเอกสาร */
-  .machine-strip{display:flex; align-items:center; gap:4px 14px; flex-wrap:wrap; font-size:12.5px; color:var(--ink-2); padding-left:14px; margin-left:4px; border-left:1px solid var(--hairline);}
-  .machine-strip:empty{display:none;}
-  #scaleChip{display:none;} /* รายละเอียดเครื่องย้ายไปอยู่ในแถบสถานะเครื่องแล้ว */
-  .machine-strip b{color:var(--ink); font-weight:600;}
-  .machine-strip .pill{height:24px;}
-
-
   /* ---------- กราฟ ---------- */
   /* X chart แบบสด — แผงมืดแบบจอมอนิเตอร์ ทั้งโหมดสว่างและมืด */
   /* กราฟหลักเต็มความกว้างจอ (ไม่มี margin / padding ซ้ายขวา) — สีตามโหมดสว่าง/มืดของหน้า */
@@ -191,85 +148,22 @@
   .axis{stroke:var(--hairline); stroke-width:1;}
   .tick{fill:var(--ink-3); font-size:9px; font-weight:600;}
 
-  /* live feed */
-  @keyframes slideIn{from{opacity:0; transform:translateY(-6px);} to{opacity:1; transform:translateY(0);}}
-  .tag{justify-self:end; height:20px; font-size:10.5px; white-space:nowrap;}
-  .tag.z-GREEN{background:var(--good-bg); color:var(--good);}
-  .tag.z-YELLOW{background:var(--caution-bg); color:var(--caution);}
-  .tag.z-RED{background:rgba(240,96,43,0.14); color:#E0531F;}
-  .tag.z-OUT{background:var(--limit); color:#fff;}
-  .alert-badge.yellow{background:var(--caution-bg); color:var(--caution); border-color:var(--caution-line);}
-  .doc-bar .alert-badge.yellow::before{background:#E3A008;}
-
-  /* สถานะการเชื่อมต่อ เครื่องชั่ง / ฐานข้อมูล */
-  .status-group{display:flex; gap:8px; flex-wrap:wrap;}
-  .conn-chip{display:flex; align-items:center; gap:8px; height:38px; padding:0 12px; border-radius:10px; border:1px solid var(--hairline); background:var(--surface-2); color:var(--ink-2); white-space:nowrap; cursor:default;}
-  .conn-chip .dot{width:8px; height:8px; border-radius:50%; background:var(--ink-3); flex:none;}
-  .conn-chip .chip-text{display:flex; flex-direction:column; line-height:1.25;}
-  .conn-chip .chip-text b{font-weight:600; font-size:12px; color:var(--ink);}
-  .conn-chip .chip-text small{color:var(--ink-3); font-size:11px; max-width:240px; overflow:hidden; text-overflow:ellipsis;}
-  .conn-chip.ok{border-color:var(--good-line); background:var(--good-bg);} .conn-chip.ok .dot{background:var(--good); animation:pulseDot 1.8s ease-in-out infinite;}
-  .conn-chip.wait{border-color:var(--caution-line); background:var(--caution-bg);} .conn-chip.wait .dot{background:#E3A008;}
-  .conn-chip.down{border-color:var(--bad-line); background:var(--bad-bg);} .conn-chip.down .dot{background:var(--limit);}
-  .conn-chip.down .chip-text small{color:var(--limit);}
-  @keyframes pulseDot{0%,100%{opacity:1;} 50%{opacity:.35;}}
-
   @media (max-width:900px){
     body{overflow:auto; display:block;}
-    .wrap{display:flex; padding:8px 0 0;}
+    .wrap{display:flex;}
     .xl-row{height:auto; min-height:0; flex:none;}
     .xl-box{flex:none; height:540px;}
         .kd-rows{grid-template-columns:1fr;}
     .range-switch{flex-wrap:wrap; margin-left:0 !important;}
-    .header-right, .doc-bar-actions{width:100%; justify-content:flex-start;}
-    .conn-chip .chip-text small{max-width:52vw;}
   }
 </style>
 </head>
 <body data-page="dashboard">
 <script src="assets/app-header.js"></script>
 <script src="assets/hist-bins.js"></script>
-<script src="report.js"></script>
 <div class="wrap">
 
-  <div class="dash-head">
-    <div class="header-left">
-      <div class="eyebrow" id="scaleEyebrow">Statistical Process Control · Live Feed</div>
-      <h1>SPC Dashboard <span>เรียลไทม์</span></h1>
-    </div>
-    <div class="header-right">
-      <div class="spec-chips">
-        <div class="chip lsl"><small>LSL</small><b id="chipLsl">80.5 g</b></div>
-        <div class="chip tgt"><small>TARGET <i class="spec-src" id="chipSrc"></i></small><b id="chipTgt">82 g</b></div>
-        <div class="chip usl"><small>USL</small><b id="chipUsl">85 g</b></div>
-      </div>
-      <div class="header-btns">
-        <button class="btn accent" id="exportBtn" type="button"><svg class="i"><use href="assets/icons.svg#printer"></use></svg>Export Report</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="doc-bar" id="docBar">
-    <span class="alert-badge" id="alertBadge" style="display:none;"></span>
-    <div class="doc-bar-info">
-      <span class="doc-bar-lbl"><svg class="i sm"><use href="assets/icons.svg#file"></use></svg>เอกสาร</span>
-      <span id="docBarText">ยังไม่มีเอกสารที่กำลังทำ</span>
-      <span class="machine-strip" id="machineStrip"></span>
-    </div>
-    <div class="spec-warn" id="specWarn" hidden></div>
-    <div class="doc-bar-actions">
-      <div class="status-group">
-        <div class="conn-chip wait" id="scaleChip">
-          <span class="dot"></span>
-          <div class="chip-text"><b>เครื่องชั่ง</b><small id="scaleChipDetail">กำลังเชื่อมต่อ…</small></div>
-        </div>
-        <div class="conn-chip wait" id="dbChip">
-          <span class="dot"></span>
-          <div class="chip-text"><b>ฐานข้อมูล</b><small id="dbChipDetail">กำลังเชื่อมต่อ…</small></div>
-        </div>
-      </div>
-    </div>
-  </div>
+  <div class="spec-warn" id="specWarn" hidden></div>
 
   <!-- ---------------- modal: เริ่มเอกสารใหม่ ---------------- -->
   <div class="modal-backdrop" id="startDocModal">
@@ -554,28 +448,7 @@ function setConn(level, msg){
   paintConn();
 }
 
-function timeAgo(iso){
-  if(!iso) return null;
-  const sec = Math.max(0, Math.round((Date.now() - new Date(iso).getTime())/1000));
-  if(sec < 3) return 'เมื่อครู่นี้';
-  if(sec < 60) return `${sec} วิ ที่แล้ว`;
-  const min = Math.round(sec/60);
-  if(min < 60) return `${min} นาที ที่แล้ว`;
-  return `${Math.round(min/60)} ชม. ที่แล้ว`;
-}
 
-function paintChip(id, detailId, level, title, detail){
-  const chip = document.getElementById(id);
-  if(!chip) return;
-  chip.className = 'conn-chip ' + level;
-  chip.title = title || '';
-  document.getElementById(detailId).textContent = detail;
-}
-
-/**
- * วาดสถานะทั้งสองชิป (เครื่องชั่ง / ฐานข้อมูล) จาก serverStatus (GET /api/status)
- * ถ้ายังต่อ backend เองไม่ได้เลย ให้ทั้งคู่ขึ้นแดงพร้อมเหตุผลจาก connState
- */
 /** /api/status ตอนนี้คืนหลายเครื่อง { scales:[...], db, server_time } — หาเครื่องที่กำลังดูอยู่ */
 function currentScaleStatus(){
   if(!serverStatus || !Array.isArray(serverStatus.scales)) return null;
@@ -583,87 +456,44 @@ function currentScaleStatus(){
   return serverStatus.scales[0] || null;
 }
 
-/** แถบสถานะเครื่อง (กำลังผลิต / โปรแกรม / ความเร็ว / ชิ้นล่าสุด / บันทึกแล้ว) — ย้ายมาจากหน้า Checkweigher เดิม */
-function renderMachineStrip(sc){
-  const elx = document.getElementById('machineStrip');
-  if(!elx) return;
-  if(!sc){ elx.innerHTML = ''; return; }
-  const esc2 = (v)=> String(v ?? '').replace(/[&<>"']/g, (ch)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
-  const p2 = (n)=> String(n).padStart(2,'0');
-  const dhms = (iso)=>{ if(!iso) return '-'; const d=new Date(iso); return `${p2(d.getDate())}/${p2(d.getMonth()+1)} ${p2(d.getHours())}:${p2(d.getMinutes())}:${p2(d.getSeconds())}`; };
+/**
+ * สถานะเครื่องที่วาดบนกราฟหลัก: สถานะ (กำลังผลิต / ว่าง / ต่อไม่ได้ ฯลฯ) · โปรแกรม · ความเร็ว
+ * + คำเตือนเฉพาะตอนมีปัญหา (ต่อ backend ไม่ได้ / ฐานข้อมูลต่อไม่ติด) — ปกติไม่แสดง
+ */
+function machineInfo(sc){
+  if(!serverStatus){
+    return { state:{ cls: connState.level==='wait' ? 'warn' : 'down', text: connState.level==='wait' ? 'กำลังเชื่อมต่อ…' : 'ต่อ backend ไม่ได้' }, program:null, speed:null, warn:[] };
+  }
+  const warn = [];
+  const db = serverStatus.db || {};
+  if(db.enabled && !db.connected) warn.push('ฐานข้อมูลต่อไม่ติด');
+  if(!sc) return { state:{ cls:'warn', text:'ยังไม่มีเครื่องชั่งในระบบ' }, program:null, speed:null, warn };
   const cs = sc.connection_status;
-  const parts = [];
+  let state, program = null, speed = null;
   if(sc.enabled === false){
-    parts.push('<span class="pill idle"><span class="dot"></span>ปิดใช้งาน</span>');
+    state = { cls:'idle', text:'ปิดใช้งาน' };
   } else if(sc.device_type === 'opcua'){
     const c = sc.cw || {};
-    parts.push(cs !== 'connected'
-      ? `<span class="pill ${cs==='error'||cs==='stopped'?'down':'warn'}"><span class="dot"></span>${{connecting:'กำลังเชื่อมต่อ',reconnecting:'กำลังเชื่อมต่อใหม่',error:'เชื่อมต่อไม่ได้',stopped:'หยุดอยู่'}[cs] || cs}</span>`
-      : c.run_state === 'running' ? '<span class="pill ok live"><span class="dot"></span>กำลังผลิต</span>' : '<span class="pill idle"><span class="dot"></span>ว่าง / หยุดเดิน</span>');
-    if(c.program_no != null || c.program_name) parts.push(`<span>โปรแกรม <b>No.${c.program_no ?? '-'} ${esc2(c.program_name || '')}</b></span>`);
-    const speed = c.pass_speed ?? c.infeed_speed;
-    if(speed != null || c.speed_setting != null) parts.push(`<span>ความเร็ว <b>${speed ?? '-'}</b> ชิ้น/นาที${c.speed_setting != null ? ` (ตั้งไว้ ${c.speed_setting})` : ''}</span>`);
-    const ms = c.machine_stats || {};
-    if(ms.total != null) parts.push(`<span>ตัวนับเครื่อง <b>${Number(ms.total).toLocaleString('en-US')}</b> · ผ่าน <b>${ms.total ? ((ms.accept||0)/ms.total*100).toFixed(1) : '-'}%</b></span>`);
+    state = cs !== 'connected'
+      ? { cls: cs==='error'||cs==='stopped' ? 'down' : 'warn', text: {connecting:'กำลังเชื่อมต่อ', reconnecting:'กำลังเชื่อมต่อใหม่', error:'เชื่อมต่อไม่ได้', stopped:'หยุดอยู่'}[cs] || cs }
+      : c.run_state === 'running' ? { cls:'ok', text:'กำลังผลิต' } : { cls:'idle', text:'ว่าง / หยุดเดิน' };
+    if(c.program_no != null || c.program_name) program = `No.${c.program_no ?? '-'} ${c.program_name || ''}`.trim();
+    const sp = c.pass_speed ?? c.infeed_speed;
+    if(sp != null || c.speed_setting != null) speed = { v: sp ?? '-', set: c.speed_setting };
   } else {
     const ok = cs === 'connected' || cs === 'simulating';
-    parts.push(`<span class="pill ${ok?'ok live':cs==='error'||cs==='stopped'?'down':'warn'}"><span class="dot"></span>${ok ? 'รับค่าอยู่' : esc2(cs)}</span>`);
+    state = { cls: ok ? 'ok' : cs==='error'||cs==='stopped' ? 'down' : 'warn', text: ok ? 'รับค่าอยู่' : String(cs) };
   }
-  if(sc.device) parts.push(`<span>อุปกรณ์ <b>${esc2(sc.device)}${sc.sim_mode ? ' (SIM)' : ''}</b></span>`);
-  parts.push(`<span>ชิ้นล่าสุด <b>${dhms(sc.last_received_at)}</b></span>`);
-  parts.push(`<span>บันทึกแล้ว <b>${Number(sc.total_received || 0).toLocaleString('en-US')}</b> ชิ้น</span>`);
-  elx.innerHTML = parts.join('');
+  return { state, program, speed, warn };
 }
 
+/** อัปเดตสถานะเครื่องบนกราฟ (วาดใหม่เฉพาะเมื่อค่าเปลี่ยน) */
 function paintConn(){
-  if(!serverStatus){
-    const msg = connState.msg || 'ยังไม่ได้เชื่อมต่อ';
-    paintChip('scaleChip','scaleChipDetail', connState.level, msg, connState.level==='down' ? 'ต่อ backend ไม่ได้' : msg);
-    paintChip('dbChip','dbChipDetail', connState.level, msg, connState.level==='down' ? 'ต่อ backend ไม่ได้' : msg);
-    return;
-  }
-
-  // ---- เครื่องชั่ง (เฉพาะเครื่องที่กำลังดูอยู่) ----
-  const sc = currentScaleStatus();
-  if(!sc){
-    paintChip('scaleChip','scaleChipDetail','wait','ยังไม่มีเครื่องชั่งในระบบ','ไม่พบเครื่องชั่ง — เพิ่มได้ที่หน้า Monitor');
-  } else {
-    const cs = sc.connection_status;
-    const scaleLevel = (cs === 'connected' || cs === 'simulating') ? 'ok' : (cs === 'error' || cs === 'stopped') ? 'down' : 'wait';
-    const wLabel = sc.last_weight != null ? `${sc.last_weight.toFixed(1)} g` : '--';
-    const ago = timeAgo(sc.last_received_at);
-    const simTag = sc.sim_mode ? ' (SIM)' : '';
-    const scaleDetail = `${sc.name} · ${sc.device}${simTag} · ${cs}${scaleLevel==='ok' ? ` · ${wLabel}${ago ? ' · '+ago : ''}` : ''}`;
-    const scaleTitle = [
-      `เครื่อง: ${sc.name} (${sc.line || '-'} / S-N ${sc.serial_no || '-'})`,
-      `สถานะ: ${cs}${simTag}`,
-      `อุปกรณ์: ${sc.device}`,
-      `น้ำหนักล่าสุด: ${wLabel}`,
-      ago ? `รับล่าสุด: ${ago}` : null,
-      `รับทั้งหมด: ${sc.total_received ?? 0} ค่า`,
-      sc.active_product_code ? `กำลังทำเอกสาร: ${sc.active_group_code} / ${sc.active_product_code}` : 'ไม่มีเอกสารที่กำลังทำ',
-      sc.last_error ? `ข้อผิดพลาดล่าสุด: ${sc.last_error}` : null,
-    ].filter(Boolean).join('\n');
-    paintChip('scaleChip','scaleChipDetail', scaleLevel, scaleTitle, scaleDetail);
-    document.getElementById('scaleEyebrow').textContent =
-      `Statistical Process Control · ${sc.line || sc.name}${sc.name && sc.line && sc.name !== sc.line ? ' · '+sc.name : ''} · Live Feed`;
-  }
-
-  renderMachineStrip(sc);
-
-  // ---- ฐานข้อมูล ----
-  const dbInfo = serverStatus.db || {};
-  const dbLevel = !dbInfo.enabled ? 'wait' : dbInfo.connected ? 'ok' : 'down';
-  const dbDetail = !dbInfo.enabled
-    ? 'ปิดใช้งาน (DB_ENABLED=false)'
-    : `${dbInfo.target} · ${dbInfo.connected ? 'เชื่อมต่ออยู่' : 'ต่อไม่ติด'}`;
-  const dbTitle = [
-    `เป้าหมาย: ${dbInfo.target || '-'}`,
-    `ตาราง: ${dbInfo.table || '-'}`,
-    `สถานะ: ${dbInfo.enabled ? (dbInfo.connected ? 'เชื่อมต่ออยู่' : 'ต่อไม่ติด') : 'ปิดใช้งาน'}`,
-    dbInfo.last_error ? `ข้อผิดพลาดล่าสุด: ${dbInfo.last_error}` : null,
-  ].filter(Boolean).join('\n');
-  paintChip('dbChip','dbChipDetail', dbLevel, dbTitle, dbDetail);
+  const info = machineInfo(serverStatus ? currentScaleStatus() : null);
+  const key = JSON.stringify(info);
+  if(key === xl.machineKey) return;
+  xl.machineKey = key; xl.machine = info;
+  xlKick();
 }
 
 /** เติม dropdown เลือกเครื่องชั่งที่หัวหน้า — เปลี่ยนแล้วรีโหลดกราฟของเครื่องนั้นทันที */
@@ -767,16 +597,6 @@ function specMismatch(doc, mach){
   const half = Math.max(0.5, (mach.USL - mach.LSL) / 2);
   return Math.abs(doc.TARGET - mach.TARGET) > half || doc.USL < mach.LSL || doc.LSL > mach.USL;
 }
-function paintSpecChips(){
-  document.getElementById('chipLsl').textContent = `${SPEC.LSL} g`;
-  document.getElementById('chipTgt').textContent = `${SPEC.TARGET} g`;
-  document.getElementById('chipUsl').textContent = `${SPEC.USL} g`;
-  const src = document.getElementById('chipSrc');
-  if(src){
-    src.textContent = SPEC_INFO.src === 'machine' ? '· เครื่อง' : SPEC_INFO.src === 'doc' ? '· เอกสาร' : '· ค่าตั้งต้น';
-    src.parentElement.parentElement.title = SPEC_INFO.src === 'machine' ? 'สเปกจากโปรแกรมบนเครื่อง checkweigher' : SPEC_INFO.src === 'doc' ? 'สเปกจากเอกสารที่กำลังทำ' : 'ยังไม่มีเอกสาร/สเปกจากเครื่อง — ใช้ค่าตั้งต้น';
-  }
-}
 /** น้ำหนักที่ผลิตจริงเกือบทั้งหมด (≥ 90% ของ 200 ชิ้นล่าสุด) อยู่นอกสเปก → สเปกน่าจะเลือกผิด */
 function checkSpecVsData(){
   const rows = buffer.slice(-200);
@@ -834,7 +654,6 @@ async function loadCurrentSession(){
     applyCheckweigherSpec();
   }
   SPEC_INFO.offData = !SPEC_INFO.mismatch && checkSpecVsData();
-  paintSpecChips();
   renderSpecWarn();
   renderDocBar();
   // CURRENT_SESSION เพิ่งเปลี่ยน (เช่น เพิ่งเริ่ม/หยุดเอกสาร) — สั่ง re-render ทันที ไม่ต้องรอ poll() รอบถัดไป
@@ -843,26 +662,17 @@ async function loadCurrentSession(){
 }
 
 // ================= แถบเอกสาร (เริ่ม/หยุด/แก้ไขเวลา) =================
-function fmtStart(iso){
-  if(!iso) return '-';
-  const d = new Date(iso);
-  const p=(n)=>String(n).padStart(2,'0');
-  return `${p(d.getDate())}/${p(d.getMonth()+1)} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
-}
 
 function renderDocBar(){
   const s = CURRENT_SESSION;
-  const textEl = document.getElementById('docBarText');
   const btnStart = document.getElementById('btnStartDoc');
   const btnStop = document.getElementById('btnStopDoc');
   const btnEditTime = document.getElementById('btnEditTime');
   if(s){
-    textEl.innerHTML = `<b>${s.group_code} / ${s.product_code}</b> · ผู้ตรวจสอบ: ${s.inspector_name || '-'} · เริ่มเมื่อ ${fmtStart(s.start_time)}`;
     btnStart.style.display = 'none';
     btnStop.style.display = '';
     btnEditTime.style.display = '';
   } else {
-    textEl.textContent = 'ยังไม่มีเอกสารที่กำลังทำ';
     btnStart.style.display = '';
     btnStop.style.display = 'none';
     btnEditTime.style.display = 'none';
@@ -1003,7 +813,6 @@ let ALERT_SETTINGS = {
 };
 // โซนเตือนก่อนถึงขอบสเปก: % ของระยะจาก Target ถึง LSL/USL (ตั้งที่หน้า "ตั้งค่า")
 let ZONE = { yellowPct:60, redPct:85, yellowRun:5, redRun:3, yellowSound:false, redSound:true };
-let REPORT_FORM_CODE = 'F3QCPFB8-1-01/9/2025';
 let alertAudioCtx = null, alertOscInterval = null, alertMuted = false;
 
 function num(v, d){ const n = parseFloat(v); return Number.isFinite(n) ? n : d; }
@@ -1029,7 +838,6 @@ async function loadAlertSettings(){
       yellowSound: s['zone.yellowSound'] === 'true', redSound: s['zone.redSound'] !== 'false',
     };
     if(ZONE.redPct <= ZONE.yellowPct) ZONE.redPct = Math.min(99, ZONE.yellowPct + 1);
-    if(s['report.formCode']) REPORT_FORM_CODE = s['report.formCode'];
   }catch(err){ /* ใช้ค่า default ถ้าโหลดไม่ได้ */ }
 }
 
@@ -1099,9 +907,9 @@ document.getElementById('btnMuteAlert').addEventListener('click', () => {
 
 function updateAlertBadge(){
   const view = getView();
-  const badge = document.getElementById('alertBadge');
+  const muteBtn = document.getElementById('btnMuteAlert');
   if(view.length < 2){
-    badge.style.display = 'none';
+    muteBtn.style.display = 'none';
     stopAlertSound();
     return;
   }
@@ -1134,9 +942,7 @@ function updateAlertBadge(){
   }
 
   if(reasons.length){
-    badge.style.display = '';
-    badge.classList.toggle('yellow', !reasons.some(r => r.level === 'red'));
-    badge.innerHTML = icon('alert') + '<span>' + reasons.map(r => r.text).join(' · ').replace(/[&<>]/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])) + '</span>';
+    muteBtn.title = reasons.map(r => r.text).join('\n');      // เหตุผลที่เตือน (ชี้เมาส์ที่ปุ่มหยุดเสียงเตือน)
     if(reasons.some(r => r.sound) && !alertMuted){
       document.getElementById('btnMuteAlert').style.display = '';
       startAlertSound();
@@ -1145,8 +951,8 @@ function updateAlertBadge(){
       stopAlertSound();
     }
   } else {
-    badge.style.display = 'none';
-    document.getElementById('btnMuteAlert').style.display = 'none';
+    muteBtn.title = '';
+    muteBtn.style.display = 'none';
     alertMuted = false; // เกณฑ์กลับมาปกติแล้ว รีเซ็ต mute ไว้เผื่อรอบหน้า
     stopAlertSound();
   }
@@ -1500,7 +1306,7 @@ const XL_RM = (()=>{ try{ return matchMedia('(prefers-reduced-motion: reduce)').
 const XL_FONT = '"IBM Plex Sans Thai","Leelawadee UI","Segoe UI","Myanmar Text","Khmer UI",system-ui,sans-serif';
 const xl = {
   cv:null, ctx:null, W:0, H:0,
-  d:null, tail:null, shiftFrom:0, shiftAt:0, vlo:null, vhi:null, pulseAt:-1e9, parts:[], raf:0, hits:[],
+  d:null, tail:null, shiftFrom:0, shiftAt:0, vlo:null, vhi:null, pulseAt:-1e9, parts:[], raf:0, hits:[], machine:null, machineKey:'',
   opt:(()=>{ const d = { sig:true, ew:true, ma:true }; try{ return Object.assign(d, JSON.parse(localStorage.getItem('xlive-opt') || '{}')); }catch(e){ return d; } })(),
 };
 const T_ = (s)=> (window.t ? window.t(s) : s);
@@ -1667,6 +1473,35 @@ function xlSize(){
   xl.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 }
 
+/** วาดสถานะเครื่อง: ● สถานะ · โปรแกรม · ความเร็ว (+ คำเตือน) ในช่วง [x0, limit] — ถ้าที่ไม่พอ ลดขนาดตัวอักษร แล้วตัดโปรแกรม/ความเร็วออกตามลำดับ */
+function xlDrawMachine(ctx, m, x0, y, limit){
+  if(!m || !m.state) return;
+  const stCol = { ok:XL_C.GR, idle:XL_C.MUTE, down:XL_C.RD, warn:XL_C.OR }[m.state.cls] || XL_C.MUTE;
+  const widthOf = (str, size, wt)=>{ ctx.font = `${wt} ${size}px ${XL_FONT}`; return ctx.measureText(T_(String(str))).width; };
+  const G = [{ key:'state', parts:[[m.state.text, stCol, 700]], dot:stCol }];
+  if(m.program) G.push({ key:'program', parts:[['โปรแกรม', XL_C.MUTE, 500, 6], [m.program, XL_C.INK, 700]] });
+  if(m.speed) G.push({ key:'speed', parts:[['ความเร็ว', XL_C.MUTE, 500, 6], [String(m.speed.v), XL_C.INK, 700, 5], [m.speed.set != null ? `ชิ้น/นาที (ตั้งไว้ ${m.speed.set})` : 'ชิ้น/นาที', XL_C.MUTE, 500]] });
+  for(const w of (m.warn || [])) G.push({ key:'warn', parts:[['⚠', XL_C.RD, 700, 5], [w, XL_C.RD, 700]] });
+  const GAP = 26;
+  const gw = (g, size)=> (g.dot ? 15 : 0) + g.parts.reduce((a, [t,, wt, gap]) => a + widthOf(t, size, wt || 500) + (gap || 0), 0);
+  let use = G;
+  for(const drop of [null, 'program', 'speed']){
+    if(drop) use = use.filter(g => g.key !== drop);
+    for(const size of [12, 11, 10]){
+      const tot = use.reduce((a, g) => a + gw(g, size), 0) + GAP*(use.length - 1);
+      if(x0 + tot <= limit){
+        let x = x0;
+        for(const g of use){
+          if(g.dot){ ctx.fillStyle = g.dot; ctx.beginPath(); ctx.arc(x + 4.5, y - 4, 4, 0, Math.PI*2); ctx.fill(); x += 15; }
+          for(const [t, col, wt, gap] of g.parts){ xlText(ctx, t, x, y, col, size, 'left', wt || 500); x += widthOf(t, size, wt || 500) + (gap || 0); }
+          x += GAP;
+        }
+        return;
+      }
+    }
+  }
+}
+
 /** เรียกทุกครั้งที่ข้อมูลเปลี่ยน (renderAll) */
 function renderIndividuals(){
   if(!xlEnsureCanvas()) return;
@@ -1732,7 +1567,7 @@ function xlDraw(now){
   const devH = H >= 340 ? Math.max(56, Math.min(110, Math.round(H*0.19))) : 0;
   const devLabels = [];                    // ป้าย USL/LSL ของกราฟส่วนต่าง — วาดนอกส่วนที่เลื่อนได้
   const ribH = 16, mrH = compact ? 0 : (H >= 560 ? 58 : 46);          // แถบสถานะ + แถว MR เหนือกราฟเส้น
-  const R = { y0: twoLine ? (compact ? 76 : 56) : 34 }; R.y1 = R.y0 + ribH;
+  const R = { y0: twoLine ? (compact ? 96 : 56) : 34 }; R.y1 = R.y0 + ribH;
   const M = { y0: R.y1 + 6 }; M.y1 = M.y0 + mrH;
   const A = { y0: (mrH ? M.y1 : R.y1) + (compact ? 12 : 24), y1: H - 8 - tableH - (devH ? devH + 30 : 8) };
   const D = { y0: A.y1 + 30, y1: A.y1 + 26 + devH };
@@ -1761,9 +1596,15 @@ function xlDraw(now){
     xl.hits.push({ key, x0:lx - w - 24, x1:lx + 2, y0:ly - 16, y1:ly + 8 });
     lx -= w + 34;
   }
+  {
+    ctx.font = `600 ${compact ? 12.5 : 14}px ${XL_FONT}`;
+    const tw = ctx.measureText(T_(d.title)).width;
+    if(compact) xlDrawMachine(ctx, xl.machine, 14, 64, W - 8);
+    else xlDrawMachine(ctx, xl.machine, 14 + tw + 30, 22, (twoLine ? W : lx) - 10);
+  }
   if(compact && d.kpi && d.kpi.n){                       // จอแคบไม่มีคอลัมน์ขวา → สรุปสถิติเป็นบรรทัดเดียว
     const K = d.kpi, cpkT = d.cap.cpk == null ? '-' : d.cap.cpk.toFixed(2);
-    xlText(ctx, `Mean ${K.mean.toFixed(2)} g · SD ${K.n > 1 ? K.sd.toFixed(3) : '-'} · Cpk ${cpkT} · ผ่าน ${(K.pass/K.n*100).toFixed(1)}%`, 14, 64, XL_C.TX, 11, 'left', 600);
+    xlText(ctx, `Mean ${K.mean.toFixed(2)} g · SD ${K.n > 1 ? K.sd.toFixed(3) : '-'} · Cpk ${cpkT} · ผ่าน ${(K.pass/K.n*100).toFixed(1)}%`, 14, 84, XL_C.TX, 11, 'left', 600);
   }
   if(!compact) xlText(ctx, `การกระจาย (${d.n.toLocaleString('en-US')} ชิ้น)`, rx0, A.y0 - 10, XL_C.TX, 12);
 
@@ -2256,42 +2097,6 @@ function stopPolling(){
   if(intervalId) clearInterval(intervalId);
   if(statusIntervalId) clearInterval(statusIntervalId);
   intervalId = null; statusIntervalId = null;
-}
-
-// ================= export report (ใช้แม่แบบเดียวกับ report.js) =================
-document.getElementById('exportBtn').addEventListener('click', exportNetWeightReport);
-
-function exportNetWeightReport(){
-  const view = getView();
-  if(view.length===0){ alert('ไม่มีข้อมูลในช่วงเวลาที่เลือก (ลองเปลี่ยน Range แล้วลองใหม่)'); return; }
-
-  const vals = view.map(r=>r.value);
-  const reportRows = view.map(r=>({ value:r.value, ts:r.ts })); // ใช้แบ่ง N/AVG/R ใน report ตามชั่วโมงจริง
-  const sess = CURRENT_SESSION;
-  const customerLabel = sess && sess.customer ? sess.customer + (sess.destination ? ` (${sess.destination})` : '') : '-';
-  const scStatus = currentScaleStatus();
-  const lineLabel = sess ? (sess.line || sess.scale_name || '-') : (scStatus ? (scStatus.line || scStatus.name) : '-');
-
-  const now = new Date();
-  const dd = String(now.getDate()).padStart(2,'0');
-  const mm = String(now.getMonth()+1).padStart(2,'0');
-  const beYear = now.getFullYear()+543;
-  const dateStr = `${dd}.${mm}.${beYear}${sess && sess.shift ? ' - ' + sess.shift : ''}`;
-  const timeStr = now.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit',hour12:false});
-
-  window.openWeightCheckReport({
-    productCode: sess ? sess.product_code : '-',
-    groupCode: sess ? sess.group_code : '-',
-    packageSize: sess ? sess.package : '', packageName: sess ? sess.package_name : '',
-    customerLabel, lineLabel,
-    inspectorName: sess ? sess.inspector_name : '-',
-    remark: sess ? sess.remark : '',
-    formCode: REPORT_FORM_CODE,
-    nwTarget: SPEC.TARGET, nwUcl: SPEC.USL, nwLcl: SPEC.LSL,
-    nwUwl: sess ? sess.nw_uwl : null, nwLwl: sess ? sess.nw_lwl : null,
-    values: vals, rows: reportRows, dateStr, timeStr, rangeLabel: selectedRangeLabel,
-    docLabel: sess ? sess.id : '',
-  });
 }
 
 document.querySelectorAll('.range-btn:not(#applyCustomRange)').forEach(b=>{
