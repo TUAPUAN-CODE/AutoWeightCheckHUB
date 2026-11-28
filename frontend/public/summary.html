@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>สรุปผลรายไลน์ — Auto Weight</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="stylesheet" href="assets/theme.css">
+<style>
+  .sm-date{display:flex; align-items:center; gap:6px; flex-wrap:wrap;}
+  .sm-date input[type=date]{height:38px; width:170px;}
+  .sec-head{display:flex; align-items:flex-end; justify-content:space-between; gap:10px 16px; flex-wrap:wrap; margin:26px 0 12px;}
+  .sec-head h2{margin:0; font-size:17px; font-weight:700; letter-spacing:-0.01em; display:flex; align-items:center; gap:8px;}
+  .sec-head h2 .i{color:var(--blue-600);}
+  .sec-head .sub{font-size:12.5px; color:var(--ink-3); margin-top:2px;}
+  .sec-tools{display:flex; align-items:center; gap:8px 12px; flex-wrap:wrap;}
+  .sec-tools .lbl{font-size:12.5px; font-weight:600; color:var(--ink-3);}
+
+  /* ภาพรวม */
+  .ov{display:grid; grid-template-columns:repeat(6, minmax(0,1fr)); gap:12px;}
+  .ov .kpi small{display:block; font-size:12px; color:var(--ink-3); font-weight:500;}
+  .ov .kpi b{display:block; font-size:26px; font-weight:700; letter-spacing:-0.02em; line-height:1.25; font-variant-numeric:tabular-nums;}
+  .ov .kpi em{font-style:normal; font-size:12px; color:var(--ink-2);}
+  .ov .kpi.good b{color:var(--good);} .ov .kpi.bad b{color:var(--bad);}
+  .ov .verdicts{display:flex; gap:6px; flex-wrap:wrap; margin-top:6px;}
+  @media (max-width:1200px){ .ov{grid-template-columns:repeat(3, minmax(0,1fr));} }
+  @media (max-width:640px){ .ov{grid-template-columns:repeat(2, minmax(0,1fr));} .ov .kpi b{font-size:21px;} }
+
+  /* การ์ดไลน์ */
+  .lines{display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:14px;}
+  .lc{position:relative; display:flex; flex-direction:column; gap:10px; padding:16px 18px 14px; border-radius:var(--radius-lg); background:var(--surface); border:1px solid var(--hairline); box-shadow:var(--shadow-sm); cursor:pointer; transition:border-color .15s, box-shadow .15s;}
+  .lc:hover{border-color:var(--blue-200); box-shadow:var(--shadow-md);}
+  .lc.focus{border-color:var(--blue-500); box-shadow:0 0 0 3px var(--blue-100);}
+  .lc::before{content:''; position:absolute; left:0; top:14px; bottom:14px; width:4px; border-radius:0 4px 4px 0; background:var(--idle);}
+  .lc.v-good::before{background:var(--good);} .lc.v-warn::before{background:var(--caution);} .lc.v-bad::before{background:var(--bad);}
+  .lc-head{display:flex; align-items:flex-start; gap:8px;}
+  .lc-name{flex:1; min-width:0;}
+  .lc-name b{display:block; font-size:15.5px; font-weight:700; letter-spacing:-0.01em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .lc-name small{display:block; font-size:12px; color:var(--ink-3); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .lc-main{display:flex; align-items:flex-end; gap:16px;}
+  .lc-cpk small{display:block; font-size:11.5px; color:var(--ink-3); font-weight:600; letter-spacing:.02em;}
+  .lc-cpk b{display:block; font-size:34px; font-weight:700; letter-spacing:-0.03em; line-height:1.05; font-variant-numeric:tabular-nums;}
+  .lc-cp{font-size:12.5px; color:var(--ink-2); padding-bottom:4px;}
+  .lc-cp b{font-size:15px; color:var(--ink); font-variant-numeric:tabular-nums;}
+  .verdict{display:inline-flex; align-items:center; gap:5px; height:26px; padding:0 10px; border-radius:999px; font-size:12px; font-weight:700; white-space:nowrap;}
+  .verdict .i{width:14px; height:14px;}
+  .verdict.good{background:var(--good-bg); color:var(--good);}
+  .verdict.warn{background:var(--caution-bg); color:var(--caution);}
+  .verdict.bad{background:var(--bad-bg); color:var(--bad);}
+  .verdict.none{background:var(--idle-bg); color:var(--ink-2);}
+  .lc-main .verdict{margin-left:auto; margin-bottom:4px;}
+  .passbar{display:flex; height:8px; border-radius:6px; overflow:hidden; background:var(--surface-2); gap:2px;}
+  .passbar i{display:block; height:100%;}
+  .passbar .p{background:var(--good); border-radius:6px 0 0 6px;}
+  .passbar .f{background:var(--bad); border-radius:0 6px 6px 0; min-width:3px;}
+  .passbar .u{background:var(--hairline); border-radius:0 6px 6px 0;}
+  .lc-counts{display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:6px;}
+  .lc-counts div{background:var(--surface-2); border-radius:9px; padding:6px 9px;}
+  .lc-counts small{display:block; font-size:11px; color:var(--ink-3);}
+  .lc-counts b{font-size:15px; font-variant-numeric:tabular-nums;}
+  .lc-counts .fail b{color:var(--bad);}
+  .lc-counts em{font-style:normal; font-size:11.5px; color:var(--ink-2); margin-left:3px;}
+  .lc-meta{font-size:12px; color:var(--ink-2); line-height:1.5; min-height:18px;}
+  .lc-meta .warnline{color:var(--caution); font-weight:500;}
+  .lc-trend{display:flex; align-items:center; gap:10px; border-top:1px solid var(--hairline-2); padding-top:10px;}
+  .lc-trend svg{flex:1; height:44px; min-width:0; display:block;}
+  .lc-trend .tdir{flex:none; font-size:12px; font-weight:600; text-align:right; line-height:1.3;}
+  .lc-trend .tdir small{display:block; font-weight:400; color:var(--ink-3);}
+  .tdir.up{color:var(--good);} .tdir.down{color:var(--bad);} .tdir.flat{color:var(--ink-2);}
+  .lc-links{display:flex; gap:6px;}
+  .lc-links a{font-size:12px;}
+  .lc.empty-line{opacity:.7;}
+  .lc.empty-line .lc-cpk b{color:var(--ink-3);}
+
+  /* แนวโน้ม */
+  .trend-card{padding:14px 16px 10px;}
+  .trend-tools{display:flex; align-items:center; gap:10px 14px; flex-wrap:wrap; margin-bottom:8px;}
+  .trend-tools .grow{flex:1;}
+  .nback{display:inline-flex; align-items:center; gap:6px; font-size:13px; color:var(--ink-2);}
+  .nback input{width:72px; height:34px; text-align:center;}
+  #focusSel{height:34px; max-width:220px;}
+  .trend-wrap{position:relative; height:360px;}
+  .trend-wrap svg{display:block; width:100%; height:100%;}
+  .trend-legend{display:flex; gap:6px 16px; flex-wrap:wrap; align-items:center; font-size:12px; color:var(--ink-2); padding:4px 2px 2px;}
+  .trend-legend .sw{display:inline-block; width:18px; height:3px; border-radius:2px; vertical-align:middle; margin-right:6px;}
+  .trend-legend .bx{display:inline-block; width:12px; height:10px; border-radius:3px; vertical-align:middle; margin-right:6px;}
+  .ttip{position:absolute; pointer-events:none; z-index:5; min-width:210px; max-width:300px; background:var(--surface); border:1px solid var(--hairline); border-radius:12px; box-shadow:var(--shadow-lg); padding:10px 12px; font-size:12.5px; display:none;}
+  .ttip .th{font-weight:700; margin-bottom:6px;}
+  .ttip .row{display:flex; align-items:center; gap:8px; padding:2px 0;}
+  .ttip .row span{flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--ink-2);}
+  .ttip .row b{font-variant-numeric:tabular-nums;}
+  .ttip .row.me span{color:var(--ink); font-weight:600;}
+  .ttip .dot{width:8px; height:8px; border-radius:50%; flex:none; background:var(--idle);}
+  .dot.good{background:var(--good);} .dot.warn{background:var(--caution);} .dot.bad{background:var(--bad);}
+
+  /* ตารางสีราย ช่วง */
+  .hm-wrap{margin-top:14px;}
+  table.hm{border-collapse:separate; border-spacing:0; font-size:12.5px; width:max-content; min-width:100%;}
+  table.hm th, table.hm td{padding:7px 10px; text-align:center; white-space:nowrap; border-bottom:1px solid var(--hairline-2);}
+  table.hm thead th{position:sticky; top:0; background:var(--surface-2); font-weight:600; color:var(--ink-2); font-size:11.5px; z-index:1;}
+  table.hm th.ln, table.hm td.ln{position:sticky; left:0; background:var(--surface); text-align:left; z-index:2; font-weight:600; min-width:150px; border-right:1px solid var(--hairline);}
+  table.hm thead th.ln{z-index:3; background:var(--surface-2);}
+  table.hm td.cell{font-variant-numeric:tabular-nums; font-weight:600; cursor:default;}
+  table.hm td.cell.good{background:var(--good-bg); color:var(--good);}
+  table.hm td.cell.warn{background:var(--caution-bg); color:var(--caution);}
+  table.hm td.cell.bad{background:var(--bad-bg); color:var(--bad);}
+  table.hm td.cell.na{color:var(--ink-3); font-weight:400;}
+  table.hm td.tot{border-left:1px solid var(--hairline); font-weight:700;}
+  table.hm tr.focus td.ln{color:var(--blue-700);}
+  table.hm tr:hover td.ln{background:var(--blue-25);}
+
+  .guide{display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:12px; font-size:13px; line-height:1.6; color:var(--ink-2);}
+  .guide b{color:var(--ink);}
+  .guide .crit{display:flex; flex-direction:column; gap:6px;}
+  .loading-veil{opacity:.55; transition:opacity .2s;}
+  .err-box{margin-top:12px; padding:10px 14px; border-radius:12px; background:var(--bad-bg); color:var(--bad); font-size:13px; display:none;}
+  @media (max-width:640px){
+    .page{padding:16px 12px 40px;}
+    .lines{grid-template-columns:1fr;}
+    .trend-wrap{height:300px;}
+    .sm-date input[type=date]{width:150px;}
+  }
+  @media print{
+    #appbar, .head-actions, .trend-tools, .lc-links{display:none !important;}
+    .lc{break-inside:avoid; box-shadow:none;}
+  }
+</style>
+</head>
+<body data-page="summary">
+<script src="assets/app-header.js"></script>
+<div class="page">
+  <div class="page-head">
+    <div>
+      <div class="eyebrow">Line Quality Summary · สรุปคุณภาพรายไลน์</div>
+      <h1>สรุปผลรายไลน์ <span class="accent" id="dayTitle">วันนี้</span></h1>
+      <div class="sub">แต่ละไลน์ผลิตกี่ชิ้น ผ่าน / ไม่ผ่านกี่ชิ้น และ Cp / Cpk ดีหรือไม่ — คำนวณตามสเปกของเอกสารแต่ละใบ</div>
+    </div>
+    <div class="head-actions">
+      <div class="sm-date">
+        <button class="btn icon-only" id="btnPrev" type="button" title="วันก่อนหน้า" aria-label="วันก่อนหน้า"><svg class="i"><use href="assets/icons.svg#arrow-left"></use></svg></button>
+        <input type="date" id="dayInput" aria-label="วันที่">
+        <button class="btn icon-only" id="btnNext" type="button" title="วันถัดไป" aria-label="วันถัดไป"><svg class="i"><use href="assets/icons.svg#arrow-right"></use></svg></button>
+        <button class="btn" id="btnToday" type="button">วันนี้</button>
+      </div>
+      <button class="btn" id="btnRefresh" type="button" title="โหลดใหม่"><svg class="i"><use href="assets/icons.svg#refresh"></use></svg>รีเฟรช</button>
+      <button class="btn" id="btnCsv" type="button"><svg class="i"><use href="assets/icons.svg#file"></use></svg>CSV</button>
+      <button class="btn" id="btnPrint" type="button"><svg class="i"><use href="assets/icons.svg#printer"></use></svg>พิมพ์</button>
+    </div>
+  </div>
+
+  <div class="ov" id="overview"></div>
+  <div class="err-box" id="errBox"></div>
+
+  <div class="sec-head">
+    <div>
+      <h2><svg class="i"><use href="assets/icons.svg#factory"></use></svg>แต่ละไลน์ <span class="muted" id="linesDay" style="font-weight:500; font-size:14px;"></span></h2>
+      <div class="sub">แถบสีซ้ายการ์ด = ผลตาม Cpk · กดการ์ดเพื่อดูแนวโน้มของไลน์นั้นด้านล่าง</div>
+    </div>
+    <div class="sec-tools">
+      <div class="seg" id="showSeg">
+        <button type="button" data-v="active" class="active">เฉพาะไลน์ที่ผลิต</button>
+        <button type="button" data-v="all">ทุกไลน์</button>
+      </div>
+      <div class="seg" id="sortSeg">
+        <button type="button" data-v="name" class="active">เรียงตามชื่อ</button>
+        <button type="button" data-v="worst">Cpk ต่ำสุดก่อน</button>
+      </div>
+    </div>
+  </div>
+  <div class="lines" id="lines"></div>
+
+  <div class="sec-head">
+    <div>
+      <h2><svg class="i"><use href="assets/icons.svg#activity"></use></svg>แนวโน้ม <span class="muted" id="trendRange" style="font-weight:500; font-size:14px;"></span></h2>
+      <div class="sub">เลือกได้ว่าจะดูเป็นรายวัน / สัปดาห์ / เดือน / ปี และย้อนหลังกี่ช่วง — สิ้นสุดที่วันที่เลือกด้านบน</div>
+    </div>
+  </div>
+  <div class="card trend-card">
+    <div class="trend-tools">
+      <div class="seg" id="periodSeg">
+        <button type="button" data-v="day">รายวัน</button>
+        <button type="button" data-v="week" class="active">รายสัปดาห์</button>
+        <button type="button" data-v="month">รายเดือน</button>
+        <button type="button" data-v="year">รายปี</button>
+      </div>
+      <label class="nback">ย้อนหลัง <input type="number" id="nBack" min="1" max="400" step="1" value="8"> <span id="nUnit">สัปดาห์</span></label>
+      <span class="grow"></span>
+      <div class="seg" id="metricSeg">
+        <button type="button" data-v="cpk" class="active">Cpk</button>
+        <button type="button" data-v="cp">Cp</button>
+        <button type="button" data-v="pass_pct">% ผ่าน</button>
+        <button type="button" data-v="n">จำนวนชิ้น</button>
+      </div>
+      <select id="focusSel" aria-label="ไลน์ที่เน้น"></select>
+    </div>
+    <div class="trend-wrap" id="trendWrap">
+      <svg id="trendSvg" role="img" aria-label="กราฟแนวโน้มรายไลน์"></svg>
+      <div class="ttip" id="ttip"></div>
+    </div>
+    <div class="trend-legend" id="trendLegend"></div>
+    <div class="table-wrap hm-wrap"><table class="hm" id="hmTable"></table></div>
+  </div>
+
+  <div class="sec-head"><div><h2><svg class="i"><use href="assets/icons.svg#info"></use></svg>วิธีอ่านหน้านี้</h2></div></div>
+  <div class="card guide" id="guide"></div>
+</div>
+<script src="assets/summary.js"></script>
+</body>
+</html>

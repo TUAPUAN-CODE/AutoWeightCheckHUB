@@ -138,15 +138,13 @@ const COLUMNS = [
 
 let state = { sortBy:'start_time', sortDir:'desc', page:1, pageSize:50, total:0 };
 let rowsCache = [];
-let historyEditPassword = '172480116';
+// รหัสแก้ไขเวลา = "Itc#" ตามด้วยปี ค.ศ. ปัจจุบัน เช่น Itc#2026 (เปลี่ยนเองทุกปี)
+const historyEditPassword = () => `Itc#${new Date().getFullYear()}`;
 let REPORT_FORM_CODE = 'F3QCPFB8-1-01/9/2025';
 
 async function loadPassword(){
   try{
     const data = await api('/api/settings');
-    if(data.settings && data.settings['security.historyEditPassword']) {
-      historyEditPassword = data.settings['security.historyEditPassword'];
-    }
     if(data.settings && data.settings['report.formCode']) {
       REPORT_FORM_CODE = data.settings['report.formCode'];
     }
@@ -198,6 +196,7 @@ function rowHtml(r){
     <td class="${r.out_of_spec_count ? 'oos' : ''}">${r.out_of_spec_count ?? '-'}</td>
     <td style="display:flex; gap:6px; flex-wrap:wrap;">
       <a class="link" href="session.html?id=${r.id}">รายละเอียด${icon('arrow-right','sm')}</a>
+      <a class="btn small" href="analysis.html?session=${r.id}" title="ดูกราฟย้อนหลังของเอกสารนี้">${icon('dashboard')}กราฟ</a>
       <button class="btn small" data-action="pdf" data-id="${r.id}">${icon('file')}PDF</button>
       <button class="btn small" data-action="edittime" data-id="${r.id}">แก้ไขเวลา</button>
     </td>
@@ -260,7 +259,7 @@ async function exportRowPdf(docId){
   try{
     const sessionRes = await api(`/api/sessions/${docId}`);
     const s = sessionRes.session;
-    const weightsRes = await api(`/api/weights/range?scaleId=${s.scale_id}&from=${encodeURIComponent(s.start_time)}&to=${encodeURIComponent(s.end_time)}&limit=20000`);
+    const weightsRes = await api(`/api/sessions/${docId}/weights?limit=200000`);
     const values = (weightsRes.rows || []).map(r => r.weight).filter(v => Number.isFinite(v));
 
     const startD = new Date(s.start_time);
@@ -311,7 +310,7 @@ function openEditTimeModal(docId){
 $('btnEditTimeCancel').addEventListener('click', () => $('editTimeModal').classList.remove('open'));
 $('btnEditTimeSave').addEventListener('click', async () => {
   const password = $('ePassword').value;
-  if(password !== historyEditPassword){
+  if(password !== historyEditPassword()){
     $('editTimeErr').textContent = 'รหัสผ่านไม่ถูกต้อง';
     return;
   }
@@ -341,7 +340,7 @@ $('tbody').addEventListener('click', (e) => {
     return;
   }
   // ลิงก์ "รายละเอียด" ยังพาไปหน้า session.html ตามเดิม
-  const link = e.target.closest('a.link');
+  const link = e.target.closest('a');
   if(link) return;
 
   // คลิกที่แถว (นอกเหนือจากปุ่ม/ลิงก์ข้างบน) → เปิด popup histogram แบบเต็มจอ
@@ -361,8 +360,13 @@ $('btnNext').addEventListener('click', () => { state.page++; load(); });
 
 buildHead();
 loadPassword();
-loadFilterOptions();
-load();
+// เปิดจากหน้าอื่นพร้อมเครื่องที่ต้องการ (เช่น history.html?scaleId=3 จากหน้าสรุปผลรายไลน์)
+(async () => {
+  await loadFilterOptions();
+  const qScale = new URLSearchParams(location.search).get('scaleId');
+  if(qScale && [...$('fScale').options].some(o => o.value === qScale)) $('fScale').value = qScale;
+  load();
+})();
 </script>
 </body>
 </html>

@@ -15,20 +15,20 @@
     el = document.createElement('div');
     el.id = MODAL_ID;
     el.style.cssText = `
-      position:fixed; inset:0; background:#F6F8FB; z-index:5000;
+      position:fixed; inset:0; background:var(--bg, #F6F8FB); z-index:5000;
       display:none; flex-direction:column;
-      font-family:'IBM Plex Sans Thai','Leelawadee UI',Tahoma,sans-serif; color:#0E1A2E;
+      font-family:'IBM Plex Sans Thai','Leelawadee UI',Tahoma,sans-serif; color:var(--text, #0E1A2E);
     `;
     el.innerHTML = `
       <div style="display:flex; align-items:center; justify-content:space-between;
-                  padding:14px 24px; background:#fff; border-bottom:1px solid #E4E9F1; flex:none;">
+                  padding:14px 24px; background:var(--panel, #fff); border-bottom:1px solid var(--line, #E4E9F1); flex:none;">
         <div id="hmTitle" style="font-size:18px; font-weight:700; letter-spacing:-0.01em;">Histogram</div>
         <button id="hmCloseBtn" class="btn" type="button"><svg class="i"><use href="assets/icons.svg#x"></use></svg>ปิด</button>
       </div>
-      <div style="flex:1; overflow:auto; padding:24px 30px;"><div style="background:#fff; border:1px solid #E4E9F1; border-radius:16px; padding:22px 24px; box-shadow:0 1px 2px rgba(14,26,46,.04),0 2px 8px -2px rgba(14,26,46,.06);">
-        <div id="hmSubtitle" style="font-size:12.5px; color:#4A5870; margin-bottom:16px;"></div>
+      <div style="flex:1; overflow:auto; padding:24px 30px;"><div style="background:var(--panel, #fff); border:1px solid var(--line, #E4E9F1); border-radius:16px; padding:22px 24px; box-shadow:0 1px 2px rgba(14,26,46,.04),0 2px 8px -2px rgba(14,26,46,.06);">
+        <div id="hmSubtitle" style="font-size:12.5px; color:var(--text-dim, #4A5870); margin-bottom:16px;"></div>
         <div id="hmChartWrap" style="width:100%;"></div>
-        <div id="hmMsg" style="display:none; text-align:center; color:#8190A6; padding:60px;"></div>
+        <div id="hmMsg" style="display:none; text-align:center; color:var(--text-faint, #8190A6); padding:60px;"></div>
       </div></div>
     `;
     document.body.appendChild(el);
@@ -56,91 +56,37 @@
     return payload || {};
   }
 
-  function buildHistogram(values, opts) {
-    opts = opts || {};
-    let min = Math.min(...values);
-    let max = Math.max(...values);
-    if (opts.lsl != null) min = Math.min(min, opts.lsl);
-    if (opts.usl != null) max = Math.max(max, opts.usl);
-    min = Math.floor(min);
-    max = Math.ceil(max);
-    if (min === max) { min -= 1; max += 1; }
-
-    // ถ้าช่วงข้อมูลกว้างมาก ให้รวมเป็นช่วง ๆ (bin) แทนการนับทีละหน่วย
-    const binWidth = (max - min) > 30 ? Math.ceil((max - min) / 20) : 1;
-    const binCount = Math.ceil((max - min) / binWidth);
-    const bins = new Array(binCount).fill(0);
-
-    values.forEach((v) => {
-      let idx = Math.floor((v - min) / binWidth);
-      if (idx < 0) idx = 0;
-      if (idx >= binCount) idx = binCount - 1;
-      bins[idx]++;
+  // ช่อง Histogram + การวาด ใช้ตัวเดียวกับ Dashboard (assets/hist-bins.js) — โหลดเองถ้าหน้านั้นยังไม่ได้ใส่ไว้
+  function ensureBins() {
+    if (window.computeHistogram && window.histogramSvg) return Promise.resolve();
+    return new Promise((resolve, reject) => {
+      const sc = document.createElement('script');
+      sc.src = 'assets/hist-bins.js';
+      sc.onload = () => resolve();
+      sc.onerror = () => reject(new Error('โหลด hist-bins.js ไม่ได้'));
+      document.head.appendChild(sc);
     });
-
-    return { min, max, binWidth, binCount, bins };
   }
 
-  function renderChart(container, hist, opts) {
-    opts = opts || {};
-    const width = Math.max(container.clientWidth || 900, 640);
-    const height = 540;
-    const padL = 40, padR = 30, padT = 70, padB = 50;
-    const plotW = width - padL - padR;
-    const plotH = height - padT - padB;
-    const maxCount = Math.max(...hist.bins, 1);
-    const barW = plotW / hist.binCount;
+  let zoneCache = null;
+  async function loadZone() {
+    if (zoneCache) return zoneCache;
+    zoneCache = { yellowPct: 60, redPct: 85 };
+    try {
+      const st = await apiGet('/api/settings');
+      const v = (st && (st.settings || st)) || {};
+      const y = Number(v['zone.yellowPct']); const r = Number(v['zone.redPct']);
+      if (Number.isFinite(y) && y > 0) zoneCache.yellowPct = y;
+      if (Number.isFinite(r) && r > 0) zoneCache.redPct = r;
+    } catch (e) { console.error('histogram-modal settings:', e); }
+    return zoneCache;
+  }
 
-    const xOf = (val) => padL + ((val - hist.min) / (hist.max - hist.min)) * plotW;
-    const yOf = (count) => padT + plotH - (count / maxCount) * plotH;
-
-    let svg = `<svg viewBox="0 0 ${width} ${height}" width="100%" height="${height}"
-                 xmlns="http://www.w3.org/2000/svg"
-                 style="font-family:'IBM Plex Sans Thai','Leelawadee UI',Tahoma,sans-serif;">`;
-
-    // เส้นฐาน
-    svg += `<line x1="${padL}" y1="${padT + plotH}" x2="${padL + plotW}" y2="${padT + plotH}"
-              stroke="#D3DAE5" stroke-width="1"/>`;
-
-    // แท่งกราฟ
-    hist.bins.forEach((count, i) => {
-      const x0 = hist.min + i * hist.binWidth;
-      const xPix = xOf(x0);
-      const yPix = yOf(count);
-      const h = (padT + plotH) - yPix;
-      svg += `<rect x="${xPix + 1}" y="${yPix}" width="${Math.max(barW - 2, 1)}"
-                height="${Math.max(h, 0)}" rx="2" fill="#2563EB"></rect>`;
-      if (count > 0) {
-        svg += `<text x="${xPix + barW / 2}" y="${yPix - 8}" font-size="14" font-weight="700"
-                  fill="#0E1A2E" text-anchor="middle">${count}</text>`;
-      }
-    });
-
-    // เลขกำกับแกน X
-    const labelStep = hist.binCount > 16 ? 2 : 1;
-    for (let i = 0; i <= hist.binCount; i += labelStep) {
-      const val = hist.min + i * hist.binWidth;
-      const xPix = xOf(val);
-      svg += `<text x="${xPix}" y="${padT + plotH + 22}" font-size="13"
-                fill="#8190A6" text-anchor="middle">${val}</text>`;
-    }
-
-    // เส้น LSL / USL / Target
-    function specLine(val, color, label, dashed) {
-      if (val == null || isNaN(val)) return '';
-      const xPix = xOf(val);
-      let s = `<line x1="${xPix}" y1="${padT - 10}" x2="${xPix}" y2="${padT + plotH}"
-                 stroke="${color}" stroke-width="2" ${dashed ? 'stroke-dasharray="6,5"' : ''}/>`;
-      s += `<text x="${xPix}" y="${padT - 16}" font-size="13" font-weight="700"
-              fill="${color}" text-anchor="middle">${label}</text>`;
-      return s;
-    }
-    svg += specLine(opts.lsl, '#D23A31', 'LSL ' + opts.lsl, false);
-    svg += specLine(opts.usl, '#D23A31', 'USL ' + opts.usl, false);
-    svg += specLine(opts.target, '#F57C1F', 'Target ' + opts.target, true);
-
-    svg += `</svg>`;
-    container.innerHTML = svg;
+  function renderChart(container, h, opts) {
+    const W = Math.max(container.clientWidth || 900, 640);
+    const H = 440;
+    const inner = window.histogramSvg(h, Object.assign({ W, H, fontSize: 13 }, opts));
+    container.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="100%" style="display:block; font-family:inherit;">${inner}</svg>`;
   }
 
   function showMessage(modal, text) {
@@ -158,7 +104,7 @@
     modal.querySelector('#hmSubtitle').textContent = '';
     modal.querySelector('#hmTitle').textContent = `Histogram — เอกสาร #${docId}`;
     modal.querySelector('#hmChartWrap').innerHTML =
-      '<div style="padding:60px; text-align:center; color:rgba(19,26,43,0.45);">กำลังโหลดข้อมูล...</div>';
+      '<div style="padding:60px; text-align:center; color:var(--text-faint, #8190A6);">กำลังโหลดข้อมูล...</div>';
 
     try {
       const sessionRes = await apiGet(`/api/sessions/${docId}`);
@@ -169,21 +115,28 @@
         return;
       }
 
-      const weightsRes = await apiGet(
-        `/api/weights/range?scaleId=${s.scale_id}&from=${encodeURIComponent(s.start_time)}&to=${encodeURIComponent(s.end_time)}&limit=20000`
-      );
+      // อ่านตามเลขเอกสาร (session_id) — รวมข้อมูลเก่าที่อยู่ใน dbo.Auto ก่อนแยกตาราง Spout
+      const weightsRes = await apiGet(`/api/sessions/${docId}/weights?limit=200000`);
       const values = (weightsRes.rows || []).map((r) => r.weight).filter((v) => Number.isFinite(v));
 
-      modal.querySelector('#hmSubtitle').textContent =
-        `${s.product_code || ''}  ${s.group_code || ''}  ·  ${s.line || s.scale_name || '-'}  ·  จำนวนค่า ${values.length}`;
-
       if (!values.length) {
+        modal.querySelector('#hmSubtitle').textContent =
+          `${s.product_code || ''}  ${s.group_code || ''}  ·  ${s.line || s.scale_name || '-'}  ·  จำนวนค่า 0`;
         showMessage(modal, 'ไม่มีข้อมูลน้ำหนักในช่วงเวลานี้');
         return;
       }
 
-      const opts = { lsl: s.nw_lcl, usl: s.nw_ucl, target: s.nw_target };
-      const hist = buildHistogram(values, opts);
+      await ensureBins();
+      const num = (v) => (v == null || v === '' || !Number.isFinite(Number(v)) ? undefined : Number(v));
+      const opts = { lsl: num(s.nw_lcl), usl: num(s.nw_ucl), target: num(s.nw_target), zone: await loadZone() };
+      const hist = window.computeHistogram(values, opts);
+      const outside = hist.below.count + hist.above.count;
+      const w = hist.width >= 1 ? hist.width.toFixed(0) : hist.width >= 0.1 ? hist.width.toFixed(1) : hist.width.toFixed(2);
+      modal.querySelector('#hmSubtitle').textContent =
+        `${s.product_code || ''}  ${s.group_code || ''}  ·  ${s.line || s.scale_name || '-'}  ·  จำนวนค่า ${values.length.toLocaleString('en-US')}` +
+        `  ·  ช่องละ ${w} g` +
+        (outside ? `  ·  ${outside.toLocaleString('en-US')} ค่าอยู่ไกลจากกลุ่มหลัก (แท่งขอบ)` : '') +
+        (opts.lsl != null && !hist.specInRange ? '  ·  ⚠ สเปกในเอกสารไม่ตรงกับน้ำหนักที่ผลิตจริง' : '');
       renderChart(modal.querySelector('#hmChartWrap'), hist, opts);
     } catch (err) {
       showMessage(modal, 'โหลดข้อมูลไม่สำเร็จ: ' + err.message);

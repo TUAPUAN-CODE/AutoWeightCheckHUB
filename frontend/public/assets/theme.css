@@ -56,7 +56,7 @@
   --shadow-lg:0 24px 60px -16px rgba(14,26,46,0.28);
   --ring:0 0 0 3px rgba(37,99,235,0.18);
 
-  --font:'IBM Plex Sans Thai', 'Leelawadee UI', 'Segoe UI', Tahoma, sans-serif;
+  --font:'IBM Plex Sans Thai', 'Leelawadee UI', 'Segoe UI', 'Myanmar Text', 'Noto Sans Myanmar', 'Khmer UI', 'Noto Sans Khmer', Tahoma, sans-serif;
   --appbar-h:64px;
 
   /* ---- ชื่อตัวแปรเดิมของแต่ละหน้า (ให้โค้ดเดิมใช้สีชุดใหม่) ---- */
@@ -68,6 +68,31 @@
   --brand:var(--blue-600); --accent:var(--orange-500);
   --sans:var(--font); --mono:var(--font);
 }
+
+/* ---------- โหมดมืด (สลับที่ปุ่มบนเมนู — จำไว้ในเครื่อง) ---------- */
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --blue-25:#111C30; --blue-50:#15264A; --blue-100:#1C3466; --blue-200:#2B4C92;
+  --blue-500:#4C86FF; --blue-600:#3D78F5; --blue-700:#9DBDFF; --blue-900:#DCE7FF;
+  --orange-50:#2B1E12; --orange-100:#4A3018; --orange-400:#FFAE66; --orange-500:#FF8C3A; --orange-600:#FFA45C;
+  --canvas:#0A111D; --surface:#111A29; --surface-2:#162133; --hairline:#24324A; --hairline-2:#1C283C;
+  --ink:#E7EDF7; --ink-2:#A8B5CA; --ink-3:#73839C;
+  --good:#3CCB95; --good-bg:rgba(60,203,149,0.13); --good-line:rgba(60,203,149,0.35);
+  --caution:#F2B84B; --caution-bg:rgba(242,184,75,0.13); --caution-line:rgba(242,184,75,0.38);
+  --bad:#FF6B61; --bad-bg:rgba(255,107,97,0.13); --bad-line:rgba(255,107,97,0.4);
+  --idle:#8C98AD; --idle-bg:#1B2639;
+  --shadow-xs:0 1px 2px rgba(0,0,0,0.35);
+  --shadow-sm:0 1px 2px rgba(0,0,0,0.35), 0 2px 8px -2px rgba(0,0,0,0.4);
+  --shadow-md:0 1px 2px rgba(0,0,0,0.4), 0 10px 28px -10px rgba(0,0,0,0.6);
+  --shadow-lg:0 24px 60px -16px rgba(0,0,0,0.7);
+  --ring:0 0 0 3px rgba(76,134,255,0.3);
+}
+:root[data-theme="dark"] #appbar{background:rgba(13,21,34,0.92);}
+:root[data-theme="dark"] .btn.primary{color:#fff;}
+:root[data-theme="dark"] input::placeholder, :root[data-theme="dark"] textarea::placeholder{color:#5E6D85;}
+:root[data-theme="dark"] ::-webkit-scrollbar-thumb{background:#2A3850; border-color:var(--canvas);}
+:root[data-theme="dark"] .switch input{background:#33425C;}
+:root[data-theme="dark"] .modal-backdrop{background:rgba(0,0,0,0.6);}
 
 *{box-sizing:border-box;}
 html{-webkit-text-size-adjust:100%;}
@@ -123,6 +148,12 @@ a{color:var(--blue-600);}
 #appbar .ab-clock b{font-size:15px; font-weight:600; font-variant-numeric:tabular-nums; letter-spacing:.01em;}
 #appbar .ab-clock small{font-size:11px; color:var(--ink-3);}
 #appbar .ab-menu-btn{display:none;}
+#appbar .ab-tools{display:flex; align-items:center; gap:8px;}
+#appbar .ab-lang{height:36px; padding:0 30px 0 34px; font-size:13px; font-weight:600; border-radius:10px; min-width:0;
+  background-position:right 8px center, left 10px center;}
+#appbar .ab-lang-wrap{position:relative; display:inline-flex;}
+#appbar .ab-lang-wrap .i{position:absolute; left:10px; top:50%; transform:translateY(-50%); width:16px; height:16px; color:var(--ink-2); pointer-events:none;}
+#appbar .ab-theme{width:36px; height:36px;}
 
 #appbar .ab-drawer{display:none;}
 
@@ -134,6 +165,7 @@ a{color:var(--blue-600);}
 @media (max-width:900px){
   #appbar .ab-nav{display:none;}
   #appbar .ab-clock small{display:none;}
+  #appbar .ab-clock{display:none;}
   #appbar .ab-menu-btn{display:inline-flex;}
   #appbar .ab-drawer{
     position:absolute; top:var(--appbar-h); left:0; right:0; background:#fff; border-bottom:1px solid var(--hairline);

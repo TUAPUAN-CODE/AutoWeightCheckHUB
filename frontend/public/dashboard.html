@@ -55,6 +55,17 @@
   .doc-bar .alert-badge{order:10; flex:1 1 100%; animation:none; border-radius:10px; line-height:1.45; padding:7px 12px;}
   .doc-bar .alert-badge::before{content:''; width:8px; height:8px; border-radius:50%; background:var(--limit); flex:none; animation:pulseAlert 1.2s infinite;}
   .doc-bar-info{display:flex; align-items:center; gap:10px; color:var(--ink-2);}
+  .spec-warn{order:11; flex:1 1 100%; display:flex; align-items:center; flex-wrap:wrap; gap:8px 12px; padding:8px 12px; border-radius:10px;
+    background:var(--orange-50, #FFF4EA); border:1px solid var(--orange-100); color:var(--ink); line-height:1.45;}
+  .spec-warn[hidden]{display:none;}
+  .spec-warn > .i{color:var(--orange-600); width:18px; height:18px; flex:none;}
+  .spec-warn .sw-text{flex:1 1 380px; min-width:0;}
+  .spec-warn .sw-text small{display:block; color:var(--ink-2); font-size:12px;}
+  .spec-warn .sw-seg{display:inline-flex; border:1px solid var(--line); border-radius:9px; overflow:hidden; background:var(--surface); flex:none;}
+  .spec-warn .sw-seg button{border:0; background:transparent; color:var(--ink-2); font:inherit; font-size:12.5px; font-weight:600; padding:6px 12px; cursor:pointer; min-height:32px;}
+  .spec-warn .sw-seg button + button{border-left:1px solid var(--line);}
+  .spec-warn .sw-seg button.on{background:var(--blue-600); color:#fff;}
+  .spec-src{font-style:normal; font-weight:600; color:var(--orange-600); letter-spacing:0;}
   .doc-bar-lbl{display:inline-flex; align-items:center; gap:6px; color:var(--orange-600); font-weight:600; font-size:12.5px;}
   #docBarText{color:var(--ink); font-weight:500;}
   .doc-bar-actions{display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:flex-end;}
@@ -85,8 +96,45 @@
   .time-input{height:30px; width:76px; padding:0 8px; font-size:12.5px; border-radius:8px; text-align:center;}
 
   /* ---------- KPI ---------- */
-  .kpis{display:grid; grid-template-columns:repeat(6,1fr); gap:8px; flex:0 0 auto;}
-  .kpi{background:var(--surface); border:1px solid var(--hairline); border-radius:var(--radius); padding:7px 14px 6px; box-shadow:var(--shadow-xs);}
+  .kpis{display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:8px; flex:0 0 auto;}
+  .kpi{background:var(--surface); border:1px solid var(--hairline); border-radius:var(--radius); padding:7px 14px 6px; box-shadow:var(--shadow-xs);
+    text-align:left; font:inherit; color:inherit; cursor:pointer; transition:border-color .15s, box-shadow .15s; min-width:0;}
+  .kpi:hover{border-color:var(--blue-200); box-shadow:var(--shadow-md);}
+  .kpi:focus-visible{outline:none; box-shadow:var(--ring);}
+  .kpi.yield{grid-column:span 2; display:flex; flex-direction:column; gap:1px;}
+  .kpi.yield .lbl b{color:var(--ink); font-weight:700;}
+  .yield-nums{display:flex; gap:16px; font-size:13px; color:var(--ink-2); align-items:baseline;}
+  .yield-nums b{font-size:18px; font-weight:700; font-variant-numeric:tabular-nums;}
+  .yield-nums small{font-size:12px; font-weight:600;}
+  .y-pass b, .y-pass small{color:var(--good);}
+  .y-fail b, .y-fail small{color:var(--limit);}
+  .ybar{display:flex; height:6px; border-radius:999px; overflow:hidden; background:var(--idle-bg); margin:2px 0 1px;}
+  .ybar i{height:100%;} .ybar .p{background:var(--good);} .ybar .o{background:var(--limit);} .ybar .u{background:var(--target);}
+  /* รายละเอียด KPI */
+  #kpiDetailModal .modal{width:660px;}
+  .kd-lead{margin:4px 0 12px; color:var(--ink-2); font-size:13.5px; line-height:1.6;}
+  .kd-formula{background:var(--surface-2); border:1px solid var(--hairline); border-radius:10px; padding:10px 12px; font-size:13.5px; margin-bottom:10px; font-variant-numeric:tabular-nums;}
+  .kd-curve{width:100%; height:auto; display:block; margin:4px 0 10px;}
+  .kd-curve text{font-family:var(--font); font-weight:600;}
+  .kd-crit{width:100%; border-collapse:separate; border-spacing:0; font-size:13px; border:1px solid var(--hairline); border-radius:10px; overflow:hidden;}
+  .kd-crit td{padding:8px 10px; border-bottom:1px solid var(--hairline-2);}
+  .kd-crit tr:last-child td{border-bottom:none;}
+  .kd-crit td:first-child{font-weight:700; white-space:nowrap; width:110px;}
+  .kd-crit td.bad{color:var(--limit);} .kd-crit td.warn{color:var(--caution);} .kd-crit td.good{color:var(--good);}
+  .kd-crit tr.on td{background:var(--blue-50);}
+  .kd-crit tr.on td:last-child::after{content:'  ← ค่าปัจจุบัน'; color:var(--blue-700); font-weight:600;}
+  .kd-note{font-size:12px; color:var(--ink-3); margin:6px 0 12px;}
+  .kd-rows{display:grid; grid-template-columns:1fr 1fr; gap:0 18px; margin:6px 0 10px;}
+  .kd-rows div{display:flex; justify-content:space-between; gap:10px; padding:7px 0; border-bottom:1px solid var(--hairline-2); font-size:13px;}
+  .kd-rows span{color:var(--ink-3);} .kd-rows b{font-variant-numeric:tabular-nums; text-align:right;}
+  .kd-tip{margin:8px 0 0; padding:10px 12px; background:var(--orange-50); border:1px solid var(--orange-100); border-radius:10px; font-size:13px; line-height:1.6;}
+  /* สถานะเครื่องในแถวเอกสาร */
+  .machine-strip{display:flex; align-items:center; gap:4px 14px; flex-wrap:wrap; font-size:12.5px; color:var(--ink-2); padding-left:14px; margin-left:4px; border-left:1px solid var(--hairline);}
+  .machine-strip:empty{display:none;}
+  #scaleChip{display:none;} /* รายละเอียดเครื่องย้ายไปอยู่ในแถบสถานะเครื่องแล้ว */
+  .machine-strip b{color:var(--ink); font-weight:600;}
+  .machine-strip .pill{height:24px;}
+
   .kpi .lbl{font-size:11.5px; font-weight:500; color:var(--ink-3);}
   .kpi .val{font-size:19px; font-weight:700; letter-spacing:-0.02em; line-height:1.3; font-variant-numeric:tabular-nums; transition:color .2s;}
   .kpi .sub{font-size:11.5px; color:var(--ink-3); line-height:1.3; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
@@ -116,6 +164,13 @@
   .expand-hint{margin-left:auto; flex:0 0 auto; color:var(--ink-3); display:inline-flex; align-self:center;}
   .panel.expandable:hover .expand-hint{color:var(--blue-600);}
   .expand-hint .i{width:15px; height:15px;}
+  .ich-mode{flex:0 0 auto; display:inline-flex; align-items:center; gap:6px; height:28px; padding:0 4px 0 9px; border:1px solid var(--line); border-radius:8px; background:var(--surface-2, var(--panel)); color:var(--ink-2); cursor:pointer; font-size:12px; font-weight:500;}
+  .ich-mode:hover{border-color:var(--blue-200);}
+  .ich-mode .i{width:14px; height:14px; color:var(--blue-600);}
+  .ich-mode select{border:0; background:transparent; color:inherit; font:inherit; padding:0 2px; height:26px; cursor:pointer; outline:none; max-width:140px;}
+  .ich-mode select:focus-visible{outline:2px solid var(--blue-200); border-radius:6px;}
+  .ich-mode option, .ich-mode optgroup{background:var(--panel); color:var(--ink);}
+  @media (max-width:640px){ .ich-mode select{max-width:112px;} }
   .chart-body-wrap{flex:1; min-height:0; display:flex; flex-direction:column; min-width:0;}
 
   /* ---------- ขยายกราฟ (zoom/pan) ---------- */
@@ -159,9 +214,12 @@
   .feed-row .bar-bg{background:var(--surface-2); border-radius:3px; height:6px; position:relative; overflow:hidden;}
   .feed-row .bar-fill{position:absolute; top:0; bottom:0; left:0; border-radius:3px;}
   .tag{justify-self:end; height:20px; font-size:10.5px; white-space:nowrap;}
-  .tag.OK{background:var(--ok-dim); color:var(--ok);}
-  .tag.WARNING{background:var(--orange-50); color:var(--orange-600);}
-  .tag.OUT_OF_SPEC{background:var(--limit-dim); color:var(--limit);}
+  .tag.z-GREEN{background:var(--good-bg); color:var(--good);}
+  .tag.z-YELLOW{background:var(--caution-bg); color:var(--caution);}
+  .tag.z-RED{background:rgba(240,96,43,0.14); color:#E0531F;}
+  .tag.z-OUT{background:var(--limit); color:#fff;}
+  .alert-badge.yellow{background:var(--caution-bg); color:var(--caution); border-color:var(--caution-line);}
+  .doc-bar .alert-badge.yellow::before{background:#E3A008;}
 
   /* สถานะการเชื่อมต่อ เครื่องชั่ง / ฐานข้อมูล */
   .status-group{display:flex; gap:8px; flex-wrap:wrap;}
@@ -176,13 +234,15 @@
   .conn-chip.down .chip-text small{color:var(--limit);}
   @keyframes pulseDot{0%,100%{opacity:1;} 50%{opacity:.35;}}
 
-  @media (max-width:1200px){ .kpis{grid-template-columns:repeat(3,1fr);} }
+  @media (max-width:1200px){ .kpis{grid-template-columns:repeat(3,1fr);} .kpi.yield{grid-column:span 3;} .doc-bar-info{flex-wrap:wrap;} .machine-strip{border-left:none; padding-left:0; margin-left:0;} }
   @media (max-width:900px){
     body{overflow:auto; display:block;}
     .wrap{display:flex; padding:12px;}
     .main-grid{grid-template-columns:1fr; grid-template-rows:none;}
     .main-grid .panel, .hist-row .panel{height:300px;}
     .kpis{grid-template-columns:repeat(2,1fr);}
+    .kpi.yield{grid-column:span 2;}
+    .kd-rows{grid-template-columns:1fr;}
     .range-switch{flex-wrap:wrap; margin-left:0 !important;}
     .header-right, .doc-bar-actions{width:100%; justify-content:flex-start;}
     .conn-chip .chip-text small{max-width:52vw;}
@@ -191,6 +251,7 @@
 </head>
 <body data-page="dashboard">
 <script src="assets/app-header.js"></script>
+<script src="assets/hist-bins.js"></script>
 <script src="report.js"></script>
 <div class="wrap">
 
@@ -203,7 +264,7 @@
       <select id="scalePicker" title="เลือกเครื่องชั่ง" aria-label="เลือกเครื่องชั่ง"></select>
       <div class="spec-chips">
         <div class="chip lsl"><small>LSL</small><b id="chipLsl">80.5 g</b></div>
-        <div class="chip tgt"><small>TARGET</small><b id="chipTgt">82 g</b></div>
+        <div class="chip tgt"><small>TARGET <i class="spec-src" id="chipSrc"></i></small><b id="chipTgt">82 g</b></div>
         <div class="chip usl"><small>USL</small><b id="chipUsl">85 g</b></div>
       </div>
       <div class="header-btns">
@@ -217,7 +278,9 @@
     <div class="doc-bar-info">
       <span class="doc-bar-lbl"><svg class="i sm"><use href="assets/icons.svg#file"></use></svg>เอกสาร</span>
       <span id="docBarText">ยังไม่มีเอกสารที่กำลังทำ</span>
+      <span class="machine-strip" id="machineStrip"></span>
     </div>
+    <div class="spec-warn" id="specWarn" hidden></div>
     <div class="doc-bar-actions">
       <div class="status-group">
         <div class="conn-chip wait" id="scaleChip">
@@ -278,11 +341,21 @@
     </div>
   </div>
 
+  <div class="modal-backdrop" id="kpiDetailModal">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="kpiDetailTitle">
+      <h3 id="kpiDetailTitle">รายละเอียด</h3>
+      <div id="kpiDetailBody"></div>
+      <div class="actions"><button class="btn primary" type="button" id="kpiDetailClose">ปิด</button></div>
+    </div>
+  </div>
+
   <div class="legend-bar">
     <span><strong>สีในกราฟ</strong></span>
-    <span><i style="background:var(--ok)"></i>ค่าจริง / ในสเปก</span>
-    <span><i style="background:var(--target)"></i>Target / โซนเตือน / Cp 1.33</span>
-    <span><i style="background:var(--limit)"></i>หลุดสเปก / LSL, USL / &lt; 1.00</span>
+    <span><i style="background:var(--good)"></i>โซนเขียว</span>
+    <span><i style="background:#E3A008"></i>โซนเหลือง</span>
+    <span><i style="background:#F0602B"></i>โซนแดง</span>
+    <span><i style="background:var(--target)"></i>Target / Cp 1.33</span>
+    <span><i style="background:var(--limit)"></i>หลุดสเปก (reject) / LSL, USL / &lt; 1.00</span>
     <span><i class="d-dash"></i>Control limit (UCL / LCL)</span>
     <div class="range-switch" id="rangeSwitch" style="margin-left:auto;">
       <span style="color:var(--text-faint); margin-right:2px;">ช่วงเวลา</span>
@@ -290,7 +363,7 @@
       <button class="range-btn" data-ms="600000">10m</button>
       <button class="range-btn" data-ms="1800000">30m</button>
       <button class="range-btn" data-ms="3600000">1h</button>
-      <button class="range-btn active" data-ms="all">All</button>
+      <button class="range-btn active" data-ms="all" title="ทุกค่าที่หน้าเว็บเก็บไว้ (สูงสุด 12,000 ชิ้นล่าสุด) — กราฟรายชิ้นแสดง 120 ชิ้นล่าสุด">ทั้งหมด</button>
       <span class="range-sep"></span>
       <input type="text" id="rangeFrom" class="time-input" placeholder="HH:MM" inputmode="numeric" maxlength="5" autocomplete="off">
       <span style="color:var(--text-faint);">–</span>
@@ -304,6 +377,26 @@
   <div class="main-grid">
     <div class="panel expandable" data-title="Individuals (X) Chart" data-src="ichart">
       <h2>Individuals (X) Chart <em id="ichartMeta"></em>
+        <label class="ich-mode" id="ichartModeWrap" title="เลือกวิธีแสดง: ค่ารายชิ้นล่าสุด หรือค่าเฉลี่ยต่อช่วงเวลาแบบกราฟหุ้น">
+          <svg class="i"><use href="assets/icons.svg#chart-bar"></use></svg>
+          <select id="ichartMode" aria-label="วิธีแสดงกราฟรายชิ้น">
+            <option value="auto">อัตโนมัติ</option>
+            <optgroup label="รายชิ้น (ค่าล่าสุด)">
+              <option value="n50">50 ชิ้นล่าสุด</option>
+              <option value="n100">100 ชิ้นล่าสุด</option>
+              <option value="n200">200 ชิ้นล่าสุด</option>
+              <option value="n500">500 ชิ้นล่าสุด</option>
+            </optgroup>
+            <optgroup label="เฉลี่ยต่อช่วงเวลา แบบกราฟหุ้น (1 ชม. · 4 ชม. · 12 ชม. · 24 ชม. · 2 วัน · 30 วันล่าสุด)">
+              <option value="t1m">เฉลี่ย 1 นาที</option>
+              <option value="t5m">เฉลี่ย 5 นาที</option>
+              <option value="t15m">เฉลี่ย 15 นาที</option>
+              <option value="t30m">เฉลี่ย 30 นาที</option>
+              <option value="t1h">เฉลี่ย 1 ชม.</option>
+              <option value="t1d">เฉลี่ยรายวัน</option>
+            </optgroup>
+          </select>
+        </label>
         <span class="expand-hint"><svg class="i"><use href="assets/icons.svg#expand"></use></svg></span></h2>
       <div class="chart-body-wrap">
         <div class="chart-body"><svg id="ichart" viewBox="0 0 1120 250" preserveAspectRatio="xMidYMid meet"></svg></div>
@@ -382,7 +475,7 @@
 <script>
 const SPEC = { LSL:80.5, TARGET:82, USL:85 };
 let CURRENT_SESSION = null; // เอกสาร (session) ที่กำลังรันอยู่บนเครื่องที่กำลังดู — null ถ้าไม่มี
-const BUFFER_MAX = 4000;    // จำนวนแถวสูงสุดที่เก็บไว้ในหน้าเว็บ (= จำนวนที่ขอย้อนหลังตอนเปิดหน้า)
+const BUFFER_MAX = 12000;   // จำนวนแถวสูงสุดที่เก็บไว้ในหน้าเว็บ (= จำนวนที่ขอย้อนหลังตอนเปิดหน้า) — พอสำหรับ 1 ชม. ที่ 170 ชิ้น/นาที
 const STRIP_WINDOW = 120;   // max points shown on the scrolling individuals chart when no range narrows it further
 
 // ---- backend ----
@@ -410,7 +503,7 @@ const TIME_RANGES = [
   {label:'All', ms:null},
 ];
 let selectedRangeMs = null; // null = All
-let selectedRangeLabel = 'All';
+let selectedRangeLabel = 'ทั้งหมด';
 let useCustomRange = false;
 let customFrom = null, customTo = null; // Date objects, only when custom time range is applied
 
@@ -462,11 +555,26 @@ let connState = { level:'wait', msg:'กำลังเชื่อมต่อ�
 
 function mean(a){return a.reduce((s,x)=>s+x,0)/a.length;}
 function stdev(a){const m=mean(a); return a.length>1 ? Math.sqrt(a.reduce((s,x)=>s+(x-m)**2,0)/(a.length-1)) : 0;}
+/** โซนของน้ำหนัก: GREEN | YELLOW | RED | OUT (หลุดสเปก = reject) — วัดเป็น % ของระยะจาก Target ถึงขอบสเปกฝั่งนั้น */
+function zoneOf(v){
+  if(v>SPEC.USL || v<SPEC.LSL) return 'OUT';
+  const d = v - SPEC.TARGET;
+  const lim = d >= 0 ? SPEC.USL - SPEC.TARGET : SPEC.TARGET - SPEC.LSL;
+  if(!(lim > 0)) return 'GREEN';
+  const r = Math.abs(d) / lim * 100;
+  return r >= ZONE.redPct ? 'RED' : r >= ZONE.yellowPct ? 'YELLOW' : 'GREEN';
+}
+const ZONE_COLOR = { GREEN:'var(--good)', YELLOW:'#E3A008', RED:'#F0602B', OUT:'var(--limit)' };
+const ZONE_LABEL = { GREEN:'เขียว', YELLOW:'เหลือง', RED:'แดง', OUT:'REJECT' };
+/** เส้นแบ่งโซน (ค่าน้ำหนัก) ทั้งสองฝั่ง */
+function zoneEdges(){
+  const up = SPEC.USL - SPEC.TARGET, dn = SPEC.TARGET - SPEC.LSL;
+  return { yHi: SPEC.TARGET + up*ZONE.yellowPct/100, rHi: SPEC.TARGET + up*ZONE.redPct/100,
+           yLo: SPEC.TARGET - dn*ZONE.yellowPct/100, rLo: SPEC.TARGET - dn*ZONE.redPct/100 };
+}
 function statusOf(v){
-  const band=(SPEC.USL-SPEC.LSL)*0.1;
-  if(v>SPEC.USL||v<SPEC.LSL) return 'OUT_OF_SPEC';
-  if(v>SPEC.USL-band||v<SPEC.LSL+band) return 'WARNING';
-  return 'OK';
+  const z = zoneOf(v);
+  return z === 'OUT' ? 'OUT_OF_SPEC' : z === 'GREEN' ? 'OK' : 'WARNING';
 }
 
 /** จำกัดค่าที่จะ "วาดบนกราฟ" ให้อยู่ในช่วง [lo,hi] เท่านั้น — ใช้กันไม่ให้ค่าที่หลุดไปไกลมาก
@@ -559,6 +667,38 @@ function currentScaleStatus(){
   return serverStatus.scales[0] || null;
 }
 
+/** แถบสถานะเครื่อง (กำลังผลิต / โปรแกรม / ความเร็ว / ชิ้นล่าสุด / บันทึกแล้ว) — ย้ายมาจากหน้า Checkweigher เดิม */
+function renderMachineStrip(sc){
+  const elx = document.getElementById('machineStrip');
+  if(!elx) return;
+  if(!sc){ elx.innerHTML = ''; return; }
+  const esc2 = (v)=> String(v ?? '').replace(/[&<>"']/g, (ch)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+  const p2 = (n)=> String(n).padStart(2,'0');
+  const dhms = (iso)=>{ if(!iso) return '-'; const d=new Date(iso); return `${p2(d.getDate())}/${p2(d.getMonth()+1)} ${p2(d.getHours())}:${p2(d.getMinutes())}:${p2(d.getSeconds())}`; };
+  const cs = sc.connection_status;
+  const parts = [];
+  if(sc.enabled === false){
+    parts.push('<span class="pill idle"><span class="dot"></span>ปิดใช้งาน</span>');
+  } else if(sc.device_type === 'opcua'){
+    const c = sc.cw || {};
+    parts.push(cs !== 'connected'
+      ? `<span class="pill ${cs==='error'||cs==='stopped'?'down':'warn'}"><span class="dot"></span>${{connecting:'กำลังเชื่อมต่อ',reconnecting:'กำลังเชื่อมต่อใหม่',error:'เชื่อมต่อไม่ได้',stopped:'หยุดอยู่'}[cs] || cs}</span>`
+      : c.run_state === 'running' ? '<span class="pill ok live"><span class="dot"></span>กำลังผลิต</span>' : '<span class="pill idle"><span class="dot"></span>ว่าง / หยุดเดิน</span>');
+    if(c.program_no != null || c.program_name) parts.push(`<span>โปรแกรม <b>No.${c.program_no ?? '-'} ${esc2(c.program_name || '')}</b></span>`);
+    const speed = c.pass_speed ?? c.infeed_speed;
+    if(speed != null || c.speed_setting != null) parts.push(`<span>ความเร็ว <b>${speed ?? '-'}</b> ชิ้น/นาที${c.speed_setting != null ? ` (ตั้งไว้ ${c.speed_setting})` : ''}</span>`);
+    const ms = c.machine_stats || {};
+    if(ms.total != null) parts.push(`<span>ตัวนับเครื่อง <b>${Number(ms.total).toLocaleString('en-US')}</b> · ผ่าน <b>${ms.total ? ((ms.accept||0)/ms.total*100).toFixed(1) : '-'}%</b></span>`);
+  } else {
+    const ok = cs === 'connected' || cs === 'simulating';
+    parts.push(`<span class="pill ${ok?'ok live':cs==='error'||cs==='stopped'?'down':'warn'}"><span class="dot"></span>${ok ? 'รับค่าอยู่' : esc2(cs)}</span>`);
+  }
+  if(sc.device) parts.push(`<span>อุปกรณ์ <b>${esc2(sc.device)}${sc.sim_mode ? ' (SIM)' : ''}</b></span>`);
+  parts.push(`<span>ชิ้นล่าสุด <b>${dhms(sc.last_received_at)}</b></span>`);
+  parts.push(`<span>บันทึกแล้ว <b>${Number(sc.total_received || 0).toLocaleString('en-US')}</b> ชิ้น</span>`);
+  elx.innerHTML = parts.join('');
+}
+
 function paintConn(){
   if(!serverStatus){
     const msg = connState.msg || 'ยังไม่ได้เชื่อมต่อ';
@@ -592,6 +732,8 @@ function paintConn(){
     document.getElementById('scaleEyebrow').textContent =
       `Statistical Process Control · ${sc.line || sc.name}${sc.name && sc.line && sc.name !== sc.line ? ' · '+sc.name : ''} · Live Feed`;
   }
+
+  renderMachineStrip(sc);
 
   // ---- ฐานข้อมูล ----
   const dbInfo = serverStatus.db || {};
@@ -681,12 +823,72 @@ async function refreshStatus(){
   }
 }
 
-/** checkweigher (OPC UA) ที่ยังไม่เริ่มเอกสาร — ใช้ Target / ช่วงผ่าน (Lo–Hi) ตามโปรแกรมบนเครื่องแทนค่าตั้งต้น */
-function applyCheckweigherSpec(){
+/** Target / ช่วงผ่าน (Lo–Hi) ตามโปรแกรมบนเครื่อง checkweigher (OPC UA) — null ถ้าไม่ใช่ CW หรือยังอ่านไม่ได้ */
+function machineSpec(){
   const sc = serverStatus && (serverStatus.scales || []).find(x => Number(x.scale_id) === Number(SCALE_ID));
   const L = sc && sc.device_type === 'opcua' && sc.cw && sc.cw.limits;
-  if(L && L.target != null && L.lo != null && L.hi != null){
-    SPEC.TARGET = L.target; SPEC.LSL = L.lo; SPEC.USL = L.hi;
+  if(!(L && L.target != null && L.lo != null && L.hi != null)) return null;
+  const c = sc.cw;
+  return { TARGET:Number(L.target), LSL:Number(L.lo), USL:Number(L.hi), program: (c.program_no != null || c.program_name) ? `No.${c.program_no ?? '-'} ${c.program_name || ''}`.trim() : '' };
+}
+/** checkweigher ที่ยังไม่เริ่มเอกสาร — ใช้สเปกตามโปรแกรมบนเครื่องแทนค่าตั้งต้น */
+function applyCheckweigherSpec(){
+  const m = machineSpec();
+  if(m){ SPEC.TARGET = m.TARGET; SPEC.LSL = m.LSL; SPEC.USL = m.USL; SPEC_INFO.src = 'machine'; }
+}
+
+// ================= สเปกเอกสาร vs สเปกบนเครื่อง =================
+// เคสจริง: เอกสารเลือก Product Target 103 g แต่เครื่องเดินโปรแกรม 73 g → ทุกชิ้น "หลุดสเปก", Histogram เพี้ยน
+// ระบบเตือนและให้ผู้ใช้เลือกว่าจะคำนวณตามสเปกไหน (จำแยกต่อเครื่อง) — ไม่แก้ข้อมูลเอกสาร
+let SPEC_INFO = { src:'default', doc:null, machine:null, mismatch:false, offData:false };
+function specPref(){ try{ return localStorage.getItem(`spec_src_${SCALE_ID}`) === 'machine' ? 'machine' : 'doc'; }catch(e){ return 'doc'; } }
+function setSpecPref(v){
+  try{ localStorage.setItem(`spec_src_${SCALE_ID}`, v); }catch(e){ /* ใช้ได้เฉพาะรอบนี้ */ }
+  loadCurrentSession();
+}
+function specMismatch(doc, mach){
+  if(!doc || !mach) return false;
+  const half = Math.max(0.5, (mach.USL - mach.LSL) / 2);
+  return Math.abs(doc.TARGET - mach.TARGET) > half || doc.USL < mach.LSL || doc.LSL > mach.USL;
+}
+function paintSpecChips(){
+  document.getElementById('chipLsl').textContent = `${SPEC.LSL} g`;
+  document.getElementById('chipTgt').textContent = `${SPEC.TARGET} g`;
+  document.getElementById('chipUsl').textContent = `${SPEC.USL} g`;
+  const src = document.getElementById('chipSrc');
+  if(src){
+    src.textContent = SPEC_INFO.src === 'machine' ? '· เครื่อง' : SPEC_INFO.src === 'doc' ? '· เอกสาร' : '· ค่าตั้งต้น';
+    src.parentElement.parentElement.title = SPEC_INFO.src === 'machine' ? 'สเปกจากโปรแกรมบนเครื่อง checkweigher' : SPEC_INFO.src === 'doc' ? 'สเปกจากเอกสารที่กำลังทำ' : 'ยังไม่มีเอกสาร/สเปกจากเครื่อง — ใช้ค่าตั้งต้น';
+  }
+}
+/** น้ำหนักที่ผลิตจริงเกือบทั้งหมด (≥ 90% ของ 200 ชิ้นล่าสุด) อยู่นอกสเปก → สเปกน่าจะเลือกผิด */
+function checkSpecVsData(){
+  const rows = buffer.slice(-200);
+  if(rows.length < 30) return false;
+  const out = rows.filter(r => r.value < SPEC.LSL || r.value > SPEC.USL).length;
+  return out / rows.length >= 0.9;
+}
+function renderSpecWarn(){
+  const box = document.getElementById('specWarn');
+  if(!box) return;
+  const I = SPEC_INFO;
+  const fmtS = (x)=> `Target ${x.TARGET} g (${x.LSL}–${x.USL})`;
+  if(I.mismatch){
+    const useM = I.src === 'machine';
+    box.innerHTML = `${icon('alert')}<div class="sw-text"><b>สเปกในเอกสารไม่ตรงกับโปรแกรมบนเครื่อง</b>
+        <small>เอกสาร ${fmtS(I.doc)} · เครื่อง ${I.machine.program ? I.machine.program + ' — ' : ''}${fmtS(I.machine)} · ตอนนี้กราฟ, % ผ่าน และการแจ้งเตือนคำนวณตาม <b>${useM ? 'สเปกเครื่อง' : 'สเปกเอกสาร'}</b>${useM ? '' : ' — ถ้าเลือก Product ผิด ให้หยุดเอกสารแล้วเริ่มใหม่'}</small></div>
+      <div class="sw-seg" role="group" aria-label="คำนวณตามสเปก">
+        <button type="button" data-spec="doc" class="${useM ? '' : 'on'}">สเปกเอกสาร</button>
+        <button type="button" data-spec="machine" class="${useM ? 'on' : ''}">สเปกเครื่อง</button>
+      </div>`;
+    box.querySelectorAll('[data-spec]').forEach(b => b.addEventListener('click', () => setSpecPref(b.dataset.spec)));
+    box.hidden = false;
+  } else if(I.offData){
+    box.innerHTML = `${icon('alert')}<div class="sw-text"><b>น้ำหนักที่ผลิตเกือบทั้งหมดอยู่นอกสเปก ${fmtS(SPEC)}</b>
+        <small>ตรวจว่าเลือก Product / ProductCode ในเอกสารถูกต้อง หรือเครื่องตั้งโปรแกรมตรงกับงานที่ผลิตอยู่</small></div>`;
+    box.hidden = false;
+  } else {
+    box.hidden = true; box.innerHTML = '';
   }
 }
 
@@ -697,20 +899,27 @@ async function loadCurrentSession(){
     const data = await api(`/api/sessions?scaleId=${SCALE_ID}&status=running&pageSize=1`);
     const s = (data.rows && data.rows[0]) || null;
     CURRENT_SESSION = s;
-    if(s && s.nw_target != null){
-      SPEC.TARGET = s.nw_target;
-      SPEC.LSL = s.nw_lcl != null ? s.nw_lcl : s.nw_target;
-      SPEC.USL = s.nw_ucl != null ? s.nw_ucl : s.nw_target;
+    const doc = (s && s.nw_target != null) ? {
+      TARGET: Number(s.nw_target),
+      LSL: Number(s.nw_lcl != null ? s.nw_lcl : s.nw_target),
+      USL: Number(s.nw_ucl != null ? s.nw_ucl : s.nw_target),
+    } : null;
+    const mach = machineSpec();
+    SPEC_INFO = { src:'default', doc, machine:mach, mismatch: specMismatch(doc, mach), offData:false };
+    if(doc && !(SPEC_INFO.mismatch && specPref() === 'machine')){
+      Object.assign(SPEC, { TARGET:doc.TARGET, LSL:doc.LSL, USL:doc.USL }); SPEC_INFO.src = 'doc';
     } else {
       applyCheckweigherSpec();
     }
   }catch(err){
+    console.error('loadCurrentSession:', err);
     CURRENT_SESSION = null;
+    SPEC_INFO = { src:'default', doc:null, machine:machineSpec(), mismatch:false, offData:false };
     applyCheckweigherSpec();
   }
-  document.getElementById('chipLsl').textContent = `${SPEC.LSL} g`;
-  document.getElementById('chipTgt').textContent = `${SPEC.TARGET} g`;
-  document.getElementById('chipUsl').textContent = `${SPEC.USL} g`;
+  SPEC_INFO.offData = !SPEC_INFO.mismatch && checkSpecVsData();
+  paintSpecChips();
+  renderSpecWarn();
   renderDocBar();
   // CURRENT_SESSION เพิ่งเปลี่ยน (เช่น เพิ่งเริ่ม/หยุดเอกสาร) — สั่ง re-render ทันที ไม่ต้องรอ poll() รอบถัดไป
   // เพื่อให้ sessionScope() ใน getView() มีผลกับกราฟ/KPI ที่เห็นอยู่ตอนนี้เลย
@@ -874,11 +1083,14 @@ document.getElementById('btnEditTimeSave').addEventListener('click', async () =>
 // ================= CP/CPK/Ppk + OOS ย้อนหลัง + ค่าเฉลี่ยเบี่ยงเบน — เสียงเตือนต่อเนื่องถ้าเกินเกณฑ์ =================
 let ALERT_SETTINGS = {
   cpMin:1.0, cpkMin:1.0, ppkMin:1.0, soundEnabled:true,
-  oosWindowMin:60, oosMaxCount:3, oosMaxPercent:5, meanDeviationMax:2,
+  oosCountMax:3, oosCountHours:1, oosPctMax:5, oosPctHours:1, meanDeviationMax:2,
 };
+// โซนเตือนก่อนถึงขอบสเปก: % ของระยะจาก Target ถึง LSL/USL (ตั้งที่หน้า "ตั้งค่า")
+let ZONE = { yellowPct:60, redPct:85, yellowRun:5, redRun:3, yellowSound:false, redSound:true };
 let REPORT_FORM_CODE = 'F3QCPFB8-1-01/9/2025';
 let alertAudioCtx = null, alertOscInterval = null, alertMuted = false;
 
+function num(v, d){ const n = parseFloat(v); return Number.isFinite(n) ? n : d; }
 async function loadAlertSettings(){
   try{
     const data = await api('/api/settings');
@@ -888,11 +1100,19 @@ async function loadAlertSettings(){
       cpkMin: parseFloat(s['alert.cpkMin']) || 1.0,
       ppkMin: parseFloat(s['alert.ppkMin']) || 1.0,
       soundEnabled: s['alert.soundEnabled'] !== 'false',
-      oosWindowMin: parseFloat(s['alert.oosWindowMin']) || 60,
-      oosMaxCount: s['alert.oosMaxCount'] != null ? parseFloat(s['alert.oosMaxCount']) : 3,
-      oosMaxPercent: s['alert.oosMaxPercent'] != null ? parseFloat(s['alert.oosMaxPercent']) : 5,
-      meanDeviationMax: s['alert.meanDeviationMax'] != null ? parseFloat(s['alert.meanDeviationMax']) : 2,
+      // กฎใหม่: [จำนวน] ต่อทุก [ชม.] และ [%] ต่อทุก [ชม.] — ค่าเดิม (นาทีเดียวร่วมกัน) ใช้เป็นค่าเริ่มต้น
+      oosCountMax: num(s['alert.oosCountMax'] ?? s['alert.oosMaxCount'], 3),
+      oosCountHours: num(s['alert.oosCountHours'], s['alert.oosWindowMin'] ? Number(s['alert.oosWindowMin'])/60 : 1),
+      oosPctMax: num(s['alert.oosPctMax'] ?? s['alert.oosMaxPercent'], 5),
+      oosPctHours: num(s['alert.oosPctHours'], s['alert.oosWindowMin'] ? Number(s['alert.oosWindowMin'])/60 : 1),
+      meanDeviationMax: num(s['alert.meanDeviationMax'], 2),
     };
+    ZONE = {
+      yellowPct: num(s['zone.yellowPct'], 60), redPct: num(s['zone.redPct'], 85),
+      yellowRun: num(s['zone.yellowRun'], 5), redRun: num(s['zone.redRun'], 3),
+      yellowSound: s['zone.yellowSound'] === 'true', redSound: s['zone.redSound'] !== 'false',
+    };
+    if(ZONE.redPct <= ZONE.yellowPct) ZONE.redPct = Math.min(99, ZONE.yellowPct + 1);
     if(s['report.formCode']) REPORT_FORM_CODE = s['report.formCode'];
   }catch(err){ /* ใช้ค่า default ถ้าโหลดไม่ได้ */ }
 }
@@ -907,13 +1127,32 @@ function computeCpCpk(vals, lsl, usl){
   return { cp, cpk };
 }
 
-/** จำนวน/สัดส่วนค่าที่หลุด Spec (นอก LSL–USL) ย้อนหลังตามหน้าต่างเวลาที่ตั้งไว้ (นาที) */
-function computeOosWindow(view, windowMin, lsl, usl){
-  const cutoff = Date.now() - windowMin*60*1000;
-  const windowRows = view.filter(r => r.ts.getTime() >= cutoff);
-  const oosCount = windowRows.filter(r => r.value < lsl || r.value > usl).length;
-  const oosPercent = windowRows.length ? (oosCount/windowRows.length)*100 : 0;
-  return { count: windowRows.length, oosCount, oosPercent };
+/** จำนวน/สัดส่วนที่หลุดสเปกย้อนหลัง N ชั่วโมง — สรุปจาก server (ครบทุกชิ้น ไม่จำกัดแค่ที่หน้าเว็บเก็บไว้) */
+let OOS_HOURS = {}; // { [hours]: { n, fail, at } }
+async function refreshOosWindows(){
+  if(SCALE_ID == null) return;
+  const hoursList = [...new Set([ALERT_SETTINGS.oosCountHours, ALERT_SETTINGS.oosPctHours].filter(h => h > 0))];
+  for(const h of hoursList){
+    const to = new Date(), from = new Date(to.getTime() - h*3600e3);
+    try{
+      const q = `scaleId=${SCALE_ID}&from=${encodeURIComponent(toLocalIso(from))}&to=${encodeURIComponent(toLocalIso(to))}&unit=hour&step=1&lsl=${SPEC.LSL}&usl=${SPEC.USL}`;
+      const data = await api(`/api/analytics/buckets?${q}`);
+      const rows = data.rows || [];
+      OOS_HOURS[h] = { n: rows.reduce((a,r)=>a+r.n,0), fail: rows.reduce((a,r)=>a+r.over+r.under,0), at: Date.now() };
+    }catch(err){ /* ใช้ค่าล่าสุดที่มี */ }
+  }
+}
+setInterval(refreshOosWindows, 30000);
+const fmtHours = (h)=> h >= 1 ? `${+h.toFixed(2)} ชม.` : `${Math.round(h*60)} นาที`;
+/** จำนวนชิ้นล่าสุดติดกันที่อยู่โซนเหลือง(หรือแย่กว่า) / แดง(หรือแย่กว่า) */
+function zoneRuns(){
+  let yellow = 0, red = 0, yDone = false, rDone = false;
+  for(let i = buffer.length - 1; i >= 0 && !(yDone && rDone); i--){
+    const z = zoneOf(buffer[i].value);
+    if(!yDone){ if(z !== 'GREEN') yellow++; else yDone = true; }
+    if(!rDone){ if(z === 'RED' || z === 'OUT') red++; else rDone = true; }
+  }
+  return { yellow, red };
 }
 
 function startAlertSound(){
@@ -954,29 +1193,40 @@ function updateAlertBadge(){
   const vals = view.map(r=>r.value);
   const { cp, cpk } = computeCpCpk(vals, SPEC.LSL, SPEC.USL);
   const ppk = cpk; // หมายเหตุ: ระบบยังไม่แยก subgroup จริง จึงใช้สูตรเดียวกับ Cpk ไปก่อน (ดู README)
-  const oos = computeOosWindow(view, ALERT_SETTINGS.oosWindowMin, SPEC.LSL, SPEC.USL);
   const meanDev = Math.abs(mean(vals) - SPEC.TARGET);
 
+  // แต่ละเหตุผล: level red/yellow, sound = มีเสียงไหม
   const reasons = [];
-  if(cp != null && cp < ALERT_SETTINGS.cpMin) reasons.push(`Cp ${cp.toFixed(2)} ต่ำกว่า ${ALERT_SETTINGS.cpMin}`);
-  if(cpk != null && cpk < ALERT_SETTINGS.cpkMin) reasons.push(`Cpk ${cpk.toFixed(2)} ต่ำกว่า ${ALERT_SETTINGS.cpkMin}`);
-  if(ppk != null && ppk < ALERT_SETTINGS.ppkMin) reasons.push(`Ppk ${ppk.toFixed(2)} ต่ำกว่า ${ALERT_SETTINGS.ppkMin}`);
-  if(oos.count > 0 && oos.oosCount > ALERT_SETTINGS.oosMaxCount) {
-    reasons.push(`หลุดสเปก ${oos.oosCount} ค่า ใน ${ALERT_SETTINGS.oosWindowMin} นาทีที่ผ่านมา (เกิน ${ALERT_SETTINGS.oosMaxCount})`);
+  const red = (text)=> reasons.push({ text, level:'red', sound:true });
+  if(cp != null && cp < ALERT_SETTINGS.cpMin) red(`Cp ${cp.toFixed(2)} ต่ำกว่า ${ALERT_SETTINGS.cpMin}`);
+  if(cpk != null && cpk < ALERT_SETTINGS.cpkMin) red(`Cpk ${cpk.toFixed(2)} ต่ำกว่า ${ALERT_SETTINGS.cpkMin}`);
+  if(ppk != null && ppk < ALERT_SETTINGS.ppkMin) red(`Ppk ${ppk.toFixed(2)} ต่ำกว่า ${ALERT_SETTINGS.ppkMin}`);
+  const oc = OOS_HOURS[ALERT_SETTINGS.oosCountHours];
+  if(ALERT_SETTINGS.oosCountMax > 0 && oc && oc.fail > ALERT_SETTINGS.oosCountMax){
+    red(`หลุดสเปก ${oc.fail.toLocaleString('en-US')} ชิ้น ใน ${fmtHours(ALERT_SETTINGS.oosCountHours)}ที่ผ่านมา (เกิน ${ALERT_SETTINGS.oosCountMax})`);
   }
-  if(oos.count > 0 && oos.oosPercent > ALERT_SETTINGS.oosMaxPercent) {
-    reasons.push(`หลุดสเปก ${oos.oosPercent.toFixed(1)}% ใน ${ALERT_SETTINGS.oosWindowMin} นาทีที่ผ่านมา (เกิน ${ALERT_SETTINGS.oosMaxPercent}%)`);
+  const op = OOS_HOURS[ALERT_SETTINGS.oosPctHours];
+  if(ALERT_SETTINGS.oosPctMax > 0 && op && op.n > 0 && op.fail/op.n*100 > ALERT_SETTINGS.oosPctMax){
+    red(`หลุดสเปก ${(op.fail/op.n*100).toFixed(1)}% ใน ${fmtHours(ALERT_SETTINGS.oosPctHours)}ที่ผ่านมา (เกิน ${ALERT_SETTINGS.oosPctMax}%)`);
   }
-  if(meanDev > ALERT_SETTINGS.meanDeviationMax) {
-    reasons.push(`ค่าเฉลี่ยเบี่ยงจาก Target ${meanDev.toFixed(2)} g (เกิน ${ALERT_SETTINGS.meanDeviationMax} g)`);
+  if(meanDev > ALERT_SETTINGS.meanDeviationMax) red(`ค่าเฉลี่ยเบี่ยงจาก Target ${meanDev.toFixed(2)} g (เกิน ${ALERT_SETTINGS.meanDeviationMax} g)`);
+  const runs = zoneRuns();
+  if(ZONE.redRun > 0 && runs.red >= ZONE.redRun){
+    reasons.push({ text:`โซนแดง: ${runs.red} ชิ้นล่าสุดติดกันใกล้ขอบสเปก/หลุดสเปก`, level:'red', sound: ZONE.redSound });
+  } else if(ZONE.yellowRun > 0 && runs.yellow >= ZONE.yellowRun){
+    reasons.push({ text:`โซนเหลือง: ${runs.yellow} ชิ้นล่าสุดติดกันเริ่มห่างจาก Target`, level:'yellow', sound: ZONE.yellowSound });
   }
 
   if(reasons.length){
     badge.style.display = '';
-    badge.innerHTML = icon('alert') + '<span>' + reasons.join(' · ').replace(/[&<>]/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])) + '</span>';
-    if(!alertMuted){
+    badge.classList.toggle('yellow', !reasons.some(r => r.level === 'red'));
+    badge.innerHTML = icon('alert') + '<span>' + reasons.map(r => r.text).join(' · ').replace(/[&<>]/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])) + '</span>';
+    if(reasons.some(r => r.sound) && !alertMuted){
       document.getElementById('btnMuteAlert').style.display = '';
       startAlertSound();
+    } else if(!reasons.some(r => r.sound)){
+      document.getElementById('btnMuteAlert').style.display = 'none';
+      stopAlertSound();
     }
   } else {
     badge.style.display = 'none';
@@ -1144,86 +1394,409 @@ function renderKPIs(){
   const oos = view.filter(r=>r.status==='OUT_OF_SPEC').length;
   const warn = view.filter(r=>r.status==='WARNING').length;
 
+  const over = view.filter(r=>r.value>SPEC.USL).length;
+  const under = view.filter(r=>r.value<SPEC.LSL).length;
+  const pass = view.length - over - under;
+  const minV = view.length ? vals.reduce((a,b)=>Math.min(a,b), Infinity) : null;
+  const maxV = view.length ? vals.reduce((a,b)=>Math.max(a,b), -Infinity) : null;
+  LAST_KPI = { n:view.length, mean:m, sd, cp, cpk, min:minV, max:maxV, pass, over, under, warn, oos, label:selectedRangeLabel };
+
   const kpis = [
-    {lbl:'Mean', val: view.length? m.toFixed(2)+' g':'--', cls:'', sub:`${selectedRangeLabel} · n=${view.length}`},
-    {lbl:'Std Dev (s)', val: view.length>1? sd.toFixed(3):'--', cls:'', sub:`rolling`},
-    {lbl:'Cp', val: view.length>1? cp.toFixed(2):'--', cls: cp>=1.33?'good':cp>=1?'warn':'bad', sub:'potential capability'},
-    {lbl:'Cpk', val: view.length>1? cpk.toFixed(2):'--', cls: cpk>=1.33?'good':cpk>=1?'warn':'bad', sub:'actual capability'},
-    {lbl:'Min / Max', val: view.length? `${Math.min(...vals).toFixed(1)} / ${Math.max(...vals).toFixed(1)}`:'--', cls:'', sub:'g'},
-    {lbl:'Out of Spec', val: oos, cls: oos>0?'bad':'good', sub:`${warn} warning`},
+    {key:'mean', lbl:'Mean', val: view.length? m.toFixed(2)+' g':'--', cls:'', sub:`${selectedRangeLabel} · n=${view.length}`},
+    {key:'sd', lbl:'Std Dev (s)', val: view.length>1? sd.toFixed(3):'--', cls:'', sub:`rolling`},
+    {key:'cp', lbl:'Cp', val: view.length>1? cp.toFixed(2):'--', cls: cp>=1.33?'good':cp>=1?'warn':'bad', sub:'potential capability'},
+    {key:'cpk', lbl:'Cpk', val: view.length>1? cpk.toFixed(2):'--', cls: cpk>=1.33?'good':cpk>=1?'warn':'bad', sub:'actual capability'},
+    {key:'minmax', lbl:'Min / Max', val: view.length? `${minV.toFixed(1)} / ${maxV.toFixed(1)}`:'--', cls:'', sub:'g'},
   ];
+  const fmtN = (v)=> Number(v).toLocaleString('en-US');
+  const pc = (v)=> view.length ? (v/view.length*100).toFixed(1)+'%' : '-';
+  const fail = over + under;
+  const yieldCls = !view.length ? '' : fail===0 ? 'good' : fail/view.length > 0.02 ? 'bad' : 'warn';
+  const w = (v)=> view.length ? (v/view.length*100) : 0;
   document.getElementById('kpiRow').innerHTML = kpis.map(k=>`
-    <div class="kpi ${k.cls}">
+    <button type="button" class="kpi ${k.cls}" data-kpi="${k.key}" title="คลิกเพื่อดูรายละเอียด">
       <div class="lbl">${k.lbl}</div>
       <div class="val">${k.val}</div>
       <div class="sub">${k.sub}</div>
-    </div>`).join('');
+    </button>`).join('') + `
+    <button type="button" class="kpi yield ${yieldCls}" data-kpi="yield" title="คลิกเพื่อดูรายละเอียด">
+      <div class="lbl">ผลการชั่ง · ทั้งหมด <b>${fmtN(view.length)}</b> ชิ้น</div>
+      <div class="yield-nums">
+        <span class="y-pass">ผ่าน <b>${fmtN(pass)}</b> <small>${pc(pass)}</small></span>
+        <span class="y-fail">ไม่ผ่าน <b>${fmtN(fail)}</b> <small>${pc(fail)}</small></span>
+      </div>
+      <div class="ybar"><i class="p" style="width:${w(pass)}%"></i><i class="o" style="width:${w(over)}%"></i><i class="u" style="width:${w(under)}%"></i></div>
+      <div class="sub">เกิน USL ${fmtN(over)} · ต่ำกว่า LSL ${fmtN(under)} · ใกล้ขอบ ${fmtN(warn)}</div>
+    </button>`;
 }
+
+// ================= รายละเอียดเมื่อคลิกการ์ด KPI =================
+var LAST_KPI = null;
+function capLevelText(v){ return v==null || !isFinite(v) ? '-' : v>=1.33 ? 'ดี' : v>=1 ? 'พอใช้' : 'ไม่ดี'; }
+function normalCurveSvg(k){
+  if(!k || !(k.sd>0)) return '';
+  const W=560, H=150, pad=22;
+  const lo = Math.min(SPEC.LSL, k.mean-4*k.sd), hi = Math.max(SPEC.USL, k.mean+4*k.sd);
+  const X = (v)=> pad + (v-lo)/(hi-lo)*(W-2*pad);
+  const pdf = (v)=> Math.exp(-0.5*((v-k.mean)/k.sd)**2);
+  let d=''; for(let i=0;i<=120;i++){ const v=lo+(hi-lo)*i/120; d+=(i?'L':'M')+X(v).toFixed(1)+' '+(H-pad-pdf(v)*(H-2*pad-10)).toFixed(1)+' '; }
+  const vl = (v,c,l,dash)=>`<line x1="${X(v)}" x2="${X(v)}" y1="8" y2="${H-pad}" stroke="${c}" stroke-width="1.6" ${dash?'stroke-dasharray="5 4"':''}/><text x="${X(v)}" y="${H-6}" text-anchor="middle" font-size="11" fill="${c}">${l} ${(+v).toFixed(1)}</text>`;
+  return `<svg viewBox="0 0 ${W} ${H}" class="kd-curve"><rect x="${X(SPEC.LSL)}" y="8" width="${Math.max(0, X(SPEC.USL)-X(SPEC.LSL))}" height="${H-pad-8}" fill="var(--ok-dim)"/>
+    <path d="${d}" fill="none" stroke="var(--ok)" stroke-width="2"/>${vl(SPEC.LSL,'var(--limit)','LSL')}${vl(SPEC.USL,'var(--limit)','USL')}${vl(SPEC.TARGET,'var(--target)','T',true)}
+    <line x1="${X(k.mean)}" x2="${X(k.mean)}" y1="8" y2="${H-pad}" stroke="var(--ctrl)" stroke-width="1.4" stroke-dasharray="2 3"/></svg>`;
+}
+function critTable(v, minAlert){
+  const lv = v==null||!isFinite(v) ? '' : v>=1.33 ? 'good' : v>=1 ? 'warn' : 'bad';
+  return `<table class="kd-crit"><tr class="${lv==='bad'?'on':''}"><td class="bad">&lt; 1.00</td><td>ไม่ดี — กระบวนการกว้างกว่าสเปก มีโอกาสหลุดสเปกสูง</td></tr>
+    <tr class="${lv==='warn'?'on':''}"><td class="warn">1.00 – 1.33</td><td>พอใช้ — อยู่ในสเปกแต่ระยะเผื่อน้อย ควรเฝ้าระวัง</td></tr>
+    <tr class="${lv==='good'?'on':''}"><td class="good">≥ 1.33</td><td>ดี — มีระยะเผื่อเพียงพอ ควบคุมได้มั่นคง</td></tr></table>
+    <div class="kd-note">ระบบแจ้งเตือนเมื่อค่าต่ำกว่า ${Number(minAlert).toFixed(2)} (ตั้งได้ที่หน้า "ตั้งค่า")</div>`;
+}
+function kdRows(rows){ return `<div class="kd-rows">${rows.map(([a,b])=>`<div><span>${a}</span><b>${b}</b></div>`).join('')}</div>`; }
+function openKpiDetail(key){
+  const k = LAST_KPI; if(!k || !k.n) return;
+  const f = (v,d=2)=> v==null||!isFinite(v) ? '-' : (+v).toFixed(d);
+  const fmtN = (v)=> Number(v).toLocaleString('en-US');
+  const n = k.n, sigma6 = 6*k.sd, tol = SPEC.USL-SPEC.LSL;
+  const cpu = k.sd>0 ? (SPEC.USL-k.mean)/(3*k.sd) : null, cpl = k.sd>0 ? (k.mean-SPEC.LSL)/(3*k.sd) : null;
+  const off = k.mean - SPEC.TARGET;
+  let title='', body='';
+  if(key==='cp'){
+    title = `Cp = ${f(k.cp)} · ${capLevelText(k.cp)}`;
+    body = `<p class="kd-lead">Cp บอกว่า "ความกว้างของการกระจาย" แคบกว่าช่วงสเปกแค่ไหน (ยังไม่ดูว่าค่าเฉลี่ยอยู่ตรงไหน)</p>
+      <div class="kd-formula">Cp = (USL − LSL) ÷ 6σ = (${f(SPEC.USL,1)} − ${f(SPEC.LSL,1)}) ÷ (6 × ${f(k.sd,3)}) = <b>${f(k.cp)}</b></div>
+      ${normalCurveSvg(k)}${critTable(k.cp, ALERT_SETTINGS.cpMin)}
+      ${kdRows([['Mean',f(k.mean)+' g'],['Std Dev (σ)',f(k.sd,3)+' g'],['ช่วงสเปก (USL − LSL)',f(tol)+' g'],['ความกว้างการกระจาย (6σ)',f(sigma6)+' g'],['จำนวนค่า',fmtN(n)],['ช่วงข้อมูล',k.label]])}
+      <p class="kd-tip">${k.cp>=1.33 ? 'การกระจายแคบพอ ถ้าค่าเฉลี่ยตรง Target จะผลิตได้ในสเปกสม่ำเสมอ' : `ต้องลดความแปรปรวน (σ) ให้เหลือไม่เกิน ${f(tol/8,3)} g จึงจะได้ Cp ≥ 1.33 — ตรวจเครื่องเติม หัวฉีด วัตถุดิบ และความเร็วไลน์`}</p>`;
+  } else if(key==='cpk'){
+    title = `Cpk = ${f(k.cpk)} · ${capLevelText(k.cpk)}`;
+    const near = cpu!=null && cpu<cpl ? 'USL (ด้านบน)' : 'LSL (ด้านล่าง)';
+    body = `<p class="kd-lead">Cpk คือความสามารถ "จริง" — นับทั้งความกว้างการกระจายและการเยื้องของค่าเฉลี่ย โดยใช้ฝั่งที่ใกล้ขอบสเปกที่สุด</p>
+      <div class="kd-formula">Cpk = min( (USL − x̄) ÷ 3σ , (x̄ − LSL) ÷ 3σ ) = min( ${f(cpu)} , ${f(cpl)} ) = <b>${f(k.cpk)}</b></div>
+      ${normalCurveSvg(k)}${critTable(k.cpk, ALERT_SETTINGS.cpkMin)}
+      ${kdRows([['Mean (x̄)',f(k.mean)+' g'],['Target',f(SPEC.TARGET,1)+' g'],['ห่างจาก Target',(off>=0?'+':'')+f(off)+' g'],['Std Dev (σ)',f(k.sd,3)+' g'],['CPU (ฝั่ง USL)',f(cpu)],['CPL (ฝั่ง LSL)',f(cpl)],['ใกล้ขอบด้าน',near],['จำนวนค่า',fmtN(n)]])}
+      <p class="kd-tip">${Math.abs(off) > tol*0.075 ? `ค่าเฉลี่ย${off>0?'สูง':'ต่ำ'}กว่า Target ${f(Math.abs(off))} g — ปรับน้ำหนักเติม${off>0?'ลง':'ขึ้น'}ประมาณ ${f(Math.abs(off),1)} g จะทำให้ Cpk ขึ้นไปใกล้ Cp (${f(k.cp)})` : 'ค่าเฉลี่ยอยู่ใกล้ Target แล้ว ถ้า Cpk ยังต่ำ ต้องลดความแปรปรวน (ดูการ์ด Cp)'}</p>`;
+  } else if(key==='mean'){
+    title = `Mean = ${f(k.mean)} g`;
+    body = `<p class="kd-lead">ค่าเฉลี่ยน้ำหนักของทุกชิ้นในช่วงที่เลือก เทียบกับ Target</p>${normalCurveSvg(k)}
+      ${kdRows([['Mean',f(k.mean)+' g'],['Target',f(SPEC.TARGET,1)+' g'],['ห่างจาก Target',(off>=0?'+':'')+f(off)+' g'],['LSL / USL',`${f(SPEC.LSL,1)} / ${f(SPEC.USL,1)} g`],['Std Dev (σ)',f(k.sd,3)+' g'],['จำนวนค่า',fmtN(n)],['ช่วงข้อมูล',k.label]])}
+      <p class="kd-tip">${off>0 ? `ให้น้ำหนักเกินเฉลี่ย ${f(off)} g/ชิ้น — ประมาณ ${f(off*n/1000)} kg ในช่วงนี้ (ต้นทุนวัตถุดิบ)` : off<0 ? `ต่ำกว่า Target เฉลี่ย ${f(-off)} g/ชิ้น — เสี่ยงน้ำหนักขาด ควรปรับน้ำหนักเติมขึ้น` : 'ตรง Target พอดี'}</p>`;
+  } else if(key==='sd'){
+    title = `Std Dev = ${f(k.sd,3)} g`;
+    body = `<p class="kd-lead">ค่าเบี่ยงเบนมาตรฐาน (σ) บอกความสม่ำเสมอของน้ำหนัก — ยิ่งต่ำยิ่งดี</p>${normalCurveSvg(k)}
+      ${kdRows([['σ',f(k.sd,3)+' g'],['6σ (ครอบ 99.7% ของชิ้น)',f(sigma6)+' g'],['ช่วงสเปก',f(tol)+' g'],['6σ ÷ ช่วงสเปก',tol>0? (sigma6/tol*100).toFixed(0)+'%':'-'],['σ สูงสุดที่ยังได้ Cp 1.33',f(tol/8,3)+' g'],['จำนวนค่า',fmtN(n)]])}
+      <p class="kd-tip">${sigma6 <= tol*0.75 ? 'การกระจายแคบกว่าช่วงสเปกพอสมควร — ดี' : sigma6 <= tol ? 'การกระจายเกือบเต็มช่วงสเปก — ต้องตั้งค่าเฉลี่ยให้ตรง Target มาก ๆ' : 'การกระจายกว้างกว่าช่วงสเปก — จะมีชิ้นหลุดสเปกแน่นอน ต้องลดความแปรปรวน'}</p>`;
+  } else if(key==='minmax'){
+    title = `Min / Max = ${f(k.min,1)} / ${f(k.max,1)} g`;
+    body = kdRows([['ต่ำสุด',f(k.min,1)+' g'],['สูงสุด',f(k.max,1)+' g'],['ช่วงกว้าง',f(k.max-k.min,1)+' g'],['LSL / USL',`${f(SPEC.LSL,1)} / ${f(SPEC.USL,1)} g`],['จำนวนค่า',fmtN(n)]])+
+      `<p class="kd-tip">${k.min<SPEC.LSL || k.max>SPEC.USL ? 'มีค่าที่อยู่นอกสเปก — ดูจำนวนในการ์ด "ผลการชั่ง"' : 'ทุกค่าอยู่ในสเปก'} · ค่าที่ห่างจากกลุ่มมาก (เช่น 150 g ขณะที่ปกติ 73 g) มักเป็นชิ้นซ้อนหรือวัตถุแปลกปลอม ไม่ใช่การเติมผิด</p>`;
+  } else if(key==='yield'){
+    const pcx=(v)=> n? (v/n*100).toFixed(2)+'%' : '-';
+    title = `ผลการชั่ง ${fmtN(n)} ชิ้น`;
+    body = kdRows([['ผ่าน (อยู่ในสเปก)',`${fmtN(k.pass)} · ${pcx(k.pass)}`],['ไม่ผ่าน',`${fmtN(k.over+k.under)} · ${pcx(k.over+k.under)}`],['— เกิน USL',`${fmtN(k.over)} · ${pcx(k.over)}`],['— ต่ำกว่า LSL',`${fmtN(k.under)} · ${pcx(k.under)}`],['ผ่านแต่ใกล้ขอบสเปก (10%)',`${fmtN(k.warn)} · ${pcx(k.warn)}`],['สเปก',`${f(SPEC.LSL,1)} – ${f(SPEC.USL,1)} g`],['ช่วงข้อมูล',k.label]])+
+      `<p class="kd-tip">${k.under>0 ? `มีชิ้นน้ำหนักขาด ${fmtN(k.under)} ชิ้น — เสี่ยงต่อลูกค้าและกฎหมายฉลาก ควรคัดออก` : 'ไม่มีชิ้นน้ำหนักขาด'}${k.over>0 ? ' · ชิ้นน้ำหนักเกินเป็นต้นทุนวัตถุดิบ' : ''}</p>`;
+  }
+  document.getElementById('kpiDetailTitle').textContent = title;
+  document.getElementById('kpiDetailBody').innerHTML = body;
+  document.getElementById('kpiDetailModal').classList.add('open');
+}
+document.getElementById('kpiRow').addEventListener('click', (e)=>{
+  const b = e.target.closest('[data-kpi]'); if(b) openKpiDetail(b.dataset.kpi);
+});
+
 
 // ================= histogram =================
 function renderHistogram(targetSvg, forceW, forceH){
   const svg = targetSvg || document.getElementById('hist');
   clearSvg(svg);
   const allVals = applyZoomWindow('hist', getView().map(r=>r.value));
-  const W=forceW||1400, H=forceH||420, padL=60,padR=28,padT=50,padB=54;
+  const W=forceW||1400, H=forceH||420;
   svg.setAttribute('viewBox', `0 0 ${W} ${H}`); // ต้องเซ็ตใหม่ทุกครั้ง เพราะ modal ใช้ W/H ที่คำนวณจากขนาดจอจริง ไม่ใช่ 1400x420 ตายตัว
-
-  // ตัดค่าผิดปกติที่เกินช่วง Spec ไปไกลมากออกจากกราฟ (เข้ม/แคบ = ±0.5 เท่าของความกว้าง Spec รอบ LSL–USL)
-  // กันไม่ให้ค่า outlier ตัวเดียวดึงแกน X ยืดจนแท่งปกติทั้งหมดถูกบีบไปกองมุมซ้าย
-  const specWidth = Math.max(SPEC.USL - SPEC.LSL, 0.01);
-  const clipBand = specWidth * 0.5;
-  const clipLo = SPEC.LSL - clipBand, clipHi = SPEC.USL + clipBand;
-  const vals = allVals.filter(v => v >= clipLo && v <= clipHi);
-  const hiddenCount = allVals.length - vals.length;
-
+  // ช่องคำนวณจากข้อมูลจริง (assets/hist-bins.js): ไม่ซ่อนค่าใด ๆ — ค่าที่อยู่ไกลจากกลุ่มหลักรวมเป็นแท่ง "ต่ำกว่า / สูงกว่า" ที่ขอบ
+  const opt = { lsl:SPEC.LSL, usl:SPEC.USL, target:SPEC.TARGET, zone:ZONE };
+  const h = window.computeHistogram(allVals, opt);
+  const outside = h.below.count + h.above.count;
+  const w = h.width ? (h.width >= 1 ? h.width.toFixed(0) : h.width >= 0.1 ? h.width.toFixed(1) : h.width.toFixed(2)) : '–';
   document.getElementById('histMeta').textContent =
-    `n=${vals.length} · ${selectedRangeLabel}` + (hiddenCount > 0 ? ` · ⚠ ซ่อน ${hiddenCount} ค่าผิดปกติ (นอกช่วงแสดงผล)` : '');
-  if(vals.length<2) return;
-  const plotW=W-padL-padR, plotH=H-padT-padB;
-  const binW=1.0;
-  const lo=Math.floor(Math.min(...vals,SPEC.LSL)), hi=Math.ceil(Math.max(...vals,SPEC.USL));
-  const nBins=Math.max(1,Math.ceil((hi-lo)/binW));
-  const bins=new Array(nBins).fill(0);
-  vals.forEach(v=>{ let idx=Math.floor((v-lo)/binW); if(idx>=nBins) idx=nBins-1; if(idx<0) idx=0; bins[idx]++; });
-  const maxCount=Math.max(...bins,1);
-  const x=(v)=> padL + ((v-lo)/(hi-lo))*plotW;
-  const y=(c)=> padT + plotH - (c/maxCount)*plotH;
-
-  svg.appendChild(el('rect',{x:x(SPEC.LSL),y:padT,width:x(SPEC.USL)-x(SPEC.LSL),height:plotH,fill:'var(--ok-dim)'}));
-  bins.forEach((c,i)=>{
-    if(c===0) return;
-    const bx0=lo+i*binW, bx1=bx0+binW;
-    const barX=x(bx0), barW=x(bx1)-x(bx0)-3;
-    svg.appendChild(el('rect',{x:barX,y:y(c),width:Math.max(barW,2),height:padT+plotH-y(c),fill:'var(--ok)',opacity:0.88,rx:2}));
-    svg.appendChild(el('text',{x:barX+barW/2,y:y(c)-8,'font-size':'15','font-weight':'600',fill:'var(--text-dim)','text-anchor':'middle'})).textContent=c;
-  });
-  [[SPEC.LSL,'LSL','var(--limit)'],[SPEC.USL,'USL','var(--limit)'],[SPEC.TARGET,'Target','var(--target)']].forEach(([val,lbl,color])=>{
-    svg.appendChild(el('line',{x1:x(val),x2:x(val),y1:padT,y2:padT+plotH,stroke:color,'stroke-width':2.4,'stroke-dasharray': lbl==='Target'?'6 4':'0'}));
-    svg.appendChild(el('text',{x:x(val),y:padT-14,'font-size':'15','font-weight':'600','text-anchor':'middle',fill:color})).textContent=lbl+' '+val;
-  });
-  svg.appendChild(el('line',{x1:padL,x2:W-padR,y1:padT+plotH,y2:padT+plotH,stroke:'var(--line)','stroke-width':1.5}));
-  for(let v=lo; v<=hi; v+=2){
-    svg.appendChild(el('text',{x:x(v),y:H-16,'font-size':'14',fill:'var(--text-faint)','text-anchor':'middle'})).textContent=v;
-  }
+    `n=${h.n.toLocaleString('en-US')} · ${selectedRangeLabel} · ช่องละ ${w} g` +
+    (outside > 0 ? ` · ${outside.toLocaleString('en-US')} ค่าอยู่ไกลจากกลุ่มหลัก (แท่งขอบ)` : '') +
+    (h.n > 0 && !h.specInRange ? ' · ⚠ สเปกไม่ตรงกับน้ำหนักที่ผลิตจริง' : '');
+  if(h.n < 2) return;
+  svg.innerHTML = window.histogramSvg(h, Object.assign({ W, H, fontSize: W >= 1000 ? 15 : 13 }, opt));
 }
 
 // ================= individuals (scrolling strip) =================
+// ================= individuals: เลือกวิธีแสดง (รายชิ้นล่าสุด / เฉลี่ยต่อช่วงเวลาแบบกราฟหุ้น) =================
+// ข้อมูลหลายพันจุดในการ์ดเล็ก ๆ จะกลายเป็น "ขี้มด" อ่านไม่ออก — โหมดอัตโนมัติจึงรวมเป็นแท่งตามเวลาเมื่อเกิน 150 ชิ้น
+// แต่ละแท่ง: เส้นบาง = ต่ำสุด–สูงสุด, กล่อง = ค่าเฉลี่ย ± SD, จุด = ค่าเฉลี่ย (สีตามโซน), แท่งล่าง = จำนวนชิ้น (แดง = หลุดสเปก)
+const ICH_RAW_MAX = 150;
+const ICH_MODES = {
+  auto:{ kind:'auto' },
+  n50:{ kind:'last', n:50 }, n100:{ kind:'last', n:100 }, n200:{ kind:'last', n:200 }, n500:{ kind:'last', n:500 },
+  t1m:{ kind:'time', unit:'minute', step:1, ms:60e3, span:3600e3, label:'1 นาที', tf:'1m', range:'1h' },
+  t5m:{ kind:'time', unit:'minute', step:5, ms:300e3, span:4*3600e3, label:'5 นาที', tf:'5m', range:'shift' },
+  t15m:{ kind:'time', unit:'minute', step:15, ms:900e3, span:12*3600e3, label:'15 นาที', tf:'15m', range:'24h' },
+  t30m:{ kind:'time', unit:'minute', step:30, ms:1800e3, span:24*3600e3, label:'30 นาที', tf:'30m', range:'24h' },
+  t1h:{ kind:'time', unit:'hour', step:1, ms:3600e3, span:48*3600e3, label:'1 ชม.', tf:'1h', range:'7d' },
+  t1d:{ kind:'time', unit:'day', step:1, ms:86400e3, span:30*86400e3, label:'1 วัน', tf:'1d', range:'30d' },
+};
+// ขนาดแท่งที่โหมดอัตโนมัติเลือกได้ (ให้ได้ไม่เกิน ~60 แท่งในช่วงที่ดูอยู่)
+const ICH_AUTO_SIZES = [
+  { unit:'second', step:10, ms:10e3, label:'10 วินาที' }, { unit:'second', step:30, ms:30e3, label:'30 วินาที' },
+  { unit:'minute', step:1, ms:60e3, label:'1 นาที' }, { unit:'minute', step:2, ms:120e3, label:'2 นาที' },
+  { unit:'minute', step:5, ms:300e3, label:'5 นาที' }, { unit:'minute', step:10, ms:600e3, label:'10 นาที' },
+  { unit:'minute', step:15, ms:900e3, label:'15 นาที' }, { unit:'minute', step:30, ms:1800e3, label:'30 นาที' },
+  { unit:'hour', step:1, ms:3600e3, label:'1 ชม.' }, { unit:'day', step:1, ms:86400e3, label:'1 วัน' },
+];
+let ICH_MODE = (()=>{ try{ const v = localStorage.getItem('ichart-mode'); return ICH_MODES[v] ? v : 'auto'; }catch(e){ return 'auto'; } })();
+const ichRemote = { key:'', rows:null, at:0, loading:false, error:'' };
+
+/** จุดเริ่มของแท่งที่ t อยู่ — ตรงกับที่ backend ใช้ (DATEADD/DATEDIFF ตามเวลาเครื่อง) */
+function ichBucketStart(t, sz){
+  const d = new Date(t);
+  if(sz.unit === 'second'){ d.setMilliseconds(0); d.setSeconds(Math.floor(d.getSeconds()/sz.step)*sz.step); }
+  else if(sz.unit === 'minute'){ d.setSeconds(0,0); const m = d.getHours()*60 + d.getMinutes(); const b = Math.floor(m/sz.step)*sz.step; d.setHours(Math.floor(b/60), b%60); }
+  else if(sz.unit === 'hour'){ d.setMinutes(0,0,0); d.setHours(Math.floor(d.getHours()/sz.step)*sz.step); }
+  else { d.setHours(0,0,0,0); }
+  return d.getTime();
+}
+function ichNext(t, sz){ const d = new Date(t); if(sz.unit === 'day') d.setDate(d.getDate()+sz.step); else d.setTime(t + sz.ms); return d.getTime(); }
+
+/** รวมแถวรายชิ้นเป็นแท่ง {t, n, mean, sd, min, max, over, under} */
+function ichAggregate(rows, sz){
+  const map = new Map();
+  for(const r of rows){
+    const k = ichBucketStart(r.ts.getTime(), sz);
+    let b = map.get(k);
+    if(!b){ b = { t:k, n:0, s:0, ss:0, min:Infinity, max:-Infinity, over:0, under:0 }; map.set(k, b); }
+    const v = r.value; b.n++; b.s += v; b.ss += v*v;
+    if(v < b.min) b.min = v; if(v > b.max) b.max = v;
+    if(v > SPEC.USL) b.over++; else if(v < SPEC.LSL) b.under++;
+  }
+  return [...map.values()].map(b=>{
+    const mean = b.s/b.n;
+    const sd = b.n > 1 ? Math.sqrt(Math.max(0, (b.ss - b.n*mean*mean)/(b.n-1))) : 0;
+    return { t:b.t, n:b.n, mean, sd, min:b.min, max:b.max, over:b.over, under:b.under };
+  });
+}
+
+/** ช่วงเวลาที่โหมดเฉลี่ยใช้: ช่วงที่เลือกเอง (ถ้ามี) หรือ span ของโหมดย้อนจากตอนนี้ */
+function ichWindow(md){
+  if(useCustomRange && customFrom && customTo) return { from: customFrom.getTime(), to: customTo.getTime() };
+  const to = Date.now();
+  return { from: ichBucketStart(to - md.span + md.ms, md), to };
+}
+
+/** ข้อมูลเก่ากว่าที่หน้าเว็บถืออยู่ ขอจาก backend (รวมเป็นแท่งใน SQL) ทุก 30 วินาที */
+async function ichFetchRemote(md, win){
+  if(SCALE_ID == null) return;
+  const key = `${SCALE_ID}|${ICH_MODE}|${useCustomRange ? win.from + '-' + win.to : ''}|${SPEC.LSL}|${SPEC.USL}`;
+  if(ichRemote.loading) return;
+  if(ichRemote.key === key && Date.now() - ichRemote.at < 30000) return;
+  ichRemote.loading = true;
+  try{
+    const q = new URLSearchParams({ scaleId: SCALE_ID, from: toLocalIso(new Date(win.from)), to: toLocalIso(new Date(win.to)), unit: md.unit, step: md.step, lsl: SPEC.LSL, usl: SPEC.USL });
+    const data = await api(`/api/analytics/buckets?${q.toString()}`);
+    ichRemote.rows = (data.rows || []).filter(r=>r.n > 0 && r.mean != null).map(r=>({ t:new Date(r.bucket).getTime(), n:r.n, mean:r.mean, sd:r.sd || 0, min:r.min, max:r.max, over:r.over, under:r.under }));
+    ichRemote.error = '';
+  }catch(err){
+    console.error('ichart buckets:', err);
+    ichRemote.error = err.message || String(err);
+  }finally{
+    ichRemote.key = key; ichRemote.at = Date.now(); ichRemote.loading = false;
+  }
+  safeRender(renderIndividuals, 'renderIndividuals');
+}
+
 function renderIndividuals(){
+  const md = ICH_MODES[ICH_MODE] || ICH_MODES.auto;
+  const view = getView();
+  if(md.kind === 'last'){
+    const src = (useCustomRange && customFrom && customTo) ? view : sessionScope(buffer);
+    return renderIndividualsRaw(src.slice(-md.n), `${Math.min(md.n, src.length)} ชิ้นล่าสุด`, true);
+  }
+  if(md.kind === 'auto'){
+    const baseWin = (selectedRangeMs==null && !useCustomRange) ? view.slice(-STRIP_WINDOW) : view;
+    const zoomed = applyZoomWindow('ichart', baseWin);
+    if(zoomed.length <= ICH_RAW_MAX || view.length <= ICH_RAW_MAX){
+      const note = (selectedRangeMs==null && !useCustomRange && view.length > zoomed.length) ? `แสดง ${zoomed.length} ชิ้นล่าสุด จาก ${view.length}` : `${zoomed.length} ชิ้น`;
+      return renderIndividualsRaw(zoomed, note);
+    }
+    // ช่วงที่เลือกมีหลายร้อย/พันชิ้น → รวมเป็นแท่งตามเวลา ให้ได้ราว 30–60 แท่ง
+    const t0 = view[0].ts.getTime(), t1 = view[view.length-1].ts.getTime();
+    const sz = ICH_AUTO_SIZES.find(z => (t1 - t0)/z.ms <= 60) || ICH_AUTO_SIZES[ICH_AUTO_SIZES.length-1];
+    const from = ichBucketStart(t0, sz);
+    return renderIndividualsBuckets(ichAggregate(view, sz), sz, { from, to: t1, note:`เฉลี่ยทุก ${sz.label} (อัตโนมัติ เพราะมี ${view.length.toLocaleString('en-US')} ชิ้น)` });
+  }
+  // kind === 'time'
+  const win = ichWindow(md);
+  const local = buffer.filter(r=>{ const t = r.ts.getTime(); return t >= win.from && t <= win.to; });
+  const firstLocal = buffer.length ? buffer[0].ts.getTime() : Infinity;
+  const coveredFrom = ichNext(ichBucketStart(firstLocal, md), md); // แท่งแรกที่หน้าเว็บมีข้อมูลครบทั้งแท่ง
+  let buckets;
+  if(useCustomRange && customBuffer){
+    buckets = ichAggregate(view, md);
+  } else if(firstLocal <= win.from){
+    buckets = ichAggregate(local, md);           // ข้อมูลในหน้าเว็บครอบคลุมทั้งช่วง (เช่น 1 นาที × 60 แท่ง)
+  } else {
+    ichFetchRemote(md, win);                       // ส่วนเก่าขอจาก backend, ส่วนล่าสุดคำนวณสดจากหน้าเว็บ
+    const remote = (ichRemote.rows || []).filter(b => b.t < coveredFrom && b.t >= win.from);
+    const live = ichAggregate(local.filter(r=>r.ts.getTime() >= coveredFrom), md);
+    buckets = remote.concat(live);
+  }
+  const loading = ichRemote.loading && !ichRemote.rows;
+  const spanTxt = useCustomRange ? selectedRangeLabel : ({ t1m:'1 ชม.', t5m:'4 ชม.', t15m:'12 ชม.', t30m:'24 ชม.', t1h:'2 วัน', t1d:'30 วัน' }[ICH_MODE] + 'ล่าสุด');
+  renderIndividualsBuckets(buckets, md, { from: win.from, to: win.to, note:`เฉลี่ยทุก ${md.label} · ${spanTxt}`, loading, error: ichRemote.error });
+}
+
+function ichTimeLabel(t, sz, first){
+  const d = new Date(t); const p = (n)=>String(n).padStart(2,'0');
+  if(sz.unit === 'day') return `${p(d.getDate())}/${p(d.getMonth()+1)}`;
+  const hm = sz.unit === 'second' ? `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}` : `${p(d.getHours())}:${p(d.getMinutes())}`;
+  return (first || (d.getHours() === 0 && d.getMinutes() === 0 && sz.unit !== 'second')) ? `${p(d.getDate())}/${p(d.getMonth()+1)} ${hm}` : hm;
+}
+
+function renderIndividualsBuckets(buckets, sz, info){
+  const svg = document.getElementById('ichart');
+  clearSvg(svg);
+  const W=1120,H=250,padL=48,padR=20,padT=30,padB=24;
+  const volH = 28, gap = 6;
+  const plotW=W-padL-padR, plotH=H-padT-padB, mainH = plotH - volH - gap;
+  // ช่องเวลาต่อเนื่อง (ช่วงที่เครื่องหยุดจะเห็นเป็นช่องว่าง)
+  const slots = [];
+  for(let t = ichBucketStart(info.from, sz); t <= info.to && slots.length < 400; t = ichNext(t, sz)) slots.push(t);
+  const byT = new Map(buckets.map(b=>[b.t, b]));
+  const items = slots.map(t=>byT.get(t) || null);
+  const filled = items.filter(Boolean);
+  const total = filled.reduce((a,b)=>a+b.n, 0);
+  const over = filled.reduce((a,b)=>a+b.over, 0), under = filled.reduce((a,b)=>a+b.under, 0);
+  const highPct = total ? (over/total*100).toFixed(1) : '0.0', lowPct = total ? (under/total*100).toFixed(1) : '0.0';
+  document.getElementById('ichartMeta').textContent =
+    `${info.note} · ${filled.length} ช่วง · ${total.toLocaleString('en-US')} ชิ้น · High ${highPct}% · Low ${lowPct}%` +
+    (info.error ? ` · ⚠ โหลดข้อมูลเก่าไม่ได้` : '');
+  if(!filled.length){
+    svg.appendChild(el('text',{x:W/2,y:H/2,'font-size':'14',fill:'var(--text-faint)','text-anchor':'middle'})).textContent =
+      info.loading ? 'กำลังโหลดข้อมูลย้อนหลัง…' : 'ยังไม่มีข้อมูลในช่วงนี้';
+    return;
+  }
+  // แกน Y: ตามข้อมูล (ค่าเฉลี่ย ± SD) รวมสเปกถ้าสเปกอยู่ใกล้ — สเปกที่ไม่ตรงกับของจริงจะไม่บีบกราฟจนแบน
+  let dLo = Infinity, dHi = -Infinity;
+  for(const b of filled){ dLo = Math.min(dLo, b.mean - b.sd); dHi = Math.max(dHi, b.mean + b.sd); }
+  const dSpan = Math.max(dHi - dLo, 0.5);
+  const specNear = SPEC.LSL < dHi + 3*dSpan && SPEC.USL > dLo - 3*dSpan;
+  let lo = specNear ? Math.min(dLo, SPEC.LSL) : dLo, hi = specNear ? Math.max(dHi, SPEC.USL) : dHi;
+  const padV = (hi - lo) * 0.16 || 0.5; const yMin = lo - padV, yMax = hi + padV;
+  const sw = plotW / slots.length;
+  const cx = (i)=> padL + (i + 0.5) * sw;
+  const y = (v)=> padT + mainH - ((v - yMin)/(yMax - yMin)) * mainH;
+  const yc = (v)=> y(Math.max(yMin, Math.min(yMax, v)));
+
+  // โซน + เส้นสเปก
+  if(specNear){
+    const ze = zoneEdges();
+    const zband = (a,b,fill)=>{ const ya=yc(Math.max(a,b)), yb=yc(Math.min(a,b)); if(yb>ya) svg.appendChild(el('rect',{x:padL,y:ya,width:plotW,height:yb-ya,fill})); };
+    zband(ze.yLo, ze.yHi, 'rgba(14,148,102,0.09)'); zband(ze.yHi, ze.rHi, 'rgba(227,160,8,0.12)'); zband(ze.yLo, ze.rLo, 'rgba(227,160,8,0.12)');
+    zband(ze.rHi, SPEC.USL, 'rgba(240,96,43,0.12)'); zband(ze.rLo, SPEC.LSL, 'rgba(240,96,43,0.12)');
+  }
+  [[SPEC.LSL,'LSL','var(--limit)'],[SPEC.USL,'USL','var(--limit)'],[SPEC.TARGET,'Target','var(--target)']].forEach(([val,lbl,color])=>{
+    if(val < yMin || val > yMax) return;
+    svg.appendChild(el('line',{x1:padL,x2:W-padR,y1:y(val),y2:y(val),stroke:color,'stroke-width':1.2,'stroke-dasharray': lbl==='Target'?'4 3':'0'}));
+    svg.appendChild(el('text',{x:W-padR+4,y:y(val)+3,class:'tick',fill:color})).textContent=lbl;
+  });
+  // แกน Y ตัวเลข
+  const yStep = [0.1,0.2,0.5,1,2,5,10,20,50].find(s => (yMax-yMin)/s <= 5) || 100;
+  for(let v = Math.ceil(yMin/yStep)*yStep; v <= yMax; v += yStep){
+    svg.appendChild(el('text',{x:padL-6,y:y(v)+3,class:'tick','text-anchor':'end'})).textContent = +v.toFixed(2);
+  }
+  if(!specNear){
+    svg.appendChild(el('text',{x:W-padR,y:padT-12,'font-size':'12','font-weight':'600',fill:'var(--limit)','text-anchor':'end'})).textContent =
+      `⚠ สเปก ${SPEC.LSL}–${SPEC.USL} g อยู่นอกกราฟ (ไม่ตรงกับน้ำหนักที่ผลิตจริง)`;
+  }
+
+  // เส้นค่าเฉลี่ย (ขาดตอนช่วงที่ไม่มีการผลิต)
+  let d = '', prev = false;
+  items.forEach((b,i)=>{ if(b){ d += (prev?'L':'M') + cx(i) + ' ' + y(b.mean) + ' '; prev = true; } else prev = false; });
+  svg.appendChild(el('path',{d, fill:'none', stroke:'var(--blue-600)', 'stroke-width':1.4, opacity:0.55}));
+
+  // แท่ง
+  const boxW = Math.max(2, Math.min(26, sw * 0.58));
+  const maxN = Math.max(...filled.map(b=>b.n), 1);
+  const volTop = padT + mainH + gap;
+  const showVals = sw >= 34;
+  items.forEach((b,i)=>{
+    if(!b) return;
+    const x = cx(i);
+    const z = zoneOf(b.mean);
+    const col = ZONE_COLOR[z];
+    const fail = b.over + b.under;
+    const g = el('g',{});
+    const tip = [
+      `${ichTimeLabel(b.t, sz, true)} – ${ichTimeLabel(ichNext(b.t, sz), sz, false)}`,
+      `จำนวน ${b.n.toLocaleString('en-US')} ชิ้น · หลุดสเปก ${fail} (${(fail/b.n*100).toFixed(1)}%)`,
+      `ค่าเฉลี่ย ${b.mean.toFixed(2)} g · SD ${b.sd.toFixed(3)} g`,
+      `ต่ำสุด ${b.min.toFixed(1)} · สูงสุด ${b.max.toFixed(1)} g`,
+    ].join('\n');
+    g.appendChild(el('title',{})).textContent = tip;
+    // พื้นที่ hover ทั้งคอลัมน์
+    g.appendChild(el('rect',{x:x - sw/2, y:padT, width:sw, height:plotH, fill:'transparent'}));
+    // เส้นต่ำสุด–สูงสุด
+    g.appendChild(el('line',{x1:x,x2:x,y1:yc(b.max),y2:yc(b.min),stroke: fail ? 'var(--limit)' : 'var(--ink-3)','stroke-width':1.2}));
+    if(b.max > yMax) clipMarker(g, x, padT + 4, 1, 'var(--limit)');
+    if(b.min < yMin) clipMarker(g, x, padT + mainH - 4, -1, 'var(--limit)');
+    // กล่อง ค่าเฉลี่ย ± SD
+    const yTop = yc(b.mean + b.sd), yBot = yc(b.mean - b.sd);
+    g.appendChild(el('rect',{x:x - boxW/2, y:yTop, width:boxW, height:Math.max(2, yBot - yTop), rx:Math.min(3, boxW/4),
+      fill:col, 'fill-opacity':0.28, stroke:col, 'stroke-width':1.2}));
+    g.appendChild(el('circle',{cx:x, cy:y(b.mean), r: Math.min(3.4, Math.max(2, boxW/5)), fill:col, stroke:'var(--panel)','stroke-width':0.8}));
+    // จำนวนชิ้น (เทา = ผ่าน, แดง = หลุดสเปก)
+    const vh = (b.n / maxN) * volH, fh = (fail / maxN) * volH;
+    g.appendChild(el('rect',{x:x - boxW/2, y:volTop + volH - vh, width:boxW, height:Math.max(1, vh - fh), fill:'var(--blue-200)'}));
+    if(fail) g.appendChild(el('rect',{x:x - boxW/2, y:volTop + volH - fh, width:boxW, height:Math.max(1.5, fh), fill:'var(--limit)'}));
+    svg.appendChild(g);
+  });
+  // ตัวเลขค่าเฉลี่ยบนแท่ง (เมื่อแท่งกว้างพอ) + แท่งล่าสุดเสมอ
+  items.forEach((b,i)=>{
+    if(!b) return;
+    const isLast = b === filled[filled.length-1];
+    if(!showVals && !isLast) return;
+    svg.appendChild(el('text',{x:cx(i), y:Math.max(padT + 8, yc(b.max) - 5), 'font-size': isLast ? '11.5' : '10.5', 'font-weight': isLast ? '700' : '600',
+      fill: isLast ? 'var(--ink)' : 'var(--text-dim)', 'text-anchor': isLast && i > slots.length - 3 ? 'end' : 'middle'})).textContent = b.mean.toFixed(1);
+  });
+  // แกนเวลา
+  svg.appendChild(el('line',{x1:padL,x2:W-padR,y1:padT+plotH,y2:padT+plotH,class:'axis'}));
+  const every = Math.max(1, Math.ceil(76 / sw));
+  slots.forEach((t,i)=>{
+    if(i % every) return;
+    svg.appendChild(el('text',{x:cx(i), y:H-8, class:'tick', 'text-anchor': i === 0 ? 'start' : 'middle'})).textContent = ichTimeLabel(t, sz, i === 0);
+  });
+  // ป้ายมุมซ้ายบน + คำอธิบายสัญลักษณ์มุมขวาบน
+  svg.appendChild(el('text',{x:padL+2,y:padT-12,'font-size':'12','font-weight':'600',fill:'var(--limit)'})).textContent = `▲ High ${highPct}%   ▼ Low ${lowPct}%`;
+  if(specNear){
+    const lg = el('g',{transform:`translate(${W-padR-330},${padT-22})`});
+    lg.appendChild(el('rect',{x:0,y:2,width:12,height:9,rx:2,fill:'var(--ok)','fill-opacity':0.28,stroke:'var(--ok)'}));
+    lg.appendChild(el('text',{x:17,y:10,class:'tick'})).textContent = 'ค่าเฉลี่ย ± SD';
+    lg.appendChild(el('line',{x1:112,x2:112,y1:0,y2:13,stroke:'var(--ink-3)','stroke-width':1.4}));
+    lg.appendChild(el('text',{x:119,y:10,class:'tick'})).textContent = 'ต่ำสุด–สูงสุด';
+    lg.appendChild(el('rect',{x:214,y:3,width:10,height:8,fill:'var(--limit)'}));
+    lg.appendChild(el('text',{x:229,y:10,class:'tick'})).textContent = 'จำนวนที่หลุดสเปก';
+    svg.appendChild(lg);
+  }
+}
+
+function renderIndividualsRaw(win, stripNote, noRangeLabel){
   const svg=document.getElementById('ichart');
   clearSvg(svg);
   const view = getView();
-  const baseWin = (selectedRangeMs==null && !useCustomRange) ? view.slice(-STRIP_WINDOW) : view;
-  const win = applyZoomWindow('ichart', baseWin);
   const highCount = win.filter(r=>r.value>SPEC.USL).length;
   const lowCount = win.filter(r=>r.value<SPEC.LSL).length;
   const highPct = win.length? (highCount/win.length*100).toFixed(1) : '0.0';
   const lowPct = win.length? (lowCount/win.length*100).toFixed(1) : '0.0';
   if(win.length<2){
-    document.getElementById('ichartMeta').textContent = `${selectedRangeLabel} · ${win.length} samples · High ${highPct}% · Low ${lowPct}%`;
+    document.getElementById('ichartMeta').textContent = `${noRangeLabel ? '' : selectedRangeLabel + ' · '}${win.length} ชิ้น · High ${highPct}% · Low ${lowPct}%`;
     return;
   }
   const vals = win.map(r=>r.value);
-  const allVals = view.map(r=>r.value);
+  const allVals = (view.length >= win.length ? view : win).map(r=>r.value);
   const m = mean(allVals);
   const mr=[]; for(let i=1;i<allVals.length;i++) mr.push(Math.abs(allVals[i]-allVals[i-1]));
   const mrBar = mr.length? mean(mr) : 0;
@@ -1245,10 +1818,13 @@ function renderIndividuals(){
     if(c.off===1) hiddenAbove++; else if(c.off===-1) hiddenBelow++;
     return { r, cv:c.v, off:c.off };
   });
-  document.getElementById('ichartMeta').textContent = `${selectedRangeLabel} · ${win.length} samples · High ${highPct}% · Low ${lowPct}%` +
+  document.getElementById('ichartMeta').textContent = `${noRangeLabel ? '' : selectedRangeLabel + ' · '}${stripNote} · High ${highPct}% · Low ${lowPct}%` +
     (hiddenAbove+hiddenBelow>0 ? ` · ⚠ ${hiddenAbove+hiddenBelow} ค่าเกินช่วงแสดงผล (▲${hiddenAbove} ▼${hiddenBelow})` : '');
 
-  svg.appendChild(el('rect',{x:padL,y:y(SPEC.USL),width:plotW,height:Math.max(y(SPEC.LSL)-y(SPEC.USL),0),fill:'var(--ok-dim)'}));
+  const ze = zoneEdges();
+  const zband = (a,b,fill)=>{ const ya=y(Math.max(a,b)), yb=y(Math.min(a,b)); svg.appendChild(el('rect',{x:padL,y:ya,width:plotW,height:Math.max(0,yb-ya),fill})); };
+  zband(ze.yLo, ze.yHi, 'rgba(14,148,102,0.09)'); zband(ze.yHi, ze.rHi, 'rgba(227,160,8,0.12)'); zband(ze.yLo, ze.rLo, 'rgba(227,160,8,0.12)');
+  zband(ze.rHi, SPEC.USL, 'rgba(240,96,43,0.12)'); zband(ze.rLo, SPEC.LSL, 'rgba(240,96,43,0.12)');
   [[SPEC.LSL,'LSL','var(--limit)'],[SPEC.USL,'USL','var(--limit)'],[SPEC.TARGET,'Target','var(--target)']].forEach(([val,lbl,color])=>{
     svg.appendChild(el('line',{x1:padL,x2:W-padR,y1:y(val),y2:y(val),stroke:color,'stroke-width':1.2,'stroke-dasharray': lbl==='Target'?'4 3':'0'}));
     svg.appendChild(el('text',{x:W-padR+4,y:y(val)+3,class:'tick',fill:color})).textContent=lbl;
@@ -1273,11 +1849,12 @@ function renderIndividuals(){
     const bad = r.status==='OUT_OF_SPEC';
     const warn = r.status==='WARNING';
     const isLast = i===clipped.length-1;
+    if(clipped.length > 800 && !bad && !isLast && c.off===0) return; // ข้อมูลเยอะ: วาดเฉพาะจุดที่หลุดสเปก (เส้นยังครบทุกค่า)
     if(c.off!==0){
       clipMarker(svg, x(i), y(c.cv), c.off, 'var(--limit)');
     } else {
-      svg.appendChild(el('circle',{cx:x(i),cy:y(c.cv),r: isLast?5:(bad?3.6:2.4),
-        fill: bad?'var(--limit)':(warn?'var(--target)':'var(--ok)'), stroke:'var(--panel)','stroke-width':isLast?1.5:0.75}));
+      svg.appendChild(el('circle',{cx:x(i),cy:y(c.cv),r: isLast?5:(bad?3.6:(warn?3:2.4)),
+        fill: ZONE_COLOR[zoneOf(r.value)], stroke:'var(--panel)','stroke-width':isLast?1.5:0.75}));
     }
   });
 }
@@ -1513,12 +2090,13 @@ function renderFeed(){
   const recent = getView().slice(-15).reverse();
   document.getElementById('feed').innerHTML = recent.map(r=>{
     const pct = Math.max(0,Math.min(100, ((r.value-(SPEC.LSL-5))/((SPEC.USL+5)-(SPEC.LSL-5)))*100));
-    const color = r.status==='OK'?'var(--ok)':r.status==='WARNING'?'var(--target)':'var(--limit)';
+    const z = zoneOf(r.value);
+    const color = ZONE_COLOR[z];
     return `<div class="feed-row">
       <span class="sample">${r.sample}</span>
       <span class="value" style="color:${color}">${r.value.toFixed(1)} g</span>
       <span class="bar-bg"><span class="bar-fill" style="width:${pct}%; background:${color}"></span></span>
-      <span class="tag ${r.status}">${r.status.replace('_',' ')}</span>
+      <span class="tag z-${z}">${ZONE_LABEL[z]}</span>
     </div>`;
   }).join('');
 }
@@ -1686,12 +2264,44 @@ function syncModalSvg(){
 // modal เปิดค้างอยู่แล้วผู้ใช้ย่อ/ขยายหน้าต่างเบราว์เซอร์ — วาด Histogram ใหม่ให้พอดีขนาดใหม่ด้วย
 window.addEventListener('resize', ()=>{ if(expandedSrcId==='hist') renderHistogramInModal(); });
 
+// ขยายกราฟ = เปิดหน้าวิเคราะห์เต็มจอ (ซูม/เลื่อน/ดูตัวเลขทุกจุด/เลือกแท่งรายนาที-ชั่วโมง-วัน-เดือน-ปี/แปลผล)
+const EXPAND_VIEW = { ichart:'trend', xbarchart:'xbar', rchart:'r', schart:'s', trendchart:'cap', hist:'hist' };
+function analysisUrl(view){
+  const q = new URLSearchParams();
+  if(SCALE_ID != null) q.set('scale', SCALE_ID);
+  q.set('view', view);
+  const md = ICH_MODES[ICH_MODE];
+  if(view === 'trend' && md && md.kind === 'time' && !useCustomRange){
+    q.set('range', md.range); q.set('tf', md.tf);
+  } else if(useCustomRange && customFrom && customTo){
+    q.set('range','custom'); q.set('from', toLocalIso(customFrom).slice(0,16)); q.set('to', toLocalIso(customTo).slice(0,16));
+  } else {
+    q.set('range', selectedRangeMs != null && selectedRangeMs <= 1800000 ? '30m' : '1h');
+  }
+  return `analysis.html?${q.toString()}`;
+}
+// ตัวเลือกวิธีแสดงของการ์ด Individuals (อยู่ในการ์ดที่กดแล้วเปิดหน้าวิเคราะห์ — กันไม่ให้คลิกทะลุ)
+(function initIchartMode(){
+  const wrap = document.getElementById('ichartModeWrap');
+  const sel = document.getElementById('ichartMode');
+  if(!wrap || !sel) return;
+  sel.value = ICH_MODE;
+  ['click','mousedown','pointerdown','touchstart','keydown'].forEach(ev => wrap.addEventListener(ev, e => e.stopPropagation()));
+  sel.addEventListener('change', ()=>{
+    ICH_MODE = ICH_MODES[sel.value] ? sel.value : 'auto';
+    try{ localStorage.setItem('ichart-mode', ICH_MODE); }catch(e){ /* จำไม่ได้ก็ใช้ได้รอบนี้ */ }
+    ichRemote.key = ''; ichRemote.rows = null; ichRemote.error = '';
+    safeRender(renderIndividuals, 'renderIndividuals');
+  });
+})();
 document.querySelectorAll('.panel.expandable').forEach(p=>{
-  p.addEventListener('click', ()=> openModal(p.dataset.src, p.dataset.title));
+  p.addEventListener('click', ()=>{ location.href = analysisUrl(EXPAND_VIEW[p.dataset.src] || 'trend'); });
 });
+document.getElementById('kpiDetailClose').addEventListener('click', ()=> document.getElementById('kpiDetailModal').classList.remove('open'));
+
 document.getElementById('modalClose').addEventListener('click', closeModal);
 modalOverlay.addEventListener('click', (e)=>{ if(e.target===modalOverlay) closeModal(); });
-document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') closeModal(); });
+document.addEventListener('keydown', (e)=>{ if(e.key==='Escape'){ closeModal(); document.querySelectorAll('.modal-backdrop.open').forEach(x=>x.classList.remove('open')); } });
 
 // keep the modal's chart in sync with the live-updating source chart
 const _renderAll = renderAll;
@@ -1714,6 +2324,7 @@ initModalZoomControls();
     setConn('down','โหลดข้อมูลจาก backend ไม่สำเร็จ: ' + err.message);
   }
   startPolling();                    // ต่อจากนี้ดึงเฉพาะแถวใหม่ทุก POLL_MS
+  refreshOosWindows();               // สรุปหลุดสเปกย้อนหลังตามชั่วโมงที่ตั้ง (ต่อจากนี้ทุก 30 วินาที)
 })();
 
 // พักหน้าเว็บไว้เบื้องหลังไม่ต้อง poll ถี่ กลับมาแล้วค่อยดึงรอบเดียวให้ทัน

@@ -395,7 +395,7 @@ function cwCardHtml(s){
     ${c.gaps_total ? `<div class="callout warn">${icon('alert')}<span>อ่านค่าไม่ทัน ${fmtInt(c.gaps_total)} ชิ้น ตั้งแต่เปิดระบบ (ตัวนับของเครื่องยังครบ)</span></div>` : ''}
     ` : ''}
     ${s.active_session_id ? sessionBlock(s) : ''}
-    ${actionsBlock(s, `checkweigher.html?scale=${s.scale_id}`, 'รายละเอียด')}
+    ${actionsBlock(s, `dashboard.html?scale=${s.scale_id}`, 'ดูกราฟ')}
   </div>`;
 }
 
@@ -404,7 +404,7 @@ function tableRowHtml(s){
   const running = !!s.active_session_id;
   const docCell = running ? `${esc(s.active_group_code)} / ${esc(s.active_product_code)}` : '-';
   const startCell = running ? fmtStart(s.active_session_start) : '-';
-  const detail = s.device_type === 'opcua' ? `checkweigher.html?scale=${s.scale_id}` : `dashboard.html?scale=${s.scale_id}`;
+  const detail = `dashboard.html?scale=${s.scale_id}`;
   const actions = off
     ? `<button class="btn primary small" data-action="enable" data-scale="${s.scale_id}">เปิดใช้งาน</button>
        <button class="btn small icon-only" data-action="edit" data-scale="${s.scale_id}" title="แก้ไข" aria-label="แก้ไข">${icon('edit')}</button>

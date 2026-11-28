@@ -5,6 +5,12 @@
  * เรียกใช้: window.buildWeightCheckReportHtml(opts) -> คืน HTML string เต็มหน้า พร้อม window.open + document.write เอง
  */
 (function () {
+  function escAttr(v) {
+    return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
   function fmtNum(v, digits) {
     if (v == null || Number.isNaN(v)) return '-';
     return Number(v).toFixed(digits ?? 1);
@@ -52,6 +58,9 @@
   .toolbar{ max-width:1900px; margin:0 auto 14px auto; display:flex; justify-content:flex-end; gap:10px; }
   .toolbar button{ font-family:inherit; font-size:13px; padding:8px 16px; border:1.5px solid var(--navy); background:#fff; color:var(--navy); border-radius:4px; cursor:pointer; font-weight:bold; }
   .toolbar button:hover{ background:var(--navy); color:#fff; }
+  .toolbar label{ display:flex; align-items:center; gap:8px; font-size:13px; font-weight:bold; }
+  .toolbar input{ font-family:inherit; font-size:14px; padding:7px 10px; border:1.5px solid var(--navy); border-radius:4px; color:var(--navy); width:240px; }
+  .signature[contenteditable]:hover{ outline:1px dashed var(--navy); cursor:text; }
   .sheet-wrap{ max-width:1900px; margin:0 auto; overflow-x:auto; background:#fff; box-shadow:0 2px 14px rgba(25,25,112,0.18); padding:14px; }
   table.form{ border-collapse:collapse; width:100%; min-width:1720px; table-layout:fixed; }
   table.form col.c-major{ width:150px; } table.form col.c-box{ width:96px; } table.form col.c-scale{ width:48px; } table.form col.c-stat{ width:66px; }
@@ -77,7 +86,11 @@
 </style>
 </head>
 <body>
-  <div class="toolbar"><button onclick="window.print()">Print / Export PDF</button></div>
+  <div class="toolbar">
+    <label for="inspInput">QC INSPECTOR :</label>
+    <input id="inspInput" value="${escAttr(inspectorName && inspectorName !== '-' ? inspectorName : '')}" placeholder="พิมพ์ชื่อผู้ตรวจสอบ" autocomplete="off">
+    <button onclick="window.print()">Print / Export PDF</button>
+  </div>
   <div class="sheet-wrap">
     <table class="form">
       <colgroup>
@@ -87,7 +100,7 @@
       <tbody>
 <tr class="titlebar"><td class="cell titlecell" colspan="10">i-Tail Corporation Public Company Limited</td><td class="cell titlecell titlecenter" colspan="10">WEIGHT CHECK RECORD</td><td class="cell titlecell" colspan="7" style="font-size:12px; text-align:center;">${formCode || ''}</td></tr>
 <tr class="addrrow"><td class="cell addrcell" colspan="27"><span class="chkbox">&#10003;</span> ITC: 333 Moo 2, Karnjanavanich Road,&nbsp;&nbsp;Pavong Sub-district, Mueang Songkhla District, Songkhla 90100, Thailand</td></tr>
-<tr class="dprow"><td class="cell dpcell" colspan="8"><span class="fieldlabel">DATE CHECK :</span> <span class="typed">${dateStr}</span></td><td class="cell dpcell" colspan="7"><span class="fieldlabel">PACKING LINE :</span> <span class="typed">${lineLabel}</span></td><td class="cell dpcell" colspan="8"></td><td class="cell dpcell qcinspector" colspan="4"><span class="fieldlabel">QC INSPECTOR :</span> <span class="signature">${inspectorName || '-'}</span></td></tr>
+<tr class="dprow"><td class="cell dpcell" colspan="8"><span class="fieldlabel">DATE CHECK :</span> <span class="typed">${dateStr}</span></td><td class="cell dpcell" colspan="7"><span class="fieldlabel">PACKING LINE :</span> <span class="typed">${lineLabel}</span></td><td class="cell dpcell" colspan="8"></td><td class="cell dpcell qcinspector" colspan="4"><span class="fieldlabel">QC INSPECTOR :</span> <span class="signature" id="inspSig" contenteditable="true" spellcheck="false">${escAttr(inspectorName || '-')}</span></td></tr>
 <tr><td class="cell labelmajor bold shaded">GENERAL INFO.</td><td class="cell box bold shaded" rowspan="3">PRODUCT<br>CODE</td><td class="cell prodval bold" colspan="25" rowspan="3">${productCode}</td></tr>
 <tr class="sizerow"><td class="cell labelmajor">SIZE: ${sizeLabel}</td></tr>
 <tr class="custrow"><td class="cell labelmajor">CUSTOMER: ${customerLabel}</td></tr>
@@ -107,6 +120,14 @@
       </tbody>
     </table>
   </div>
+<script>
+  // แก้ชื่อผู้ตรวจสอบได้ก่อนพิมพ์: พิมพ์ในช่องด้านบน หรือคลิกที่ชื่อในใบได้เลย
+  (function(){
+    var inp = document.getElementById('inspInput'), sig = document.getElementById('inspSig');
+    inp.addEventListener('input', function(){ sig.textContent = inp.value.trim() || '-'; });
+    sig.addEventListener('input', function(){ inp.value = sig.textContent.trim(); });
+  })();
+</script>
 </body></html>`;
 
     return html;

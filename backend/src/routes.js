@@ -7,10 +7,13 @@ const dbWc = require('./db-wc');
 const manager = require('./scale-manager');
 const shift = require('./shift');
 const logger = require('./logger');
+const summary = require('./summary');
 
 const router = express.Router();
 
 const MAX_LIMIT = 50000; // ปรับตามค่าที่ใช้งานจริงบน server (เดิม 10000)
+const SESSION_MAX_LIMIT = 200000; // ค่าน้ำหนักของเอกสาร 1 ใบ
+const MAX_BUCKETS = 6000; // จำนวนแท่งสูงสุดต่อการขอกราฟแบบรายช่วงเวลา
 
 function clampLimit(raw, fallback) {
   const n = Number.parseInt(raw, 10);
@@ -276,7 +279,9 @@ router.put('/sessions/:id', requireIntParam('id'), async (req, res) => {
 
 // ค่าน้ำหนักทั้งหมดของเอกสารนี้ — ใช้วาดกราฟหน้า detail
 router.get('/sessions/:id/weights', requireIntParam('id'), async (req, res) => {
-  const limit = clampLimit(req.query.limit, 20000);
+  // เอกสารเดียวมีได้หลายหมื่นค่า (เช่น 58,886 ค่าในกะเดียว) — อนุญาตสูงกว่า MAX_LIMIT ทั่วไป เพื่อให้ PDF/กราฟครบ
+  const n = Number.parseInt(req.query.limit, 10);
+  const limit = Number.isFinite(n) && n > 0 ? Math.min(n, SESSION_MAX_LIMIT) : 20000;
   try {
     const session = await db.getSession(req.params.id);
     if (!session) return res.status(404).json({ error: 'ไม่พบเอกสารนี้' });
@@ -335,6 +340,151 @@ router.get('/weights/range', async (req, res) => {
       .filter((r) => r.time_stamp >= from && r.time_stamp <= to)
       .slice(-limit)
   );
+});
+
+// ===================================================================== analytics (กราฟแบบรายช่วงเวลา)
+const UNIT_MS = { minute: 60e3, hour: 3600e3, day: 86400e3, month: 30 * 86400e3, year: 365 * 86400e3 };
+
+function bucketStart(d, unit, step) {
+  const t = new Date(d);
+  if (unit === 'year') return new Date(Math.floor(t.getFullYear() / step) * step, 0, 1);
+  if (unit === 'month') {
+    const m = t.getFullYear() * 12 + t.getMonth();
+    const b = Math.floor(m / step) * step;
+    return new Date(Math.floor(b / 12), b % 12, 1);
+  }
+  const base = new Date(1900, 0, 1).getTime(); // เทียบกับ SQL DATEADD(unit, ..., 0) = 1900-01-01
+  const size = UNIT_MS[unit] * step;
+  return new Date(base + Math.floor((t.getTime() - base) / size) * size);
+}
+
+/** สรุปจาก memory ring (ตอน DB ใช้ไม่ได้) — รูปแบบเดียวกับ db.fetchBuckets */
+function bucketsFromRows(rows, unit, step, lsl, usl) {
+  const map = new Map();
+  for (const r of rows) {
+    const k = bucketStart(r.time_stamp, unit, step).getTime();
+    let b = map.get(k);
+    if (!b) { b = { bucket: new Date(k), n: 0, sum: 0, sq: 0, min_w: Infinity, max_w: -Infinity, over_n: 0, under_n: 0 }; map.set(k, b); }
+    const w = Number(r.weight);
+    b.n += 1; b.sum += w; b.sq += w * w;
+    b.min_w = Math.min(b.min_w, w); b.max_w = Math.max(b.max_w, w);
+    if (usl != null && w > usl) b.over_n += 1;
+    if (lsl != null && w < lsl) b.under_n += 1;
+  }
+  return Array.from(map.values()).sort((a, b) => a.bucket - b.bucket).map((b) => ({
+    bucket: b.bucket, n: b.n, mean: b.sum / b.n,
+    sd: b.n > 1 ? Math.sqrt(Math.max(0, (b.sq - (b.sum * b.sum) / b.n) / (b.n - 1))) : null,
+    min_w: b.min_w, max_w: b.max_w, over_n: b.over_n, under_n: b.under_n,
+  }));
+}
+
+router.get('/analytics/buckets', async (req, res) => {
+  const scaleId = parseScaleId(req.query.scaleId);
+  const unit = String(req.query.unit || 'hour');
+  const step = Math.max(1, Number.parseInt(req.query.step, 10) || 1);
+  const from = new Date(req.query.from);
+  const to = new Date(req.query.to);
+  const num = (v) => (v === undefined || v === '' || v === null || !Number.isFinite(Number(v)) ? null : Number(v));
+  const lsl = num(req.query.lsl);
+  const usl = num(req.query.usl);
+  if (scaleId == null) return res.status(400).json({ error: 'ต้องระบุ scaleId' });
+  if (!UNIT_MS[unit]) return res.status(400).json({ error: 'unit ต้องเป็น minute, hour, day, month หรือ year' });
+  if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime()) || to <= from) {
+    return res.status(400).json({ error: 'from/to ต้องเป็นวันเวลาที่ถูกต้อง' });
+  }
+  const expected = (to - from) / (UNIT_MS[unit] * step);
+  if (expected > MAX_BUCKETS) {
+    return res.status(400).json({ error: `ช่วงเวลานี้มี ${Math.ceil(expected).toLocaleString('en-US')} แท่ง มากเกินไป — เลือกแท่งที่ใหญ่ขึ้น หรือช่วงเวลาที่สั้นลง` });
+  }
+  const out = (rows, source) => res.json({
+    source, unit, step,
+    rows: rows.map((r) => ({
+      bucket: naive(r.bucket instanceof Date ? r.bucket : new Date(r.bucket), source === 'db' ? config.db.useUtc : false),
+      n: Number(r.n), mean: r.mean == null ? null : Number(r.mean), sd: r.sd == null ? null : Number(r.sd),
+      min: r.min_w == null ? null : Number(r.min_w), max: r.max_w == null ? null : Number(r.max_w),
+      over: Number(r.over_n || 0), under: Number(r.under_n || 0),
+    })),
+  });
+  const memory = () => {
+    const reader = manager.get(scaleId);
+    const rows = reader ? reader.memoryHistory(config.memoryBufferSize).filter((r) => r.time_stamp >= from && r.time_stamp <= to) : [];
+    return bucketsFromRows(rows, unit, step, lsl, usl);
+  };
+  if (config.dbEnabled) {
+    try {
+      const rows = await db.fetchBuckets(scaleId, from, to, unit, step, lsl, usl, manager.tableFor(scaleId));
+      return out(rows, 'db');
+    } catch (err) {
+      logger.error(`analytics buckets DB failed, fallback memory: ${err.message}`);
+    }
+  }
+  return out(memory(), 'memory');
+});
+
+// ================================================================ สรุปผลรายไลน์
+// GET /api/summary/lines?from=YYYY-MM-DD&to=YYYY-MM-DD&period=day|week|month|year
+// ทุกเครื่อง: จำนวน / ผ่าน / ไม่ผ่าน (ตามสเปกของแต่ละเอกสาร) / Cp / Cpk รวมทั้งช่วง + แยกต่อวัน/สัปดาห์/เดือน/ปี
+const SUMMARY_PERIODS = ['day', 'week', 'month', 'year'];
+const SUMMARY_MAX_DAYS = 3 * 366 + 1;
+router.get('/summary/lines', async (req, res) => {
+  const period = SUMMARY_PERIODS.includes(req.query.period) ? req.query.period : 'day';
+  const from = summary.parseDay(req.query.from);
+  const to = summary.parseDay(req.query.to);
+  if (!from || !to || to < from) return res.status(400).json({ error: 'from/to ต้องเป็นวันที่ YYYY-MM-DD และ from ≤ to' });
+  const toExcl = summary.addDays(to, 1);
+  const days = Math.round((toExcl - from) / 86400000);
+  if (days > SUMMARY_MAX_DAYS) return res.status(400).json({ error: 'ช่วงวันที่ยาวเกิน 3 ปี — เลือกช่วงที่สั้นลง' });
+  if (period === 'day' && days > 400) return res.status(400).json({ error: 'รายวันดูได้ไม่เกิน 400 วัน — เลือกรายสัปดาห์หรือรายเดือน' });
+  const scaleFilter = req.query.scaleIds ? new Set(String(req.query.scaleIds).split(',').map(Number)) : null;
+  const scales = manager.list().filter((s) => !scaleFilter || scaleFilter.has(s.scale_id));
+  let settings = {};
+  if (config.dbEnabled) {
+    try { settings = await db.getSettings(); } catch (err) { logger.error(`summary settings: ${err.message}`); }
+  }
+  const numSetting = (k, d) => { const v = Number(settings[k]); return Number.isFinite(v) && v > 0 ? v : d; };
+  const t0 = Date.now();
+  const errors = [];
+  const forScale = async (sc) => {
+    const id = sc.scale_id;
+    let segments = null; let source = 'db';
+    if (config.dbEnabled) {
+      try {
+        segments = await summary.daySegments(id, from, toExcl,
+          (a, b) => db.fetchDaySegments(id, a, b, manager.tableFor(id)), config.db.useUtc);
+      } catch (err) {
+        logger.error(`summary scale ${id} DB failed, fallback memory: ${err.message}`);
+        errors.push(`${sc.name || id}: ${err.message}`);
+      }
+    }
+    if (!segments) {
+      source = 'memory';
+      const reader = manager.get(id);
+      const rows = reader ? reader.memoryHistory(config.memoryBufferSize).filter((r) => r.time_stamp >= from && r.time_stamp < toExcl) : [];
+      segments = summary.rowsToSegments(summary.rowsFromMemory(rows));
+    }
+    const built = summary.buildLine(segments, from, toExcl, period);
+    const cw = sc.cw || {};
+    return {
+      scale_id: id, name: sc.name, line: sc.line, device_type: sc.device_type, enabled: sc.enabled,
+      connection_status: sc.connection_status, run_state: cw.run_state || null,
+      program: cw.program_name ? `No.${cw.program_no ?? '-'} ${cw.program_name}` : null,
+      active_product_code: sc.active_product_code || null,
+      last_received_at: sc.last_received_at, source, ...built,
+    };
+  };
+  try {
+    // ทีละ 3 เครื่อง — ไม่ให้ช่วงยาวหลายไลน์แย่ง connection pool กับหน้าจออื่น
+    const lines = [];
+    for (let i = 0; i < scales.length; i += 3) lines.push(...(await Promise.all(scales.slice(i, i + 3).map(forScale))));
+    res.json({
+      from: summary.dayKey(from), to: summary.dayKey(to), period,
+      thresholds: { cpkGood: numSetting('summary.cpkGood', 1.33), cpkMin: numSetting('alert.cpkMin', 1.0), cpMin: numSetting('alert.cpMin', 1.0) },
+      min_n_for_cpk: summary.MIN_N_FOR_CPK, took_ms: Date.now() - t0, errors, lines,
+    });
+  } catch (err) {
+    logger.error(`summary/lines failed: ${err.message}`);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // poll ข้อมูลใหม่หลังจาก id ที่ frontend มีอยู่แล้ว (เรียงเก่า -> ใหม่)

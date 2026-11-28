@@ -18,6 +18,23 @@ const ALLOWED_TABLES = new Set([
 ]);
 
 /** เช็คชื่อตารางกับ whitelist ก่อนนำไปใช้ใน query — ถ้าไม่ผ่านจะ throw ทันที */
+/**
+ * ตารางที่ต้อง "อ่าน" ของเครื่องหนึ่ง = ตารางที่บันทึกอยู่ตอนนี้ + ตารางเดิม (dbo.Auto)
+ * ข้อมูลก่อนแยกตาราง Spout 1/2/3 (ก่อนมี migrate_v7) ยังอยู่ใน dbo.Auto พร้อม scale_id/session_id
+ * ถ้าอ่านแค่ตาราง Spout เอกสารเก่าจะไม่มีค่าน้ำหนัก (PDF / histogram / กราฟว่าง)
+ */
+function readTables(tableName) {
+  const t = resolveTable(tableName);
+  return t === TABLE ? [t] : [t, TABLE];
+}
+
+/** subquery รวมทุกตารางที่ต้องอ่าน — ใช้กับ WHERE ภายนอก (SQL Server ดัน filter ลงไปใช้ index ของแต่ละตาราง) */
+function weightSource(tableName) {
+  return readTables(tableName)
+    .map((t) => `SELECT [id], [weight], [time_stamp], [scale_id], [session_id] FROM ${t}`)
+    .join(' UNION ALL ');
+}
+
 function resolveTable(tableName) {
   const t = tableName || TABLE;
   if (!ALLOWED_TABLES.has(t)) {
@@ -163,24 +180,88 @@ async function fetchSince(sinceId, limit, scaleId = null, tableName = null) {
 
 /** แถวในช่วงเวลา (ใช้กับ custom range ของ dashboard) */
 async function fetchRange(from, to, limit, scaleId = null, tableName = null) {
-  const table = resolveTable(tableName);
   const pool = await getPool();
   const req = pool.request().input('from', sql.DateTime, from).input('to', sql.DateTime, to).input('limit', sql.Int, limit);
   const where = ['[time_stamp] BETWEEN @from AND @to'];
-  if (scaleId != null) { req.input('scaleId', sql.Int, scaleId); where.push('[scale_id] = @scaleId'); }
+  let source = resolveTable(tableName);
+  if (scaleId != null) {
+    req.input('scaleId', sql.Int, scaleId);
+    where.push('[scale_id] = @scaleId');
+    source = `(${weightSource(tableName)})`; // มี scale_id กรอง จึงรวมตารางเดิมได้โดยไม่ปนเครื่องอื่น
+  }
   const result = await req.query(
     `SELECT [id], [weight], [time_stamp], [scale_id], [session_id] FROM (
        SELECT TOP (@limit) [id], [weight], [time_stamp], [scale_id], [session_id]
-       FROM ${table} WHERE ${where.join(' AND ')}
-       ORDER BY [id] DESC
-     ) AS t ORDER BY [id] ASC`
+       FROM ${source} AS w WHERE ${where.join(' AND ')}
+       ORDER BY [time_stamp] DESC, [id] DESC
+     ) AS t ORDER BY [time_stamp] ASC, [id] ASC`
   );
+  return result.recordset;
+}
+
+const BUCKET_UNITS = { minute: 'minute', hour: 'hour', day: 'day', month: 'month', year: 'year' };
+
+/**
+ * สรุปน้ำหนักเป็นช่วงเวลา (แท่งแบบกราฟหุ้น) — 1 แถว = 1 ช่วง: จำนวน, ค่าเฉลี่ย, SD, ต่ำสุด, สูงสุด, เกิน USL, ต่ำกว่า LSL
+ * unit = minute|hour|day|month|year, step = จำนวน unit ต่อแท่ง (เช่น minute + 15 = แท่งละ 15 นาที)
+ */
+async function fetchBuckets(scaleId, from, to, unit, step, lsl, usl, tableName = null) {
+  const u = BUCKET_UNITS[unit];
+  if (!u) throw new Error('unit ต้องเป็น minute, hour, day, month หรือ year');
+  const pool = await getPool();
+  const bucketExpr = `DATEADD(${u}, (DATEDIFF(${u}, 0, [time_stamp]) / @step) * @step, 0)`;
+  const result = await pool
+    .request()
+    .input('scaleId', sql.Int, scaleId)
+    .input('from', sql.DateTime, from)
+    .input('to', sql.DateTime, to)
+    .input('step', sql.Int, Math.max(1, Math.floor(step) || 1))
+    .input('lsl', sql.Float, lsl ?? null)
+    .input('usl', sql.Float, usl ?? null)
+    .query(`
+      SELECT ${bucketExpr} AS [bucket],
+             COUNT(*) AS [n], AVG([weight]) AS [mean], STDEV([weight]) AS [sd],
+             MIN([weight]) AS [min_w], MAX([weight]) AS [max_w],
+             SUM(CASE WHEN @usl IS NOT NULL AND [weight] > @usl THEN 1 ELSE 0 END) AS [over_n],
+             SUM(CASE WHEN @lsl IS NOT NULL AND [weight] < @lsl THEN 1 ELSE 0 END) AS [under_n]
+      FROM (${weightSource(tableName)}) AS w
+      WHERE [scale_id] = @scaleId AND [time_stamp] BETWEEN @from AND @to
+      GROUP BY ${bucketExpr}
+      ORDER BY [bucket]
+    `);
+  return result.recordset;
+}
+
+/**
+ * สรุปรายวันของ 1 เครื่อง แยกตามเอกสาร (session) — ใช้หน้า "สรุปผลรายไลน์"
+ * แต่ละแถว = (เอกสาร, วัน): จำนวน, ค่าเฉลี่ย, SD, ต่ำสุด/สูงสุด, เกิน USL / ต่ำกว่า LSL ตามสเปกของเอกสารนั้นเอง
+ * ชิ้นที่ไม่มีเอกสาร (session_id = NULL) ไม่มีสเปก → over/under = 0 และ nw_* = NULL
+ */
+async function fetchDaySegments(scaleId, from, to, tableName = null) {
+  const pool = await getPool();
+  const dayExpr = 'DATEADD(day, DATEDIFF(day, 0, w.[time_stamp]), 0)';
+  const result = await pool
+    .request()
+    .input('scaleId', sql.Int, scaleId)
+    .input('from', sql.DateTime, from)
+    .input('to', sql.DateTime, to)
+    .query(`
+      SELECT w.[session_id], ${dayExpr} AS [day],
+             se.[product_code], se.[nw_lcl], se.[nw_target], se.[nw_ucl],
+             COUNT(*) AS [n], AVG(w.[weight]) AS [mean], STDEV(w.[weight]) AS [sd],
+             MIN(w.[weight]) AS [min_w], MAX(w.[weight]) AS [max_w],
+             SUM(CASE WHEN se.[nw_ucl] IS NOT NULL AND w.[weight] > se.[nw_ucl] THEN 1 ELSE 0 END) AS [over_n],
+             SUM(CASE WHEN se.[nw_lcl] IS NOT NULL AND w.[weight] < se.[nw_lcl] THEN 1 ELSE 0 END) AS [under_n]
+      FROM (${weightSource(tableName)}) AS w
+      LEFT JOIN [dbo].[Sessions] AS se ON se.[id] = w.[session_id]
+      WHERE w.[scale_id] = @scaleId AND w.[time_stamp] >= @from AND w.[time_stamp] < @to
+      GROUP BY w.[session_id], ${dayExpr}, se.[product_code], se.[nw_lcl], se.[nw_target], se.[nw_ucl]
+    `);
   return result.recordset;
 }
 
 /** ค่าน้ำหนักทั้งหมดของ 1 เอกสาร (session) เรียงเก่า->ใหม่ — ใช้วาดกราฟย้อนหลังของเอกสารนั้น */
 async function fetchWeightsBySession(sessionId, limit = 20000, tableName = null) {
-  const table = resolveTable(tableName);
   const pool = await getPool();
   const result = await pool
     .request()
@@ -188,7 +269,7 @@ async function fetchWeightsBySession(sessionId, limit = 20000, tableName = null)
     .input('limit', sql.Int, limit)
     .query(
       `SELECT TOP (@limit) [id], [weight], [time_stamp]
-       FROM ${table} WHERE [session_id] = @sessionId ORDER BY [id] ASC`
+       FROM (${weightSource(tableName)}) AS w WHERE [session_id] = @sessionId ORDER BY [time_stamp] ASC, [id] ASC`
     );
   return result.recordset;
 }
@@ -335,12 +416,9 @@ async function createSession({ scaleId, groupCode, productCode, spec, startTime,
  * แก้ไข start_time/end_time/inspector_name ของเอกสาร (ใช้ในหน้า Monitor/Dashboard/ประวัติ)
  * คำนวณสรุปผลใหม่จาก "ช่วงเวลา" (ไม่ใช่ session_id) เพื่อให้ตรงกับเวลาที่แก้ล่าสุดเสมอ
  *
- * หมายเหตุ: ฟังก์ชันนี้ยัง aggregate จากตารางเดียว (TABLE) — ถ้าเอกสารนี้ผูกกับเครื่องชั่ง
- * ที่ข้อมูลน้ำหนักถูกแยกไปอยู่ตาราง Spout 1/2/3 แล้ว ต้อง map scale_id -> ชื่อตาราง
- * แล้วส่งเป็น tableName เข้ามาด้วย ไม่งั้นค่าสรุปผล (avg/min/max) จะคำนวณผิด/ว่างเปล่า
+ * อ่านจากตารางของเครื่อง (tableName) รวมกับตารางเดิม dbo.Auto — เอกสารเก่าก่อนแยกตาราง Spout จะได้ไม่ถูกคำนวณเป็น 0
  */
 async function updateSessionTimes(id, { startTime, endTime, inspectorName, remark }, tableName = null) {
-  const table = resolveTable(tableName);
   const pool = await getPool();
   const current = await pool.request().input('id', sql.BigInt, id).query('SELECT * FROM [dbo].[Sessions] WHERE [id] = @id');
   const row = current.recordset[0];
@@ -360,7 +438,7 @@ async function updateSessionTimes(id, { startTime, endTime, inspectorName, remar
       .input('to', sql.DateTime, newEnd)
       .query(`
         SELECT COUNT(*) AS cnt, AVG([weight]) AS avgW, MIN([weight]) AS minW, MAX([weight]) AS maxW
-        FROM ${table} WHERE [scale_id] = @scaleId AND [time_stamp] BETWEEN @from AND @to
+        FROM (${weightSource(tableName)}) AS w WHERE [scale_id] = @scaleId AND [time_stamp] BETWEEN @from AND @to
       `);
     agg = aggRes.recordset[0] || agg;
   }
@@ -375,7 +453,7 @@ async function updateSessionTimes(id, { startTime, endTime, inspectorName, remar
       .input('lcl', sql.Float, row.nw_lcl)
       .input('ucl', sql.Float, row.nw_ucl)
       .query(`
-        SELECT COUNT(*) AS n FROM ${table}
+        SELECT COUNT(*) AS n FROM (${weightSource(tableName)}) AS w
         WHERE [scale_id] = @scaleId AND [time_stamp] BETWEEN @from AND @to AND ([weight] < @lcl OR [weight] > @ucl)
       `);
     outOfSpec = oos.recordset[0].n;
@@ -727,6 +805,8 @@ module.exports = {
   fetchSince,
   fetchRange,
   fetchWeightsBySession,
+  fetchBuckets,
+  fetchDaySegments,
   listScales,
   createScale,
   updateScale,

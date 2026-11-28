@@ -25,6 +25,16 @@
   .interp-table td.bad{font-weight:700; color:var(--bad);}
   .interp-table td.warn{font-weight:700; color:var(--caution);}
   .interp-table td.good{font-weight:700; color:var(--good);}
+  .pair{display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-size:13px; color:var(--ink-2);}
+  .field-row .pair input:not([type=checkbox]){width:96px;}
+  .zone-bar{display:flex; height:34px; border-radius:10px; overflow:hidden; border:1px solid var(--hairline); font-size:11.5px; font-weight:600;}
+  .zone-bar > div{display:flex; align-items:center; justify-content:center; min-width:0; overflow:hidden; white-space:nowrap;}
+  .zone-bar .z-green{background:var(--good-bg); color:var(--good);}
+  .zone-bar .z-yellow{background:var(--caution-bg); color:var(--caution);}
+  .zone-bar .z-red{background:var(--bad-bg); color:var(--bad);}
+  .zone-bar .z-out{background:var(--bad); color:#fff;}
+  .zone-bar .z-target{flex:0 0 auto; width:56px; background:var(--orange-500); color:#fff;}
+  .zone-example{font-size:12.5px; color:var(--ink-2); margin-top:8px; line-height:1.6;}
   .scale-row{display:flex; align-items:center; gap:8px; padding:8px 0; font-size:13.5px; border-bottom:1px solid var(--hairline-2);}
   .scale-row:last-child{border-bottom:none;}
   @media (max-width:560px){ .settings{grid-template-columns:1fr;} .field-row{grid-template-columns:1fr; gap:6px;} }
@@ -89,20 +99,18 @@
 <div class="panel">
   <h2>เกณฑ์แจ้งเตือนของหลุด Spec ย้อนหลัง (นับตามช่วงเวลา)</h2>
   <div class="desc">
-    ตรวจนับจำนวนค่าน้ำหนักที่ <b>หลุดสเปก</b> (นอกช่วง LCL–UCL ของ Target ที่กำลังใช้งานอยู่) ย้อนหลังตามหน้าต่างเวลาที่ตั้งไว้
-    เช่น "ทุก 1 ชม. ห้ามหลุด Spec เกิน 3 ค่า" — ถ้าเกินจะแจ้งเตือนเสียงเหมือนกฎ Cp/Cpk/Ppk ด้านบน
-  </div>
-  <div class="field-row">
-    <label>ช่วงเวลาย้อนหลัง</label>
-    <div><input type="number" step="1" min="1" id="oosWindowMin" value="60"><div class="hint">นาที (ค่าเริ่มต้น 60 = ทุก 1 ชั่วโมง)</div></div>
+    นับชิ้นที่ <b>หลุดสเปก</b> (ต่ำกว่า LSL หรือเกิน USL = reject) ย้อนหลังตามจำนวนชั่วโมงที่ตั้ง
+    เช่น "ห้ามหลุดเกิน 3 ชิ้น ต่อทุก 1 ชม." หรือ "ห้ามหลุดเกิน 5% ต่อทุก 8 ชม." — ถ้าเกินจะแจ้งเตือนเสียงเหมือนกฎ Cp / Cpk / Ppk ด้านบน
   </div>
   <div class="field-row">
     <label>จำนวนที่หลุดได้สูงสุด</label>
-    <div><input type="number" step="1" min="0" id="oosMaxCount" value="3"><div class="hint">ค่า — แจ้งเตือนถ้าหลุดเกินจำนวนนี้ภายในช่วงเวลาข้างต้น</div></div>
+    <div><div class="pair"><input type="number" step="1" min="0" id="oosCountMax" value="3"><span>ชิ้น ต่อทุก</span><input type="number" step="0.5" min="0.5" id="oosCountHours" value="1"><span>ชม.</span></div>
+      <div class="hint">แจ้งเตือนถ้าหลุดสเปกเกินจำนวนนี้ ภายในชั่วโมงที่ตั้ง (ใส่ 0 ชิ้น = ไม่ใช้กฎนี้)</div></div>
   </div>
   <div class="field-row">
     <label>สัดส่วนที่หลุดได้สูงสุด</label>
-    <div><input type="number" step="0.1" min="0" max="100" id="oosMaxPercent" value="5"><div class="hint">% ของจำนวนค่าทั้งหมดในช่วงเวลาข้างต้น</div></div>
+    <div><div class="pair"><input type="number" step="0.1" min="0" max="100" id="oosPctMax" value="5"><span>% ต่อทุก</span><input type="number" step="0.5" min="0.5" id="oosPctHours" value="1"><span>ชม.</span></div>
+      <div class="hint">% ของจำนวนชิ้นทั้งหมดในชั่วโมงที่ตั้ง (ใส่ 0% = ไม่ใช้กฎนี้)</div></div>
   </div>
   <div class="field-row">
     <label>ค่าเฉลี่ยเบี่ยงเบนได้สูงสุด</label>
@@ -116,18 +124,52 @@
 </div>
 
 <div class="panel">
-  <h2>รหัสผ่านแก้ไขเวลาในหน้าประวัติ</h2>
-  <div class="desc">ใช้ป้องกันการแก้ไขเวลาเริ่ม/หยุดของเอกสารเก่าในหน้า "ประวัติ" โดยไม่ตั้งใจ — ซ่อนไว้เป็นจุด ๆ ไม่ให้พนักงานที่เดินผ่านมาเห็นรหัสบนจอ กดปุ่มรูปตาถ้าต้องการดู/แก้</div>
+  <h2>โซนเตือนก่อนถึงขอบสเปก (เขียว · เหลือง · แดง)</h2>
+  <div class="desc">
+    แบ่งระยะจาก Target ไปถึง LSL / USL เป็น 3 โซน ทั้งสองฝั่ง เพื่อเตือนก่อนน้ำหนักจะหลุดสเปก
+    ชิ้นที่ <b>ต่ำกว่า LSL หรือเกิน USL = หลุดสเปก (reject)</b> — ตัวเลขเป็น % ของระยะจาก Target ถึงขอบสเปกฝั่งนั้น
+  </div>
+  <div class="zone-bar" id="zoneBar"></div>
+  <div class="zone-example" id="zoneExample"></div>
+  <div class="field-row" style="margin-top:14px;">
+    <label>โซนเหลืองเริ่มที่</label>
+    <div><div class="pair"><input type="number" step="1" min="1" max="99" id="zoneYellowPct" value="60"><span>% ของระยะถึงขอบสเปก</span></div></div>
+  </div>
   <div class="field-row">
-    <label>รหัสผ่าน</label>
-    <div style="display:flex; gap:6px; align-items:center;">
-      <input type="password" id="historyPassword" placeholder="172480116" autocomplete="new-password">
-      <button class="btn small icon-only" id="btnTogglePassword" type="button" title="แสดง/ซ่อนรหัสผ่าน" aria-label="แสดง/ซ่อนรหัสผ่าน"><svg class="i"><use href="assets/icons.svg#eye"></use></svg></button>
-    </div>
+    <label>โซนแดงเริ่มที่</label>
+    <div><div class="pair"><input type="number" step="1" min="1" max="99" id="zoneRedPct" value="85"><span>% ของระยะถึงขอบสเปก</span></div></div>
+  </div>
+  <div class="field-row">
+    <label>เตือนโซนเหลือง</label>
+    <div><div class="pair"><span>เมื่อ</span><input type="number" step="1" min="0" id="zoneYellowRun" value="5"><span>ชิ้นติดกัน อยู่โซนเหลืองหรือแย่กว่า</span></div>
+      <label class="switch" style="margin-top:6px;"><input type="checkbox" id="zoneYellowSound"> มีเสียงเตือน</label>
+      <div class="hint">ป้ายเตือนสีเหลืองที่หน้า Dashboard (ใส่ 0 = ไม่เตือน)</div></div>
+  </div>
+  <div class="field-row">
+    <label>เตือนโซนแดง</label>
+    <div><div class="pair"><span>เมื่อ</span><input type="number" step="1" min="0" id="zoneRedRun" value="3"><span>ชิ้นติดกัน อยู่โซนแดงหรือหลุดสเปก</span></div>
+      <label class="switch" style="margin-top:6px;"><input type="checkbox" id="zoneRedSound" checked> มีเสียงเตือน</label>
+      <div class="hint">ป้ายเตือนสีแดงที่หน้า Dashboard (ใส่ 0 = ไม่เตือน)</div></div>
   </div>
   <div class="save-row">
-    <button class="btn primary" id="btnSavePassword">บันทึกรหัสผ่าน</button>
-    <span class="save-msg" id="savePasswordMsg"><svg class="i sm"><use href="assets/icons.svg#ok"></use></svg>บันทึกแล้ว</span>
+    <button class="btn primary" id="btnSaveZone">บันทึกโซนเตือน</button>
+    <span class="save-msg" id="saveZoneMsg"><svg class="i sm"><use href="assets/icons.svg#ok"></use></svg>บันทึกแล้ว</span>
+  </div>
+</div>
+
+<div class="panel">
+  <h2>รหัสผ่านแก้ไขเวลาในหน้าประวัติ</h2>
+  <div class="desc">ใช้ป้องกันการแก้ไขเวลาเริ่ม/หยุดของเอกสารเก่าในหน้า "ประวัติ" โดยไม่ตั้งใจ — รหัสเปลี่ยนเองทุกปี ไม่ต้องตั้งค่า</div>
+  <div class="field-row">
+    <label>รูปแบบรหัส</label>
+    <div><b>Itc#</b> ตามด้วยปี ค.ศ. ปัจจุบัน<div class="hint">ตัวอย่างปีนี้: กดปุ่มรูปตาเพื่อดู</div></div>
+  </div>
+  <div class="field-row">
+    <label>รหัสปีนี้</label>
+    <div style="display:flex; gap:6px; align-items:center;">
+      <input type="password" id="historyPassword" readonly>
+      <button class="btn small icon-only" id="btnTogglePassword" type="button" title="แสดง/ซ่อนรหัสผ่าน" aria-label="แสดง/ซ่อนรหัสผ่าน"><svg class="i"><use href="assets/icons.svg#eye"></use></svg></button>
+    </div>
   </div>
 </div>
 
@@ -158,11 +200,20 @@ async function loadSettings(){
     $('cpkMin').value = s['alert.cpkMin'] ?? '1.00';
     $('ppkMin').value = s['alert.ppkMin'] ?? '1.00';
     $('soundEnabled').checked = s['alert.soundEnabled'] !== 'false';
-    $('oosWindowMin').value = s['alert.oosWindowMin'] ?? '60';
-    $('oosMaxCount').value = s['alert.oosMaxCount'] ?? '3';
-    $('oosMaxPercent').value = s['alert.oosMaxPercent'] ?? '5';
+    // ค่าเดิม (ช่วงเวลาเดียวร่วมกันเป็นนาที) ใช้เป็นค่าเริ่มต้นของกฎใหม่
+    const oldHours = s['alert.oosWindowMin'] ? String(Math.max(0.5, Number(s['alert.oosWindowMin']) / 60)) : '1';
+    $('oosCountMax').value = s['alert.oosCountMax'] ?? s['alert.oosMaxCount'] ?? '3';
+    $('oosCountHours').value = s['alert.oosCountHours'] ?? oldHours;
+    $('oosPctMax').value = s['alert.oosPctMax'] ?? s['alert.oosMaxPercent'] ?? '5';
+    $('oosPctHours').value = s['alert.oosPctHours'] ?? oldHours;
     $('meanDeviationMax').value = s['alert.meanDeviationMax'] ?? '2';
-    $('historyPassword').value = s['security.historyEditPassword'] || '172480116';
+    $('zoneYellowPct').value = s['zone.yellowPct'] ?? '60';
+    $('zoneRedPct').value = s['zone.redPct'] ?? '85';
+    $('zoneYellowRun').value = s['zone.yellowRun'] ?? '5';
+    $('zoneRedRun').value = s['zone.redRun'] ?? '3';
+    $('zoneYellowSound').checked = s['zone.yellowSound'] === 'true';
+    $('zoneRedSound').checked = s['zone.redSound'] !== 'false';
+    renderZonePreview();
   }catch(err){
     alert('โหลดค่าตั้งค่าปัจจุบันไม่สำเร็จ (จะใช้ค่า default แทน): ' + err.message);
   }
@@ -185,9 +236,10 @@ $('btnSaveAlert').addEventListener('click', async () => {
 $('btnSaveOos').addEventListener('click', async () => {
   try{
     await api('/api/settings', { method:'PUT', body: JSON.stringify({
-      'alert.oosWindowMin': $('oosWindowMin').value,
-      'alert.oosMaxCount': $('oosMaxCount').value,
-      'alert.oosMaxPercent': $('oosMaxPercent').value,
+      'alert.oosCountMax': $('oosCountMax').value,
+      'alert.oosCountHours': $('oosCountHours').value,
+      'alert.oosPctMax': $('oosPctMax').value,
+      'alert.oosPctHours': $('oosPctHours').value,
       'alert.meanDeviationMax': $('meanDeviationMax').value,
     })});
     flashMsg('saveOosMsg');
@@ -196,16 +248,47 @@ $('btnSaveOos').addEventListener('click', async () => {
   }
 });
 
-$('btnSavePassword').addEventListener('click', async () => {
-  const pw = $('historyPassword').value.trim();
-  if(!pw){ alert('กรุณาใส่รหัสผ่าน'); return; }
+// ---------------- โซนเตือน เขียว / เหลือง / แดง ----------------
+function zoneValues(){
+  let y = Number($('zoneYellowPct').value) || 60, r = Number($('zoneRedPct').value) || 85;
+  y = Math.min(98, Math.max(1, y)); r = Math.min(99, Math.max(y + 1, r));
+  return { y, r };
+}
+function renderZonePreview(){
+  const { y, r } = zoneValues();
+  // ซ้าย: reject | แดง | เหลือง | เขียว | Target | เขียว | เหลือง | แดง | reject
+  const seg = (w, cls, label) => `<div class="${cls}" style="flex:${w}">${label}</div>`;
+  $('zoneBar').innerHTML =
+    seg(24, 'z-out', 'reject') + seg(100 - r, 'z-red', 'แดง') + seg(r - y, 'z-yellow', 'เหลือง') + seg(y, 'z-green', 'เขียว') +
+    '<div class="z-target">Target</div>' +
+    seg(y, 'z-green', 'เขียว') + seg(r - y, 'z-yellow', 'เหลือง') + seg(100 - r, 'z-red', 'แดง') + seg(24, 'z-out', 'reject');
+  const T = 73, L = 70.5, U = 75;
+  const f = (v) => v.toFixed(2);
+  $('zoneExample').innerHTML = `ตัวอย่าง Target ${T} / LSL ${L} / USL ${U}: เขียว ${f(T - (T - L) * y / 100)}–${f(T + (U - T) * y / 100)} g · ` +
+    `เหลือง ถึง ${f(T - (T - L) * r / 100)} / ${f(T + (U - T) * r / 100)} g · แดง ถึง ${L} / ${U} g · ต่ำกว่า ${L} หรือเกิน ${U} = reject`;
+}
+['zoneYellowPct','zoneRedPct'].forEach((id) => $(id).addEventListener('input', renderZonePreview));
+renderZonePreview();
+$('btnSaveZone').addEventListener('click', async () => {
+  const { y, r } = zoneValues();
+  $('zoneYellowPct').value = y; $('zoneRedPct').value = r;
   try{
-    await api('/api/settings', { method:'PUT', body: JSON.stringify({ 'security.historyEditPassword': pw }) });
-    flashMsg('savePasswordMsg');
+    await api('/api/settings', { method:'PUT', body: JSON.stringify({
+      'zone.yellowPct': String(y),
+      'zone.redPct': String(r),
+      'zone.yellowRun': $('zoneYellowRun').value,
+      'zone.redRun': $('zoneRedRun').value,
+      'zone.yellowSound': $('zoneYellowSound').checked ? 'true' : 'false',
+      'zone.redSound': $('zoneRedSound').checked ? 'true' : 'false',
+    })});
+    flashMsg('saveZoneMsg');
+    renderZonePreview();
   }catch(err){
     alert('บันทึกไม่สำเร็จ: ' + err.message);
   }
 });
+
+$('historyPassword').value = `Itc#${new Date().getFullYear()}`;
 
 $('btnTogglePassword').addEventListener('click', () => {
   const input = $('historyPassword');
