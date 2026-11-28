@@ -77,7 +77,7 @@
 </style>
 </head>
 <body>
-  <div class="toolbar"><button onclick="window.print()">🖨️ Print / Export PDF</button></div>
+  <div class="toolbar"><button onclick="window.print()">Print / Export PDF</button></div>
   <div class="sheet-wrap">
     <table class="form">
       <colgroup>

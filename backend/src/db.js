@@ -222,7 +222,7 @@ async function listScales() {
   return result.recordset;
 }
 
-async function createScale({ name, ip, port, line, serialNo, note, deviceType }) {
+async function createScale({ name, ip, port, line, serialNo, note, deviceType, enabled }) {
   const pool = await getPool();
   const withType = await hasDeviceTypeColumn(pool);
   const type = normDeviceType(deviceType);
@@ -237,9 +237,10 @@ async function createScale({ name, ip, port, line, serialNo, note, deviceType })
     .input('serialNo', sql.NVarChar(100), serialNo || null)
     .input('note', sql.NVarChar(255), note || null)
     .input('deviceType', sql.VarChar(20), type)
+    .input('enabled', sql.Bit, enabled === false ? 0 : 1)
     .query(
-      `INSERT INTO [dbo].[Scales] ([name], [ip], [port], [line], [serial_no], [note]${withType ? ', [device_type]' : ''})
-       VALUES (@name, @ip, @port, @line, @serialNo, @note${withType ? ', @deviceType' : ''});
+      `INSERT INTO [dbo].[Scales] ([name], [ip], [port], [line], [serial_no], [note], [enabled]${withType ? ', [device_type]' : ''})
+       VALUES (@name, @ip, @port, @line, @serialNo, @note, @enabled${withType ? ', @deviceType' : ''});
        SELECT CAST(SCOPE_IDENTITY() AS INT) AS id;`
     );
   return result.recordset[0].id;

@@ -127,10 +127,10 @@ router.get('/scales', async (_req, res) => {
 });
 
 router.post('/scales', async (req, res) => {
-  const { name, ip, port, line, serialNo, note, deviceType } = req.body || {};
+  const { name, ip, port, line, serialNo, note, deviceType, enabled } = req.body || {};
   if (!ip || !port) return res.status(400).json({ error: 'ต้องมี ip, port' });
   try {
-    const scale = await manager.addScale({ name, ip, port: Number(port), line, serialNo, note, deviceType });
+    const scale = await manager.addScale({ name, ip, port: Number(port), line, serialNo, note, deviceType, enabled: enabled !== false });
     res.status(201).json({ scale });
   } catch (err) {
     res.status(500).json({ error: err.message });

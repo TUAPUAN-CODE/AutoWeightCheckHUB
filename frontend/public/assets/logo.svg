@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
+  <defs>
+    <linearGradient id="aw-bg" x1="6" y1="2" x2="42" y2="46" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#3A7BFF"/>
+      <stop offset="1" stop-color="#1638A8"/>
+    </linearGradient>
+    <linearGradient id="aw-or" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FFB15C"/>
+      <stop offset="1" stop-color="#F26B0F"/>
+    </linearGradient>
+  </defs>
+  <rect x="1" y="1" width="46" height="46" rx="13" fill="url(#aw-bg)"/>
+  <rect x="1.5" y="1.5" width="45" height="45" rx="12.5" fill="none" stroke="#fff" stroke-opacity=".18"/>
+  <!-- ชิ้นงานบนสายพานชั่ง -->
+  <rect x="15" y="15" width="18" height="14" rx="3.5" fill="#fff"/>
+  <path d="M19.4 22.2l2.9 2.9 5.4-5.6" fill="none" stroke="url(#aw-or)" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- สายพาน -->
+  <rect x="9" y="32" width="30" height="3.4" rx="1.7" fill="#fff" fill-opacity=".92"/>
+  <circle cx="13" cy="33.7" r="1" fill="#1D4ED8"/>
+  <circle cx="35" cy="33.7" r="1" fill="#1D4ED8"/>
+  <!-- จุดส้ม -->
+  <circle cx="37.5" cy="10.5" r="3.4" fill="url(#aw-or)"/>
+</svg>

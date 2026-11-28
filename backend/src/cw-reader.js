@@ -45,6 +45,8 @@ class CheckweigherReader {
     this.port = scaleRow.port;
     this.line = scaleRow.line;
     this.serialNo = scaleRow.serial_no;
+    this.enabled = scaleRow.enabled === undefined ? true : !!scaleRow.enabled;
+    this.note = scaleRow.note || null;
     this.tableName = CW_TABLE;
     this.endpoint = `opc.tcp://${this.ip}:${this.port}`;
 
@@ -553,6 +555,8 @@ class CheckweigherReader {
       port: this.port,
       line: this.line,
       serial_no: this.serialNo,
+      enabled: this.enabled,
+      note: this.note,
       table_name: this.tableName,
       device: this.endpoint,
       sim_mode: false,

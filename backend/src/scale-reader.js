@@ -30,6 +30,8 @@ class ScaleReader {
     this.port = scaleRow.port;
     this.line = scaleRow.line;
     this.serialNo = scaleRow.serial_no;
+    this.enabled = scaleRow.enabled === undefined ? true : !!scaleRow.enabled;
+    this.note = scaleRow.note || null;
 
     // หาชื่อตารางปลายทางจาก IP ของเครื่องชั่งนี้ — ถ้าไม่เจอใน mapping จะ fallback ไปตารางเดิม (Auto)
     this.tableName = SPOUT_TABLE_BY_IP[this.ip] || null;
@@ -264,6 +266,8 @@ class ScaleReader {
       port: this.port,
       line: this.line,
       serial_no: this.serialNo,
+      enabled: this.enabled,
+      note: this.note,
       table_name: this.tableName,
       device: `${this.ip}:${this.port}`,
       sim_mode: config.simMode,

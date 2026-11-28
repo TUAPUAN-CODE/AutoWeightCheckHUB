@@ -4,230 +4,221 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Monitor — Auto Weight</title>
-<link rel="icon" type="image/png" href="icon.png">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="stylesheet" href="assets/theme.css">
 <style>
-  :root{
-    --bg:#f4f6fb; --panel:#ffffff; --panel-2:#f2f6fb; --line:#dbe4f0;
-    --text:#131a2b; --text-dim:rgba(19,26,43,0.65); --text-faint:rgba(19,26,43,0.45);
-    --ok:#1d9e5a; --ok-dim:rgba(29,158,90,0.10);
-    --warn:#e8720c; --warn-dim:rgba(232,114,12,0.10);
-    --down:#d1453d; --down-dim:rgba(209,69,61,0.10);
-    --brand:#2f8fef; --sans:Tahoma,Geneva,Verdana,sans-serif; --mono:Tahoma,Geneva,Verdana,sans-serif;
+  /* ---------- สรุปด้านบน (กดเพื่อกรอง) ---------- */
+  .summary{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px; margin-bottom:18px;}
+  .sum-tile{
+    display:flex; align-items:center; gap:14px; text-align:left; cursor:pointer;
+    background:var(--surface); border:1px solid var(--hairline); border-radius:var(--radius-lg); padding:16px 18px;
+    box-shadow:var(--shadow-sm); transition:border-color .15s, box-shadow .15s, transform .1s;
   }
-  *{box-sizing:border-box;}
-  body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); padding:18px 22px;}
-  /* sidebar.js บังคับ body{padding-left:var(--sb-w)!important} — เพิ่ม wrapper นี้ให้มีช่องว่างเท่าหน้า Dashboard (.wrap มี padding 16px) */
-  .page-wrap{padding-left:16px;}
-  h1{font-size:16px; margin-top:1px; font-weight:600; letter-spacing:-0.01em;}
-  h1 span{color:#ff9f1c;}
-  .sub{font-size:12px; color:var(--text-faint); margin-bottom:16px;}
-  .toolbar{display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:14px;}
-  button{font-family:inherit; cursor:pointer;}
-  .btn{border:1px solid var(--line); background:var(--panel); border-radius:7px; padding:8px 14px; font-size:12.5px; font-weight:700; color:var(--text);}
-  .btn:hover{background:var(--panel-2);}
-  .btn.primary{background:var(--brand); border-color:var(--brand); color:#fff;}
-  .btn.primary:hover{filter:brightness(1.06);}
-  .btn.danger{background:var(--down); border-color:var(--down); color:#fff;}
-  .btn.small{padding:5px 10px; font-size:11.5px; border-radius:6px;}
-  .btn:disabled{opacity:.45; cursor:not-allowed;}
+  .sum-tile:hover{border-color:var(--blue-200);}
+  .sum-tile.active{border-color:var(--blue-500); box-shadow:var(--ring), var(--shadow-sm);}
+  .sum-ic{width:44px; height:44px; border-radius:12px; display:flex; align-items:center; justify-content:center; flex:none;}
+  .sum-ic .i{width:22px; height:22px;}
+  .sum-tile .lbl{font-size:13px; color:var(--ink-2); font-weight:500;}
+  .sum-tile .val{font-size:26px; font-weight:700; line-height:1.15; letter-spacing:-0.02em;}
+  .t-all .sum-ic{background:var(--blue-50); color:var(--blue-600);}
+  .t-ok .sum-ic{background:var(--good-bg); color:var(--good);}
+  .t-bad .sum-ic{background:var(--bad-bg); color:var(--bad);}
+  .t-off .sum-ic{background:var(--idle-bg); color:var(--idle);}
 
-  /* ---------- header bar (สไตล์เดียวกับหน้า Dashboard) ---------- */
-  header{
-    position:relative; overflow:hidden;
-    display:flex; flex-direction:row; align-items:center; justify-content:space-between;
-    gap:12px; flex-wrap:wrap;
-    background:var(--panel); border:1px solid var(--line); border-radius:8px;
-    padding:9px 14px; box-shadow:0 2px 5px rgba(0,0,0,0.07), 0 10px 24px -14px rgba(0,0,0,0.18);
-    margin-bottom:14px;
+  .toolbar{display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:16px;}
+  .search{position:relative; flex:0 1 340px;}
+  .search .i{position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--ink-3); width:16px; height:16px;}
+  .search input{width:100%; padding-left:36px;}
+  .toolbar .count{font-size:13px; color:var(--ink-3);}
+
+  /* ---------- การ์ดเครื่อง ---------- */
+  .grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(360px,1fr)); gap:16px;}
+  .mcard{display:flex; flex-direction:column; gap:14px; padding:18px 18px 16px; position:relative; overflow:hidden;}
+  .mcard::before{content:''; position:absolute; left:0; top:0; bottom:0; width:4px; background:var(--hairline);}
+  .mcard.s-ok::before{background:var(--good);}
+  .mcard.s-warn::before{background:#E3A008;}
+  .mcard.s-down::before{background:var(--bad);}
+  .mcard.s-off{background:#FBFCFE;}
+  .mcard.s-off::before{background:#D5DCE6;}
+  .m-head{display:flex; justify-content:space-between; align-items:flex-start; gap:10px;}
+  .m-title{display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+  .m-title h3{margin:0; font-size:18px; font-weight:700; letter-spacing:-0.01em;}
+  .m-meta{margin-top:3px; font-size:12.5px; color:var(--ink-3); display:flex; gap:10px; flex-wrap:wrap;}
+  .m-meta span{display:inline-flex; align-items:center; gap:4px;}
+  .m-status{display:flex; flex-direction:column; align-items:flex-end; gap:6px; flex:none;}
+
+  .m-product{display:flex; justify-content:space-between; gap:10px; font-size:13px; color:var(--ink-2); flex-wrap:wrap;}
+  .m-product b{color:var(--ink); font-weight:600;}
+
+  .m-weight{display:flex; align-items:center; justify-content:space-between; gap:12px;
+    background:linear-gradient(180deg,var(--blue-25),#fff); border:1px solid var(--hairline); border-radius:var(--radius); padding:14px 16px;}
+  .m-weight .big{font-size:36px; font-weight:700; letter-spacing:-0.03em; line-height:1;}
+  .m-weight .big small{font-size:15px; font-weight:500; color:var(--ink-3); margin-left:4px;}
+  .m-weight .lim{margin-top:6px; font-size:12px; color:var(--ink-3);}
+  .band{display:inline-flex; align-items:center; height:28px; padding:0 12px; border-radius:999px; font-size:12.5px; font-weight:700;}
+  .band.b0{background:var(--good-bg); color:var(--good);}
+  .band.b1,.band.b2{background:var(--caution-bg); color:var(--caution);}
+  .band.b3,.band.b4{background:var(--bad-bg); color:var(--bad);}
+  .band.bn{background:var(--idle-bg); color:var(--ink-3);}
+
+  .m-counts{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); border:1px solid var(--hairline); border-radius:var(--radius); overflow:hidden;}
+  .m-counts div{padding:9px 10px; border-right:1px solid var(--hairline-2); border-bottom:1px solid var(--hairline-2);}
+  .m-counts div:nth-child(4n){border-right:none;}
+  .m-counts div:nth-last-child(-n+4){border-bottom:none;}
+  .m-counts span{display:block; font-size:11px; color:var(--ink-3); font-weight:500;}
+  .m-counts b{font-size:15px; font-weight:700;}
+  .m-counts .ok b{color:var(--good);} .m-counts .warn b{color:var(--caution);} .m-counts .down b{color:var(--bad);}
+
+  .callout{display:flex; gap:8px; align-items:flex-start; font-size:12.5px; border-radius:10px; padding:9px 11px; line-height:1.45;}
+  .callout .i{width:16px; height:16px; margin-top:1px;}
+  .callout.bad{background:var(--bad-bg); color:var(--bad);}
+  .callout.warn{background:var(--caution-bg); color:var(--caution);}
+  .callout.note{background:var(--surface-2); color:var(--ink-2); border:1px dashed var(--hairline);}
+
+  .m-session{display:flex; justify-content:space-between; align-items:center; gap:10px; padding:10px 12px; border-radius:var(--radius);
+    background:var(--orange-50); border:1px solid var(--orange-100);}
+  .m-session .lbl{font-size:11.5px; font-weight:600; color:var(--orange-600);}
+  .m-session .code{font-weight:700; font-size:14px;}
+  .m-session .since{font-size:12px; color:var(--ink-2); text-align:right;}
+
+  .m-actions{display:flex; align-items:center; gap:8px; margin-top:auto; padding-top:2px; flex-wrap:wrap;}
+  .m-actions .spacer{flex:1;}
+
+  /* ---------- ตาราง ---------- */
+  #tableWrap table{min-width:1100px;}
+  .cell-line{display:flex; align-items:center; gap:8px; font-weight:600;}
+  .note-cell{max-width:260px; overflow:hidden; text-overflow:ellipsis; color:var(--ink-3); font-size:12.5px;}
+  .row-actions{display:flex; gap:6px;}
+  tr.off td{color:var(--ink-3);}
+
+  .modal .row2{display:grid; grid-template-columns:1fr 1fr; gap:0 12px;}
+  .modal .switch-row{display:flex; align-items:center; justify-content:space-between; margin-top:16px; padding:12px 14px; border:1px solid var(--hairline); border-radius:12px; background:var(--surface-2);}
+  .modal .switch-row small{display:block; color:var(--ink-3); font-size:12px;}
+
+  @media (max-width:1100px){ .summary{grid-template-columns:repeat(2,minmax(0,1fr));} }
+  @media (max-width:560px){
+    .summary{gap:10px;} .sum-tile{padding:12px; gap:10px;} .sum-ic{width:36px; height:36px;} .sum-tile .val{font-size:22px;}
+    .grid{grid-template-columns:1fr;}
+    .search{flex:1 1 100%;}
   }
-  header::before{
-    content:''; position:absolute; top:0; left:0; right:0; height:3px;
-    background:linear-gradient(135deg,#ff4d5e 0%, #ff9f1c 20%, #ffd93d 40%, #3ecf6e 60%, #2f8fef 80%, #7c5cff 100%);
-  }
-  .header-left{display:flex; align-items:center; gap:10px;}
-  .logo-badge{
-    width:34px; height:34px; flex:none; display:flex; align-items:center; justify-content:center;
-    border-radius:10px; background:linear-gradient(160deg,#ffffff,#f2f6fc);
-    border:1px solid var(--line); box-shadow:0 1px 2px rgba(16,24,40,0.08);
-  }
-  .brand-logo{width:19px; height:auto; display:block;}
-  .eyebrow{font-family:var(--mono); font-size:9px; letter-spacing:.1em; text-transform:uppercase; color:var(--text-faint);}
-  .header-right{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
-
-  .view-toggle{display:flex; border:1px solid var(--line); border-radius:7px; overflow:hidden;}
-  .view-toggle button{border:none; background:var(--panel); padding:7px 12px; font-size:11.5px; font-weight:700; color:var(--text-dim);}
-  .view-toggle button.active{background:var(--brand); color:#fff;}
-  .view-toggle button:hover:not(.active){background:var(--panel-2);}
-
-  .grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(340px,1fr)); gap:14px;}
-  .card{background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:14px 16px; box-shadow:0 2px 6px rgba(20,30,60,0.05);}
-  .card-head{display:flex; justify-content:space-between; align-items:flex-start; gap:8px; margin-bottom:8px;}
-  .card-head h3{margin:0; font-size:15px;}
-  .card-head .meta{font-size:11px; color:var(--text-faint); font-family:var(--mono);}
-  .dot{display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:6px; flex:none;}
-  .status-pill{display:inline-flex; align-items:center; font-size:11px; font-weight:700; padding:4px 9px; border-radius:20px;}
-  .status-pill.ok{background:var(--ok-dim); color:var(--ok);}
-  .status-pill.ok .dot{background:var(--ok); box-shadow:0 0 0 3px var(--ok-dim);}
-  .status-pill.warn{background:var(--warn-dim); color:var(--warn);}
-  .status-pill.warn .dot{background:var(--warn); box-shadow:0 0 0 3px var(--warn-dim);}
-  .status-pill.down{background:var(--down-dim); color:var(--down);}
-  .status-pill.down .dot{background:var(--down); box-shadow:0 0 0 3px var(--down-dim);}
-
-  /* ---------- table view ---------- */
-  .table-wrap{background:var(--panel); border:1px solid var(--line); border-radius:10px; overflow:auto;}
-  table.scale-table{border-collapse:collapse; width:100%; font-size:12px; min-width:900px;}
-  table.scale-table thead th{position:sticky; top:0; background:var(--panel-2); text-align:left; padding:9px 10px; border-bottom:1px solid var(--line); white-space:nowrap;}
-  table.scale-table tbody td{padding:8px 10px; border-bottom:1px solid var(--line); white-space:nowrap;}
-  table.scale-table tbody tr:hover{background:var(--panel-2);}
-
-  .row-line{display:flex; gap:14px; font-size:12px; color:var(--text-dim); margin:2px 0 10px; flex-wrap:wrap;}
-  .row-line b{color:var(--text); font-weight:700;}
-
-  .session-box{background:var(--panel-2); border:1px solid var(--line); border-radius:8px; padding:10px 12px; margin-bottom:10px;}
-  .session-box .lbl{font-size:10px; letter-spacing:.05em; text-transform:uppercase; color:var(--text-faint); margin-bottom:4px;}
-  select, input{font-family:inherit; font-size:12.5px; padding:7px 8px; border:1px solid var(--line); border-radius:6px; background:#fff; color:var(--text); width:100%;}
-  .two-col{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px;}
-  .actions{display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;}
-  .running-tag{display:flex; justify-content:space-between; align-items:center; gap:8px;}
-  .running-tag .code{font-weight:700; font-family:var(--mono);}
-  .elapsed{font-family:var(--mono); font-size:12px; color:var(--text-dim);}
-  .empty{padding:40px; text-align:center; color:var(--text-faint); font-size:13px;}
-
-  .modal-backdrop{position:fixed; inset:0; background:rgba(10,14,26,0.45); display:none; align-items:center; justify-content:center; z-index:2000;}
-  .modal-backdrop.open{display:flex;}
-  .modal{background:#fff; border-radius:12px; padding:20px 22px; width:360px; max-width:92vw; box-shadow:0 20px 50px rgba(0,0,0,0.25);}
-  .modal h3{margin:0 0 12px; font-size:15px;}
-  .modal label{display:block; font-size:11px; color:var(--text-faint); margin:8px 0 4px;}
-  .modal .actions{justify-content:flex-end;}
-  .err-text{color:var(--down); font-size:11.5px; margin-top:6px; min-height:14px;}
-
-  /* ---------- checkweigher (OPC UA) card ---------- */
-  .type-tag{display:inline-block; font-size:9.5px; font-weight:700; letter-spacing:.04em; padding:2px 7px; border-radius:10px; background:#eef2ff; color:#4b3fd1; margin-left:6px; vertical-align:middle;}
-  .cw-product{display:flex; justify-content:space-between; gap:8px; font-size:12px; color:var(--text-dim); margin:2px 0 8px; flex-wrap:wrap;}
-  .cw-product b{color:var(--text);}
-  .cw-main{display:flex; align-items:flex-end; justify-content:space-between; gap:10px; background:var(--panel-2); border:1px solid var(--line); border-radius:8px; padding:10px 12px; margin-bottom:8px;}
-  .cw-weight{font-size:30px; font-weight:700; line-height:1; letter-spacing:-0.02em;}
-  .cw-weight small{font-size:13px; font-weight:600; color:var(--text-faint); margin-left:3px;}
-  .cw-limits{font-size:11px; color:var(--text-faint); margin-top:5px;}
-  .band{display:inline-block; font-size:11px; font-weight:700; padding:4px 9px; border-radius:20px;}
-  .band.b0{background:var(--ok-dim); color:var(--ok);}
-  .band.b1,.band.b2{background:var(--warn-dim); color:var(--warn);}
-  .band.b3,.band.b4{background:var(--down-dim); color:var(--down);}
-  .band.bn{background:#eef1f6; color:var(--text-faint);}
-  .cw-counts{display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-bottom:8px;}
-  .cw-counts div{background:#fff; border:1px solid var(--line); border-radius:7px; padding:6px 8px;}
-  .cw-counts span{display:block; font-size:9.5px; color:var(--text-faint); text-transform:uppercase; letter-spacing:.04em;}
-  .cw-counts b{font-size:14px;}
-  .cw-counts .ok b{color:var(--ok);} .cw-counts .warn b{color:var(--warn);} .cw-counts .down b{color:var(--down);}
-  .cw-alert{font-size:11.5px; color:var(--down); background:var(--down-dim); border-radius:6px; padding:6px 9px; margin-bottom:8px;}
-  .cw-note{font-size:11px; color:var(--warn); margin-bottom:8px;}
-  .run-chip{font-size:10.5px; font-weight:700; padding:3px 8px; border-radius:20px; margin-top:5px; display:inline-block;}
-  .run-chip.running{background:var(--ok-dim); color:var(--ok);}
-  .run-chip.idle{background:#eef1f6; color:var(--text-dim);}
 </style>
 </head>
 <body data-page="monitor">
-<script src="sidebar.js"></script>
-<div id="app-sidebar-root"></div>
-<div class="page-wrap">
+<script src="assets/app-header.js"></script>
 
-<header>
-  <div class="header-left">
-    <div class="logo-badge"><img class="brand-logo" src="icon.png" alt=""></div>
+<main class="page">
+  <div class="page-head">
     <div>
-      <div class="eyebrow" id="subLine">กำลังโหลด…</div>
-      <h1>Monitor — <span>เครื่องชั่งทั้งหมด</span></h1>
+      <div class="eyebrow">ภาพรวมสายการผลิต</div>
+      <h1>สถานะเครื่องชั่ง<span class="accent">ทั้งหมด</span></h1>
+      <div class="sub" id="subLine">กำลังโหลด…</div>
+    </div>
+    <div class="head-actions">
+      <div class="seg" role="group" aria-label="รูปแบบการแสดงผล">
+        <button id="viewCardBtn" class="active" type="button"></button>
+        <button id="viewTableBtn" type="button"></button>
+      </div>
+      <button class="btn primary" id="btnAddScale" type="button"></button>
     </div>
   </div>
-  <div class="header-right">
-    <div class="view-toggle">
-      <button id="viewCardBtn" class="active">🔳 Card</button>
-      <button id="viewTableBtn">📋 Table</button>
-    </div>
-    <button class="btn primary" id="btnAddScale">+ เพิ่มเครื่องชั่ง</button>
+
+  <div class="summary" id="summary">
+    <button class="sum-tile t-all active" data-filter="all" type="button"><span class="sum-ic" data-ic="scale"></span><span><span class="lbl">ทั้งหมด</span><div class="val" id="sumAll">-</div></span></button>
+    <button class="sum-tile t-ok" data-filter="online" type="button"><span class="sum-ic" data-ic="activity"></span><span><span class="lbl">ออนไลน์</span><div class="val" id="sumOn">-</div></span></button>
+    <button class="sum-tile t-bad" data-filter="problem" type="button"><span class="sum-ic" data-ic="alert"></span><span><span class="lbl">ต้องตรวจสอบ</span><div class="val" id="sumBad">-</div></span></button>
+    <button class="sum-tile t-off" data-filter="off" type="button"><span class="sum-ic" data-ic="power"></span><span><span class="lbl">ปิดใช้งาน</span><div class="val" id="sumOff">-</div></span></button>
   </div>
-</header>
 
-<div class="grid" id="grid"><div class="empty">กำลังโหลดรายชื่อเครื่องชั่ง…</div></div>
-<div class="table-wrap" id="tableWrap" style="display:none;">
-  <table class="scale-table">
-    <thead><tr>
-      <th>Line</th><th>IP:Port</th><th>S/N</th><th>สถานะ</th><th>น้ำหนักล่าสุด</th><th>เอกสารที่กำลังทำ</th><th>เริ่มเมื่อ</th><th>การจัดการ</th>
-    </tr></thead>
-    <tbody id="tableBody"></tbody>
-  </table>
-</div>
+  <div class="toolbar">
+    <label class="search"><span data-ic="search"></span><input id="searchInp" type="search" placeholder="ค้นหา Line, IP หรือ S/N" autocomplete="off"></label>
+    <span class="count" id="countLine"></span>
+  </div>
 
-</div><!-- /.page-wrap -->
+  <div class="grid" id="grid"><div class="empty">กำลังโหลดรายชื่อเครื่องชั่ง…</div></div>
+  <div class="table-wrap" id="tableWrap" style="display:none;">
+    <table class="table">
+      <thead><tr>
+        <th>Line</th><th>ชนิด</th><th>IP:Port</th><th>S/N</th><th>สถานะ</th><th>น้ำหนักล่าสุด</th><th>เอกสารที่กำลังทำ</th><th>เริ่มเมื่อ</th><th>หมายเหตุ</th><th>จัดการ</th>
+      </tr></thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+  </div>
+</main>
 
 <!-- ---------------- modal: เพิ่ม/แก้ไขเครื่องชั่ง ---------------- -->
 <div class="modal-backdrop" id="scaleModal">
-  <div class="modal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="scaleModalTitle">
     <h3 id="scaleModalTitle">เพิ่มเครื่องชั่ง</h3>
-    <label>ชนิดเครื่อง</label>
+    <div class="modal-sub">ข้อมูลการเชื่อมต่อของเครื่อง</div>
+    <label for="fType">ชนิดเครื่อง</label>
     <select id="fType">
-      <option value="tcp">เครื่องชั่ง Spout (TCP)</option>
       <option value="opcua">Checkweigher Yamato (OPC UA)</option>
+      <option value="tcp">เครื่องชั่ง Spout (TCP แบบเดิม)</option>
     </select>
-    <div class="two-col">
-      <div><label>IP</label><input id="fIp" placeholder="172.48.2.175"></div>
-      <div><label>Port</label><input id="fPort" placeholder="1052"></div>
+    <div class="row2">
+      <div><label for="fIp">IP</label><input id="fIp" placeholder="10.246.145.187" inputmode="decimal"></div>
+      <div><label for="fPort">Port</label><input id="fPort" placeholder="4880" inputmode="numeric"></div>
     </div>
-    <div class="two-col">
-      <div><label>Line</label><input id="fLine" placeholder="Line 1"></div>
-      <div><label>S/N</label><input id="fSn" placeholder="SN-0001"></div>
+    <div class="row2">
+      <div><label for="fLine">Line</label><input id="fLine" placeholder="Pouch Auto B"></div>
+      <div><label for="fSn">S/N</label><input id="fSn" placeholder="TA220475"></div>
+    </div>
+    <label for="fNote">หมายเหตุ</label>
+    <input id="fNote" placeholder="เช่น ยังไม่ติดตั้งสายแลน (ไม่บังคับ)">
+    <div class="switch-row">
+      <div><b>เปิดใช้งาน</b><small>ระบบจะเชื่อมต่อและดึงข้อมูลจากเครื่องนี้</small></div>
+      <label class="switch"><input type="checkbox" id="fEnabled" checked></label>
     </div>
     <div class="err-text" id="scaleModalErr"></div>
     <div class="actions">
-      <button class="btn" id="btnScaleCancel">ยกเลิก</button>
-      <button class="btn primary" id="btnScaleSave">บันทึก</button>
+      <button class="btn" id="btnScaleCancel" type="button">ยกเลิก</button>
+      <button class="btn primary" id="btnScaleSave" type="button">บันทึก</button>
     </div>
   </div>
 </div>
 
 <!-- ---------------- modal: เริ่มเอกสารใหม่ (เลือก group/product) ---------------- -->
 <div class="modal-backdrop" id="startModal">
-  <div class="modal">
+  <div class="modal" role="dialog" aria-modal="true">
     <h3>เริ่มเอกสารใหม่</h3>
-    <div class="sub" id="startModalScaleName" style="margin-bottom:10px;"></div>
-    <label>Group Code</label>
+    <div class="modal-sub" id="startModalScaleName"></div>
+    <label for="fGroup">Group Code</label>
     <input id="fGroup" list="fGroupList" placeholder="พิมพ์เพื่อค้นหา Group Code…" autocomplete="off">
     <datalist id="fGroupList"></datalist>
-    <label>Product Code</label>
+    <label for="fProduct">Product Code</label>
     <input id="fProduct" list="fProductList" placeholder="เลือก Group ก่อน" disabled autocomplete="off">
     <datalist id="fProductList"></datalist>
-    <label>ชื่อผู้ตรวจสอบ (QC Inspector)</label>
+    <label for="fInspector">ชื่อผู้ตรวจสอบ (QC Inspector)</label>
     <input id="fInspector" placeholder="ชื่อ-นามสกุล">
-    <label>หมายเหตุ (Remark)</label>
+    <label for="fRemark">หมายเหตุ (Remark)</label>
     <input id="fRemark" placeholder="ไม่บังคับ">
     <div class="err-text" id="startModalErr"></div>
     <div class="actions">
-      <button class="btn" id="btnStartCancel">ยกเลิก</button>
-      <button class="btn primary" id="btnStartConfirm">เริ่ม</button>
+      <button class="btn" id="btnStartCancel" type="button">ยกเลิก</button>
+      <button class="btn primary" id="btnStartConfirm" type="button">เริ่มเอกสาร</button>
     </div>
   </div>
 </div>
 
 <!-- ---------------- modal: แก้ไขเวลาเอกสาร ---------------- -->
 <div class="modal-backdrop" id="editTimeModal">
-  <div class="modal">
+  <div class="modal" role="dialog" aria-modal="true">
     <h3>แก้ไขเวลาเอกสาร</h3>
-    <label>เวลาเริ่ม</label>
+    <label for="eStart">เวลาเริ่ม</label>
     <input type="datetime-local" id="eStart" step="1">
-    <label>เวลาหยุด (เว้นว่างถ้ายังไม่หยุด)</label>
+    <label for="eEnd">เวลาหยุด (เว้นว่างถ้ายังไม่หยุด)</label>
     <input type="datetime-local" id="eEnd" step="1">
-    <label>ชื่อผู้ตรวจสอบ</label>
+    <label for="eInspector">ชื่อผู้ตรวจสอบ</label>
     <input id="eInspector">
-    <label>หมายเหตุ (Remark)</label>
+    <label for="eRemark">หมายเหตุ (Remark)</label>
     <input id="eRemark">
     <div class="err-text" id="editTimeErr"></div>
     <div class="actions">
-      <button class="btn" id="btnEditTimeCancel">ยกเลิก</button>
-      <button class="btn primary" id="btnEditTimeSave">บันทึก</button>
+      <button class="btn" id="btnEditTimeCancel" type="button">ยกเลิก</button>
+      <button class="btn primary" id="btnEditTimeSave" type="button">บันทึก</button>
     </div>
   </div>
 </div>
-
 
 <script>
 const API_BASE = '';
@@ -239,6 +230,10 @@ async function api(path, opts){
   return payload || {};
 }
 const $ = (id) => document.getElementById(id);
+document.querySelectorAll('[data-ic]').forEach((el) => { el.innerHTML = icon(el.dataset.ic); });
+$('viewCardBtn').innerHTML = icon('grid') + 'การ์ด';
+$('viewTableBtn').innerHTML = icon('list') + 'ตาราง';
+$('btnAddScale').innerHTML = icon('plus') + 'เพิ่มเครื่องชั่ง';
 
 let scales = [];
 let groupsCache = null;
@@ -246,19 +241,33 @@ let editingScaleId = null;   // null = โหมดเพิ่มใหม่
 let startingScaleId = null;
 let editingTimeSessionId = null;
 let viewMode = localStorage.getItem('monitor-view') || 'card';
+let filterMode = 'all';
+let searchText = '';
 
-function statusLevel(cs){
+function isOff(s){ return s.enabled === false; }
+function statusLevel(s){
+  if(isOff(s)) return 'off';
+  const cs = s.connection_status;
   if(cs === 'connected' || cs === 'simulating') return 'ok';
   if(cs === 'error' || cs === 'stopped') return 'down';
   return 'warn';
 }
-function statusLabel(cs){
+const LEVEL_PILL = { ok:'ok', warn:'warn', down:'down', off:'idle' };
+function statusLabel(s){
+  if(isOff(s)) return 'ปิดใช้งาน';
   return { connected:'เชื่อมต่ออยู่', simulating:'จำลอง (SIM)', connecting:'กำลังเชื่อมต่อ',
-           reconnecting:'กำลังเชื่อมต่อใหม่', error:'ผิดพลาด', stopped:'ปิดอยู่' }[cs] || cs;
+           reconnecting:'กำลังเชื่อมต่อใหม่', error:'เชื่อมต่อไม่ได้', stopped:'หยุดอยู่' }[s.connection_status] || s.connection_status;
+}
+function statusPill(s){
+  const lvl = statusLevel(s);
+  return `<span class="pill ${LEVEL_PILL[lvl]}${lvl === 'ok' ? ' live' : ''}"><span class="dot"></span>${statusLabel(s)}</span>`;
 }
 function scaleTitle(s){
   // ไม่เก็บ "ชื่อเครื่องชั่ง" แยกแล้ว — ใช้ Line เป็นหัวข้อหลัก (หรือ ip ถ้ายังไม่ตั้ง Line)
   return s.line || s.ip;
+}
+function typeTag(s){
+  return s.device_type === 'opcua' ? '<span class="tag orange">CHECKWEIGHER</span>' : '<span class="tag">SPOUT · TCP</span>';
 }
 function fmtStart(iso){
   if(!iso) return '-';
@@ -266,49 +275,6 @@ function fmtStart(iso){
   const p=(n)=>String(n).padStart(2,'0');
   return `${p(d.getDate())}/${p(d.getMonth()+1)} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
 }
-
-function cardHtml(s){
-  if(s.device_type === 'opcua') return cwCardHtml(s);
-  const lvl = statusLevel(s.connection_status);
-  const running = !!s.active_session_id;
-  return `
-  <div class="card" data-scale-id="${s.scale_id}">
-    <div class="card-head">
-      <div>
-        <h3>${scaleTitle(s)}</h3>
-        <div class="meta">${s.ip}:${s.port}</div>
-      </div>
-      <span class="status-pill ${lvl}"><span class="dot"></span>${statusLabel(s.connection_status)}</span>
-    </div>
-    <div class="row-line">
-      <span>S/N: <b>${s.serial_no || '-'}</b></span>
-      <span>น้ำหนักล่าสุด: <b>${s.last_weight != null ? s.last_weight.toFixed(1)+' g' : '-'}</b></span>
-    </div>
-
-    ${running ? `
-      <div class="session-box">
-        <div class="lbl">กำลังทำเอกสาร</div>
-        <div class="running-tag">
-          <span class="code">${s.active_group_code} / ${s.active_product_code}</span>
-          <span class="elapsed">เริ่มเมื่อ ${fmtStart(s.active_session_start)}</span>
-        </div>
-      </div>
-      <div class="actions">
-        <button class="btn danger small" data-action="stop" data-scale="${s.scale_id}">■ หยุด (ปิดเอกสาร)</button>
-        <button class="btn small" data-action="edittime" data-scale="${s.scale_id}" data-session="${s.active_session_id}">แก้ไขเวลา</button>
-        <a class="btn small" href="dashboard.html?scale=${s.scale_id}">ดูกราฟ →</a>
-      </div>
-    ` : `
-      <div class="actions">
-        <button class="btn primary small" data-action="start" data-scale="${s.scale_id}">▶ เริ่มเอกสารใหม่</button>
-        <a class="btn small" href="dashboard.html?scale=${s.scale_id}">ดูกราฟ →</a>
-        <button class="btn small" data-action="edit" data-scale="${s.scale_id}">แก้ไข</button>
-        <button class="btn danger small" data-action="delete" data-scale="${s.scale_id}">ลบ</button>
-      </div>
-    `}
-  </div>`;
-}
-
 const BAND_LABELS = ['Accept','Over','Under','HiHi','LoLo'];
 function bandChip(b){
   if(b == null) return '<span class="band bn">-</span>';
@@ -317,101 +283,151 @@ function bandChip(b){
 function esc(v){ return String(v ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function fmtW(v, d=1){ return v == null || isNaN(v) ? '-' : Number(v).toFixed(d); }
 function fmtInt(v){ return v == null ? '-' : Number(v).toLocaleString('en-US'); }
-const RUN_LABEL = { running:'กำลังผลิต', idle:'ว่าง / หยุดเดิน', connecting:'กำลังเชื่อมต่อ', reconnecting:'กำลังเชื่อมต่อใหม่', error:'ผิดพลาด', stopped:'ปิดอยู่' };
+const RUN_LABEL = { running:'กำลังผลิต', idle:'ว่าง / หยุดเดิน', connecting:'กำลังเชื่อมต่อ', reconnecting:'กำลังเชื่อมต่อใหม่', error:'ผิดพลาด', stopped:'หยุดอยู่' };
+
+function sessionBlock(s){
+  return `
+    <div class="m-session">
+      <div><div class="lbl">กำลังทำเอกสาร</div><div class="code">${esc(s.active_group_code)} / ${esc(s.active_product_code)}</div></div>
+      <div class="since">เริ่มเมื่อ<br><b class="num">${fmtStart(s.active_session_start)}</b></div>
+    </div>`;
+}
+function actionsBlock(s, detailHref, detailLabel){
+  const id = s.scale_id;
+  if(isOff(s)){
+    return `<div class="m-actions">
+      <button class="btn primary small" data-action="enable" data-scale="${id}">${icon('power')}เปิดใช้งาน</button>
+      <span class="spacer"></span>
+      <button class="btn ghost small icon-only" data-action="edit" data-scale="${id}" title="แก้ไข" aria-label="แก้ไข">${icon('edit')}</button>
+      <button class="btn ghost small icon-only" data-action="delete" data-scale="${id}" title="ลบ" aria-label="ลบ">${icon('trash')}</button>
+    </div>`;
+  }
+  if(s.active_session_id){
+    return `<div class="m-actions">
+      <button class="btn danger small" data-action="stop" data-scale="${id}">${icon('stop')}หยุด (ปิดเอกสาร)</button>
+      <button class="btn small" data-action="edittime" data-scale="${id}" data-session="${s.active_session_id}">${icon('clock')}แก้ไขเวลา</button>
+      <span class="spacer"></span>
+      <a class="btn ghost small" href="${detailHref}">${detailLabel}${icon('arrow-right')}</a>
+    </div>`;
+  }
+  return `<div class="m-actions">
+    <button class="btn primary small" data-action="start" data-scale="${id}">${icon('play')}เริ่มเอกสาร</button>
+    <a class="btn small" href="${detailHref}">${detailLabel}${icon('arrow-right')}</a>
+    <span class="spacer"></span>
+    <button class="btn ghost small icon-only" data-action="edit" data-scale="${id}" title="แก้ไข" aria-label="แก้ไข">${icon('edit')}</button>
+    <button class="btn ghost small icon-only" data-action="delete" data-scale="${id}" title="ลบ" aria-label="ลบ">${icon('trash')}</button>
+  </div>`;
+}
+function runPill(s){
+  const c = s.cw;
+  if(isOff(s) || !c || !c.run_state || s.connection_status !== 'connected') return '';
+  const cls = c.run_state === 'running' ? 'info' : 'idle';
+  return `<span class="pill ${cls}">${RUN_LABEL[c.run_state] || c.run_state}</span>`;
+}
+function headBlock(s){
+  return `
+    <div class="m-head">
+      <div>
+        <div class="m-title"><h3>${esc(scaleTitle(s))}</h3>${typeTag(s)}</div>
+        <div class="m-meta"><span class="num">${icon('plug','sm')}${esc(s.ip)}:${s.port}</span><span>S/N ${esc(s.serial_no || '-')}</span></div>
+      </div>
+      <div class="m-status">${statusPill(s)}${runPill(s)}</div>
+    </div>`;
+}
+
+function cardHtml(s){
+  if(s.device_type === 'opcua') return cwCardHtml(s);
+  const lvl = statusLevel(s);
+  const off = isOff(s);
+  return `
+  <div class="card mcard s-${lvl}" data-scale-id="${s.scale_id}">
+    ${headBlock(s)}
+    ${off ? '' : `<div class="m-weight">
+      <div><div class="big num">${s.last_weight != null ? fmtW(s.last_weight) : '-'}<small>g</small></div><div class="lim">น้ำหนักล่าสุด</div></div>
+    </div>`}
+    ${s.note ? `<div class="callout note">${icon('info')}<span>${esc(s.note)}</span></div>` : ''}
+    ${!off && s.connection_status !== 'connected' && s.connection_status !== 'simulating' && s.last_error ? `<div class="callout bad">${icon('alert')}<span>${esc(s.last_error)}</span></div>` : ''}
+    ${s.active_session_id ? sessionBlock(s) : ''}
+    ${actionsBlock(s, `dashboard.html?scale=${s.scale_id}`, 'ดูกราฟ')}
+  </div>`;
+}
 
 function cwCardHtml(s){
   const c = s.cw || {};
-  const lvl = statusLevel(s.connection_status);
+  const lvl = statusLevel(s);
+  const off = isOff(s);
   const st = c.machine_stats || {};
   const lim = c.limits || {};
   const total = st.total || 0;
   const passPct = total ? ((st.accept || 0) / total * 100) : null;
-  const running = !!s.active_session_id;
   const speed = c.pass_speed || c.infeed_speed;
   const alerts = [];
-  if((c.machine_errors || []).length) alerts.push('เครื่องแจ้ง error: ' + c.machine_errors.join(', '));
-  if(s.connection_status !== 'connected' && s.last_error) alerts.push(s.last_error);
+  if(!off && (c.machine_errors || []).length) alerts.push('เครื่องแจ้ง error: ' + c.machine_errors.join(', '));
+  if(!off && s.connection_status !== 'connected' && s.last_error) alerts.push(s.last_error);
+  const live = !off && s.connection_status === 'connected';
   return `
-  <div class="card" data-scale-id="${s.scale_id}">
-    <div class="card-head">
-      <div>
-        <h3>${scaleTitle(s)}<span class="type-tag">CHECKWEIGHER</span></h3>
-        <div class="meta">${s.ip}:${s.port} · OPC UA</div>
-      </div>
-      <div style="text-align:right;">
-        <span class="status-pill ${lvl}"><span class="dot"></span>${statusLabel(s.connection_status)}</span><br>
-        ${c.run_state ? `<span class="run-chip ${c.run_state}">${RUN_LABEL[c.run_state] || c.run_state}</span>` : ''}
-      </div>
-    </div>
-    <div class="cw-product">
+  <div class="card mcard s-${lvl}" data-scale-id="${s.scale_id}">
+    ${headBlock(s)}
+    ${live ? `<div class="m-product">
       <span>โปรแกรม <b>No.${c.program_no ?? '-'}</b> ${c.program_name ? `<b>${esc(c.program_name)}</b>` : ''}</span>
-      <span>ความเร็ว <b>${speed ?? '-'}</b> ชิ้น/นาที</span>
-    </div>
-    ${alerts.length ? `<div class="cw-alert">⚠ ${esc(alerts.join(' · '))}</div>` : ''}
-    <div class="cw-main">
+      <span>ความเร็ว <b class="num">${speed ?? '-'}</b> ชิ้น/นาที</span>
+    </div>` : ''}
+    ${alerts.length ? `<div class="callout bad">${icon('alert')}<span>${esc(alerts.join(' · '))}</span></div>` : ''}
+    ${s.note ? `<div class="callout note">${icon('info')}<span>${esc(s.note)}</span></div>` : ''}
+    ${live ? `
+    <div class="m-weight">
       <div>
-        <div class="cw-weight">${fmtW(s.last_weight)}<small>g</small></div>
-        <div class="cw-limits">Target ${fmtW(lim.target)} g · ช่วงผ่าน ${fmtW(lim.lo)}–${fmtW(lim.hi)} g</div>
+        <div class="big num">${fmtW(s.last_weight)}<small>g</small></div>
+        <div class="lim num">Target ${fmtW(lim.target)} g · ช่วงผ่าน ${fmtW(lim.lo)}–${fmtW(lim.hi)} g</div>
       </div>
       <div>${bandChip(c.last_band)}</div>
     </div>
-    <div class="cw-counts">
+    <div class="m-counts num">
       <div><span>Total</span><b>${fmtInt(st.total)}</b></div>
       <div class="ok"><span>Accept</span><b>${fmtInt(st.accept)}</b></div>
       <div class="warn"><span>Over</span><b>${fmtInt((st.over||0)+(st.hihi||0))}</b></div>
       <div class="warn"><span>Under</span><b>${fmtInt((st.under||0)+(st.lolo||0))}</b></div>
       <div class="down"><span>Metal</span><b>${fmtInt(st.metal)}</b></div>
       <div><span>% ผ่าน</span><b>${passPct == null ? '-' : passPct.toFixed(1)+'%'}</b></div>
-      <div><span>Cp (เครื่อง)</span><b>${fmtW(st.cp,2)}</b></div>
-      <div><span>Cpk (เครื่อง)</span><b>${fmtW(st.cpk,2)}</b></div>
+      <div><span>Cp</span><b>${fmtW(st.cp,2)}</b></div>
+      <div><span>Cpk</span><b>${fmtW(st.cpk,2)}</b></div>
     </div>
-    ${c.gaps_total ? `<div class="cw-note">อ่านค่าไม่ทัน ${fmtInt(c.gaps_total)} ชิ้น ตั้งแต่เปิดระบบ (ตัวนับของเครื่องยังครบ)</div>` : ''}
-    ${running ? `
-      <div class="session-box">
-        <div class="lbl">กำลังทำเอกสาร</div>
-        <div class="running-tag">
-          <span class="code">${s.active_group_code} / ${s.active_product_code}</span>
-          <span class="elapsed">เริ่มเมื่อ ${fmtStart(s.active_session_start)}</span>
-        </div>
-      </div>
-      <div class="actions">
-        <button class="btn danger small" data-action="stop" data-scale="${s.scale_id}">■ หยุด (ปิดเอกสาร)</button>
-        <button class="btn small" data-action="edittime" data-scale="${s.scale_id}" data-session="${s.active_session_id}">แก้ไขเวลา</button>
-        <a class="btn small" href="checkweigher.html?scale=${s.scale_id}">รายละเอียด →</a>
-      </div>
-    ` : `
-      <div class="actions">
-        <button class="btn primary small" data-action="start" data-scale="${s.scale_id}">▶ เริ่มเอกสารใหม่</button>
-        <a class="btn small" href="checkweigher.html?scale=${s.scale_id}">รายละเอียด →</a>
-        <button class="btn small" data-action="edit" data-scale="${s.scale_id}">แก้ไข</button>
-        <button class="btn danger small" data-action="delete" data-scale="${s.scale_id}">ลบ</button>
-      </div>
-    `}
+    ${c.gaps_total ? `<div class="callout warn">${icon('alert')}<span>อ่านค่าไม่ทัน ${fmtInt(c.gaps_total)} ชิ้น ตั้งแต่เปิดระบบ (ตัวนับของเครื่องยังครบ)</span></div>` : ''}
+    ` : ''}
+    ${s.active_session_id ? sessionBlock(s) : ''}
+    ${actionsBlock(s, `checkweigher.html?scale=${s.scale_id}`, 'รายละเอียด')}
   </div>`;
 }
 
 function tableRowHtml(s){
-  const lvl = statusLevel(s.connection_status);
+  const off = isOff(s);
   const running = !!s.active_session_id;
-  const docCell = running ? `${s.active_group_code} / ${s.active_product_code}` : '-';
+  const docCell = running ? `${esc(s.active_group_code)} / ${esc(s.active_product_code)}` : '-';
   const startCell = running ? fmtStart(s.active_session_start) : '-';
-  const actions = running
-    ? `<button class="btn danger small" data-action="stop" data-scale="${s.scale_id}">หยุด</button>
+  const detail = s.device_type === 'opcua' ? `checkweigher.html?scale=${s.scale_id}` : `dashboard.html?scale=${s.scale_id}`;
+  const actions = off
+    ? `<button class="btn primary small" data-action="enable" data-scale="${s.scale_id}">เปิดใช้งาน</button>
+       <button class="btn small icon-only" data-action="edit" data-scale="${s.scale_id}" title="แก้ไข" aria-label="แก้ไข">${icon('edit')}</button>
+       <button class="btn small icon-only" data-action="delete" data-scale="${s.scale_id}" title="ลบ" aria-label="ลบ">${icon('trash')}</button>`
+    : running
+    ? `<button class="btn danger small" data-action="stop" data-scale="${s.scale_id}">${icon('stop')}หยุด</button>
        <button class="btn small" data-action="edittime" data-scale="${s.scale_id}" data-session="${s.active_session_id}">แก้ไขเวลา</button>
-       <a class="btn small" href="dashboard.html?scale=${s.scale_id}">กราฟ</a>`
-    : `<button class="btn primary small" data-action="start" data-scale="${s.scale_id}">เริ่ม</button>
-       <a class="btn small" href="dashboard.html?scale=${s.scale_id}">กราฟ</a>
-       <button class="btn small" data-action="edit" data-scale="${s.scale_id}">แก้ไข</button>
-       <button class="btn danger small" data-action="delete" data-scale="${s.scale_id}">ลบ</button>`;
-  return `<tr data-scale-id="${s.scale_id}">
-    <td><b>${scaleTitle(s)}</b>${s.device_type==='opcua' ? `<span class="type-tag">CW</span> <a class="btn small" href="checkweigher.html?scale=${s.scale_id}">รายละเอียด</a>` : ''}</td>
-    <td>${s.ip}:${s.port}</td>
-    <td>${s.serial_no || '-'}</td>
-    <td><span class="status-pill ${lvl}"><span class="dot"></span>${statusLabel(s.connection_status)}</span></td>
-    <td>${s.last_weight != null ? s.last_weight.toFixed(1)+' g' : '-'}${s.device_type==='opcua' ? ' '+bandChip(s.cw && s.cw.last_band) : ''}</td>
+       <a class="btn small" href="${detail}">ดูข้อมูล</a>`
+    : `<button class="btn primary small" data-action="start" data-scale="${s.scale_id}">${icon('play')}เริ่ม</button>
+       <a class="btn small" href="${detail}">ดูข้อมูล</a>
+       <button class="btn small icon-only" data-action="edit" data-scale="${s.scale_id}" title="แก้ไข" aria-label="แก้ไข">${icon('edit')}</button>
+       <button class="btn small icon-only" data-action="delete" data-scale="${s.scale_id}" title="ลบ" aria-label="ลบ">${icon('trash')}</button>`;
+  return `<tr data-scale-id="${s.scale_id}" class="${off ? 'off' : ''}">
+    <td><span class="cell-line">${esc(scaleTitle(s))}</span></td>
+    <td>${typeTag(s)}</td>
+    <td class="num">${esc(s.ip)}:${s.port}</td>
+    <td>${esc(s.serial_no || '-')}</td>
+    <td>${statusPill(s)}</td>
+    <td class="num">${!off && s.last_weight != null ? fmtW(s.last_weight)+' g' : '-'} ${!off && s.device_type==='opcua' && s.connection_status === 'connected' ? bandChip(s.cw && s.cw.last_band) : ''}</td>
     <td>${docCell}</td>
-    <td>${startCell}</td>
-    <td style="display:flex; gap:6px; flex-wrap:wrap;">${actions}</td>
+    <td class="num">${startCell}</td>
+    <td><div class="note-cell" title="${esc(s.note || '')}">${esc(s.note || '')}</div></td>
+    <td><div class="row-actions">${actions}</div></td>
   </tr>`;
 }
 
@@ -426,29 +442,62 @@ $('viewCardBtn').addEventListener('click', () => { viewMode = 'card'; localStora
 $('viewTableBtn').addEventListener('click', () => { viewMode = 'table'; localStorage.setItem('monitor-view','table'); applyViewMode(); });
 applyViewMode();
 
+function matchesFilter(s){
+  const lvl = statusLevel(s);
+  if(filterMode === 'online' && lvl !== 'ok') return false;
+  if(filterMode === 'problem' && lvl !== 'down' && lvl !== 'warn') return false;
+  if(filterMode === 'off' && lvl !== 'off') return false;
+  if(searchText){
+    const hay = `${s.line || ''} ${s.ip} ${s.serial_no || ''} ${s.note || ''}`.toLowerCase();
+    if(!hay.includes(searchText)) return false;
+  }
+  return true;
+}
+function render(){
+  const counts = { ok:0, warn:0, down:0, off:0 };
+  scales.forEach((s) => { counts[statusLevel(s)] += 1; });
+  $('sumAll').textContent = scales.length;
+  $('sumOn').textContent = counts.ok;
+  $('sumBad').textContent = counts.down + counts.warn;
+  $('sumOff').textContent = counts.off;
+  const running = scales.filter((s) => s.active_session_id).length;
+  $('subLine').textContent = `${scales.length} เครื่อง · ออนไลน์ ${counts.ok} · กำลังทำเอกสาร ${running}`;
+
+  // เครื่องที่เปิดใช้งานขึ้นก่อน แล้วตามลำดับที่ลงทะเบียน
+  const list = scales.filter(matchesFilter).sort((a, b) => (isOff(a) - isOff(b)) || (a.scale_id - b.scale_id));
+  $('countLine').textContent = list.length === scales.length ? '' : `แสดง ${list.length} จาก ${scales.length} เครื่อง`;
+  const emptyMsg = scales.length ? 'ไม่พบเครื่องที่ตรงกับตัวกรอง' : 'ยังไม่มีเครื่องชั่งในระบบ — กด "เพิ่มเครื่องชั่ง" เพื่อเริ่มต้น';
+  $('grid').innerHTML = list.length ? list.map(cardHtml).join('') : `<div class="empty" style="grid-column:1/-1;">${icon('scale')}${emptyMsg}</div>`;
+  $('tableBody').innerHTML = list.length ? list.map(tableRowHtml).join('') : `<tr><td colspan="10" class="empty">${emptyMsg}</td></tr>`;
+}
+
 async function loadScales(){
   const data = await api('/api/scales');
   scales = data.scales || [];
-  $('subLine').textContent = `${scales.length} เครื่อง · ทำงานอยู่ ${scales.filter(s=>s.connection_status==='connected'||s.connection_status==='simulating').length} เครื่อง`;
-  $('grid').innerHTML = scales.length
-    ? scales.map(cardHtml).join('')
-    : '<div class="empty">ยังไม่มีเครื่องชั่งในระบบ — กด "เพิ่มเครื่องชั่ง" เพื่อเริ่มต้น</div>';
-  $('tableBody').innerHTML = scales.length
-    ? scales.map(tableRowHtml).join('')
-    : '<tr><td colspan="8" class="empty">ยังไม่มีเครื่องชั่งในระบบ</td></tr>';
+  render();
 }
+
+document.querySelectorAll('.sum-tile').forEach((t) => t.addEventListener('click', () => {
+  filterMode = t.dataset.filter;
+  document.querySelectorAll('.sum-tile').forEach((x) => x.classList.toggle('active', x === t));
+  render();
+}));
+$('searchInp').addEventListener('input', () => { searchText = $('searchInp').value.trim().toLowerCase(); render(); });
 
 // ---------------- เพิ่ม/แก้ไขเครื่องชั่ง (ไม่มี "ชื่อเครื่องชั่ง" แยกแล้ว — ใช้ Line แทน) ----------------
 function openScaleModal(scale){
   editingScaleId = scale ? scale.scale_id : null;
   $('scaleModalTitle').textContent = scale ? `แก้ไข ${scaleTitle(scale)}` : 'เพิ่มเครื่องชั่ง';
-  $('fType').value = scale ? (scale.device_type || 'tcp') : 'tcp';
+  $('fType').value = scale ? (scale.device_type || 'tcp') : 'opcua';
   $('fIp').value = scale ? scale.ip : '';
-  $('fPort').value = scale ? scale.port : '';
+  $('fPort').value = scale ? scale.port : '4880';
   $('fLine').value = scale ? (scale.line || '') : '';
   $('fSn').value = scale ? (scale.serial_no || '') : '';
+  $('fNote').value = scale ? (scale.note || '') : '';
+  $('fEnabled').checked = scale ? !isOff(scale) : true;
   $('scaleModalErr').textContent = '';
   $('scaleModal').classList.add('open');
+  setTimeout(() => $('fIp').focus(), 50);
 }
 $('btnAddScale').addEventListener('click', () => openScaleModal(null));
 $('fType').addEventListener('change', () => {
@@ -464,15 +513,19 @@ $('btnScaleSave').addEventListener('click', async () => {
     port: Number($('fPort').value),
     line: $('fLine').value.trim(),
     serialNo: $('fSn').value.trim(),
+    note: $('fNote').value.trim() || null,
     deviceType: $('fType').value,
+    enabled: $('fEnabled').checked,
   };
   if(!body.ip || !body.port){
-    $('scaleModalErr').textContent = 'กรุณากรอก IP, Port ให้ครบ';
+    $('scaleModalErr').textContent = 'กรุณากรอก IP และ Port ให้ครบ';
     return;
   }
+  const btn = $('btnScaleSave');
+  btn.disabled = true;
   try{
     if(editingScaleId){
-      await api(`/api/scales/${editingScaleId}`, { method:'PUT', body: JSON.stringify(Object.assign({enabled:true}, body)) });
+      await api(`/api/scales/${editingScaleId}`, { method:'PUT', body: JSON.stringify(body) });
     } else {
       await api('/api/scales', { method:'POST', body: JSON.stringify(body) });
     }
@@ -480,8 +533,24 @@ $('btnScaleSave').addEventListener('click', async () => {
     await loadScales();
   }catch(err){
     $('scaleModalErr').textContent = err.message;
+  }finally{
+    btn.disabled = false;
   }
 });
+
+async function enableScale(scaleId){
+  const s = scales.find((x) => x.scale_id === scaleId);
+  if(!s) return;
+  if(!confirm(`เปิดใช้งาน ${scaleTitle(s)} (${s.ip}:${s.port})?\nระบบจะเริ่มเชื่อมต่อและดึงข้อมูลจากเครื่องนี้ทันที`)) return;
+  try{
+    await api(`/api/scales/${scaleId}`, { method:'PUT', body: JSON.stringify({
+      ip: s.ip, port: s.port, line: s.line, serialNo: s.serial_no, note: s.note, deviceType: s.device_type, enabled: true,
+    })});
+    await loadScales();
+  }catch(err){
+    alert('เปิดใช้งานไม่สำเร็จ: ' + err.message);
+  }
+}
 
 // ---------------- เริ่ม/หยุด เอกสาร ----------------
 async function ensureGroups(){
@@ -494,7 +563,7 @@ async function ensureGroups(){
 async function openStartModal(scaleId){
   startingScaleId = scaleId;
   const scale = scales.find(s => s.scale_id === scaleId);
-  $('startModalScaleName').textContent = scale ? `${scaleTitle(scale)} (${scale.ip}:${scale.port})` : '';
+  $('startModalScaleName').textContent = scale ? `${scaleTitle(scale)} · ${scale.ip}:${scale.port}` : '';
   $('startModalErr').textContent = '';
   $('fInspector').value = '';
   $('fRemark').value = '';
@@ -507,8 +576,9 @@ async function openStartModal(scaleId){
   $('startModal').classList.add('open');
   try{
     const groups = await ensureGroups();
-    $('fGroupList').innerHTML = groups.map(g => `<option value="${g}"></option>`).join('');
+    $('fGroupList').innerHTML = groups.map(g => `<option value="${esc(g)}"></option>`).join('');
     $('fGroup').placeholder = 'พิมพ์เพื่อค้นหา Group Code…';
+    $('fGroup').focus();
   }catch(err){
     $('startModalErr').textContent = 'โหลด GroupCode ไม่ได้: ' + err.message;
   }
@@ -526,7 +596,7 @@ $('fGroup').addEventListener('input', async () => {
     const data = await api(`/api/codes/products?group=${encodeURIComponent(group)}`);
     const products = data.products || [];
     PRODUCTS_CACHE = products.map(p => ({ code: p.ProductCode, label: p.ProductCode + (p.PackageName ? ' — '+p.PackageName : '') }));
-    $('fProductList').innerHTML = PRODUCTS_CACHE.map(p => `<option value="${p.label}"></option>`).join('');
+    $('fProductList').innerHTML = PRODUCTS_CACHE.map(p => `<option value="${esc(p.label)}"></option>`).join('');
     $('fProduct').placeholder = 'พิมพ์เพื่อค้นหา Product Code…';
     $('fProduct').disabled = false;
   }catch(err){
@@ -553,12 +623,16 @@ $('btnStartConfirm').addEventListener('click', async () => {
     $('startModalErr').textContent = 'กรุณาใส่ชื่อผู้ตรวจสอบ';
     return;
   }
+  const btn = $('btnStartConfirm');
+  btn.disabled = true;
   try{
     await api('/api/sessions/start', { method:'POST', body: JSON.stringify({ scaleId: startingScaleId, groupCode, productCode, inspectorName, remark }) });
     $('startModal').classList.remove('open');
     await loadScales();
   }catch(err){
     $('startModalErr').textContent = err.message;
+  }finally{
+    btn.disabled = false;
   }
 });
 
@@ -635,14 +709,18 @@ function handleAction(e){
   else if(action === 'stop') stopSession(scaleId);
   else if(action === 'edit') openScaleModal(scales.find(s => s.scale_id === scaleId));
   else if(action === 'delete') deleteScale(scaleId);
+  else if(action === 'enable') enableScale(scaleId);
   else if(action === 'edittime') openEditTimeModal(Number(btn.dataset.session));
 }
 $('grid').addEventListener('click', handleAction);
 $('tableBody').addEventListener('click', handleAction);
+document.addEventListener('keydown', (e) => {
+  if(e.key === 'Escape') document.querySelectorAll('.modal-backdrop.open').forEach((m) => m.classList.remove('open'));
+});
 
 // ---------------- boot + auto-refresh ----------------
 async function tick(){
-  try{ await loadScales(); }catch(err){ $('grid').innerHTML = `<div class="empty">โหลดข้อมูลไม่สำเร็จ: ${err.message}</div>`; }
+  try{ await loadScales(); }catch(err){ $('grid').innerHTML = `<div class="empty" style="grid-column:1/-1;">${icon('offline')}โหลดข้อมูลไม่สำเร็จ: ${esc(err.message)}</div>`; }
 }
 tick();
 setInterval(tick, 4000);

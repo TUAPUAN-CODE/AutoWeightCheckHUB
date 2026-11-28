@@ -4,98 +4,56 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ประวัติ — Auto Weight</title>
-<link rel="icon" type="image/png" href="icon.png">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="stylesheet" href="assets/theme.css">
 <style>
-  :root{
-    --bg:#f4f6fb; --panel:#ffffff; --panel-2:#f2f6fb; --line:#dbe4f0;
-    --text:#131a2b; --text-dim:rgba(19,26,43,0.65); --text-faint:rgba(19,26,43,0.45);
-    --ok:#1d9e5a; --down:#d1453d; --brand:#2f8fef; --warn:#e8720c;
-    --sans:Tahoma,Geneva,Verdana,sans-serif; --mono:Tahoma,Geneva,Verdana,sans-serif;
-  }
-  *{box-sizing:border-box;}
-  body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); padding:18px 22px;}
-  .page-wrap{padding-left:16px;}
-  h1{font-size:16px; margin-top:1px; font-weight:600; letter-spacing:-0.01em;}
-  h1 span{color:#ff9f1c;}
-  .sub{font-size:12px; color:var(--text-faint); margin-bottom:14px;}
+  .filters{display:grid; grid-template-columns:repeat(auto-fill,minmax(170px,1fr)); gap:12px 14px; align-items:end; margin-bottom:16px;
+    background:var(--surface); border:1px solid var(--hairline); border-radius:var(--radius-lg); padding:16px 18px; box-shadow:var(--shadow-sm);}
+  .f-field{display:flex; flex-direction:column; gap:6px; min-width:0;}
+  .f-field label{font-size:12.5px; font-weight:500; color:var(--ink-2);}
+  .f-field select, .f-field input{width:100%;}
+  .f-actions{display:flex; gap:8px; grid-column:span 2;}
+  .f-actions .btn{flex:1;}
 
-  header{
-    position:relative; overflow:hidden;
-    display:flex; flex-direction:row; align-items:center; justify-content:space-between;
-    gap:12px; flex-wrap:wrap;
-    background:var(--panel); border:1px solid var(--line); border-radius:8px;
-    padding:9px 14px; box-shadow:0 2px 5px rgba(0,0,0,0.07), 0 10px 24px -14px rgba(0,0,0,0.18);
-    margin-bottom:14px;
-  }
-  header::before{
-    content:''; position:absolute; top:0; left:0; right:0; height:3px;
-    background:linear-gradient(135deg,#ff4d5e 0%, #ff9f1c 20%, #ffd93d 40%, #3ecf6e 60%, #2f8fef 80%, #7c5cff 100%);
-  }
-  .header-left{display:flex; align-items:center; gap:10px;}
-  .logo-badge{
-    width:34px; height:34px; flex:none; display:flex; align-items:center; justify-content:center;
-    border-radius:10px; background:linear-gradient(160deg,#ffffff,#f2f6fc);
-    border:1px solid var(--line); box-shadow:0 1px 2px rgba(16,24,40,0.08);
-  }
-  .brand-logo{width:19px; height:auto; display:block;}
-  .eyebrow{font-family:var(--mono); font-size:9px; letter-spacing:.1em; text-transform:uppercase; color:var(--text-faint);}
-
-  .filters{display:flex; flex-wrap:wrap; gap:8px; align-items:end; margin-bottom:14px; background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:12px 14px;}
-  .f-field{display:flex; flex-direction:column; gap:4px;}
-  .f-field label{font-size:10px; color:var(--text-faint); text-transform:uppercase; letter-spacing:.04em;}
-  select, input{font-family:inherit; font-size:12.5px; padding:7px 8px; border:1px solid var(--line); border-radius:6px; background:#fff; color:var(--text);}
-  button{font-family:inherit; cursor:pointer;}
-  .btn{border:1px solid var(--line); background:var(--panel); border-radius:7px; padding:8px 14px; font-size:12.5px; font-weight:700; color:var(--text);}
-  .btn:hover{background:var(--panel-2);}
-  .btn.primary{background:var(--brand); border-color:var(--brand); color:#fff;}
-  .btn.small{padding:5px 9px; font-size:11px; border-radius:6px;}
-
-  .table-wrap{background:var(--panel); border:1px solid var(--line); border-radius:10px; overflow:auto; max-height:70vh;}
-  table{border-collapse:collapse; width:100%; font-size:12px; min-width:1550px;}
-  thead th{position:sticky; top:0; background:var(--panel-2); z-index:1; text-align:left; padding:9px 10px; border-bottom:1px solid var(--line); white-space:nowrap; cursor:pointer; user-select:none;}
-  thead th:hover{color:var(--brand);}
-  thead th.active{color:var(--brand);}
-  thead th .arrow{font-size:10px; margin-left:3px; opacity:.7;}
-  tbody td{padding:8px 10px; border-bottom:1px solid var(--line); white-space:nowrap;}
-  tbody tr{cursor:pointer;}
-  tbody tr:hover{background:var(--panel-2);}
-  .pill{display:inline-block; padding:2px 8px; border-radius:20px; font-size:10.5px; font-weight:700;}
-  .pill.running{background:rgba(47,143,239,0.12); color:var(--brand);}
-  .pill.completed{background:rgba(29,158,90,0.12); color:var(--ok);}
-  .pill.aborted{background:rgba(209,69,61,0.12); color:var(--down);}
-  .pill.ds{background:rgba(232,114,12,0.12); color:var(--warn);}
-  .pill.ns{background:rgba(90,60,220,0.12); color:#5a3cdc;}
-  .oos{color:var(--down); font-weight:700;}
-  .link{color:var(--brand); font-weight:700; text-decoration:none; font-size:12px;}
-  .empty{padding:40px; text-align:center; color:var(--text-faint);}
-  .pagebar{display:flex; justify-content:space-between; align-items:center; margin-top:10px; font-size:12px; color:var(--text-dim);}
-  .pagebar .btns{display:flex; gap:6px;}
-
-  .modal-backdrop{position:fixed; inset:0; background:rgba(10,14,26,0.45); display:none; align-items:center; justify-content:center; z-index:2000;}
-  .modal-backdrop.open{display:flex;}
-  .modal{background:#fff; border-radius:12px; padding:20px 22px; width:360px; max-width:92vw; box-shadow:0 20px 50px rgba(0,0,0,0.25);}
-  .modal h3{margin:0 0 12px; font-size:15px;}
-  .modal label{display:block; font-size:11px; color:var(--text-faint); margin:8px 0 4px;}
-  .modal .actions{display:flex; justify-content:flex-end; gap:8px; margin-top:14px;}
-  .err-text{color:var(--down); font-size:11.5px; margin-top:6px; min-height:14px;}
+  .table-wrap{max-height:calc(100vh - 360px); min-height:300px;}
+  .table-wrap table{border-collapse:separate; border-spacing:0; width:100%; font-size:13px; min-width:1550px;}
+  .table-wrap thead th{position:sticky; top:0; z-index:1; background:var(--surface-2); text-align:left; padding:11px 12px; font-size:12px; font-weight:600; color:var(--ink-2);
+    border-bottom:1px solid var(--hairline); white-space:nowrap; cursor:pointer; user-select:none;}
+  .table-wrap thead th:hover{color:var(--blue-700);}
+  .table-wrap thead th.active{color:var(--blue-700);}
+  .table-wrap thead th .arrow{font-size:10px; margin-left:4px;}
+  .table-wrap tbody td{padding:10px 12px; border-bottom:1px solid var(--hairline-2); white-space:nowrap; font-variant-numeric:tabular-nums;}
+  .table-wrap tbody tr{cursor:pointer;}
+  .table-wrap tbody tr:hover td{background:var(--blue-25);}
+  .table-wrap td .btn, .table-wrap td .link{vertical-align:middle;}
+  .table-wrap td .btn + .btn, .table-wrap td .link + .btn{margin-left:6px;}
+  .pill{height:22px; padding:0 9px; font-size:11.5px;}
+  .pill.running{background:var(--blue-50); color:var(--blue-700);}
+  .pill.completed{background:var(--good-bg); color:var(--good);}
+  .pill.aborted{background:var(--bad-bg); color:var(--bad);}
+  .pill.ds{background:var(--orange-50); color:var(--orange-600);}
+  .pill.ns{background:#EEF0FF; color:#4338CA;}
+  .oos{color:var(--bad); font-weight:700;}
+  .link{display:inline-flex; align-items:center; gap:4px; height:32px; padding:0 10px; border-radius:8px; color:var(--blue-700); font-weight:600; text-decoration:none; font-size:12.5px;}
+  .link:hover{background:var(--blue-50);}
+  .pagebar{display:flex; justify-content:space-between; align-items:center; margin-top:14px; font-size:13px; color:var(--ink-2); gap:10px; flex-wrap:wrap;}
+  .pagebar .btns{display:flex; gap:8px;}
+  @media (max-width:560px){ .f-actions{grid-column:1 / -1;} .table-wrap{max-height:none;} }
 </style>
 </head>
 <body data-page="history">
-<script src="sidebar.js"></script>
+<script src="assets/app-header.js"></script>
 <script src="report.js"></script>
 <script src="histogram-modal.js"></script>
-<div id="app-sidebar-root"></div>
-<div class="page-wrap">
+<main class="page">
 
-<header>
-  <div class="header-left">
-    <div class="logo-badge"><img class="brand-logo" src="icon.png" alt=""></div>
-    <div>
-      <div class="eyebrow" id="subLine">กำลังโหลด…</div>
-      <h1>ประวัติ<span>เอกสาร</span></h1>
-    </div>
+<div class="page-head">
+  <div>
+    <div class="eyebrow">เอกสารย้อนหลัง</div>
+    <h1>ประวัติ<span class="accent">เอกสาร</span></h1>
+    <div class="sub" id="subLine">กำลังโหลด…</div>
   </div>
-</header>
+</div>
 
 <div class="filters">
   <div class="f-field"><label>เครื่องชั่ง (Line)</label><select id="fScale"><option value="">ทั้งหมด</option></select></div>
@@ -107,8 +65,7 @@
   <div class="f-field"><label>สถานะ</label><select id="fStatus"><option value="">ทั้งหมด</option><option value="running">กำลังทำ</option><option value="completed">เสร็จแล้ว</option><option value="aborted">ยกเลิก</option></select></div>
   <div class="f-field"><label>วันที่ (จาก)</label><input type="date" id="fFrom"></div>
   <div class="f-field"><label>วันที่ (ถึง)</label><input type="date" id="fTo"></div>
-  <div class="f-field"><button class="btn primary" id="btnFilter">ค้นหา</button></div>
-  <div class="f-field"><button class="btn" id="btnClear">ล้างตัวกรอง</button></div>
+  <div class="f-actions"><button class="btn primary" id="btnFilter" type="button"><svg class="i"><use href="assets/icons.svg#search"></use></svg>ค้นหา</button><button class="btn" id="btnClear" type="button">ล้างตัวกรอง</button></div>
 </div>
 
 <div class="table-wrap">
@@ -123,12 +80,12 @@
 <div class="pagebar">
   <div id="pageInfo"></div>
   <div class="btns">
-    <button class="btn" id="btnPrev">← ก่อนหน้า</button>
-    <button class="btn" id="btnNext">ถัดไป →</button>
+    <button class="btn" id="btnPrev" type="button"><svg class="i"><use href="assets/icons.svg#arrow-left"></use></svg>ก่อนหน้า</button>
+    <button class="btn" id="btnNext" type="button">ถัดไป<svg class="i"><use href="assets/icons.svg#arrow-right"></use></svg></button>
   </div>
 </div>
 
-</div><!-- /.page-wrap -->
+</main>
 
 <!-- ---------------- modal: แก้ไขเวลา (ต้องใส่รหัสผ่าน) ---------------- -->
 <div class="modal-backdrop" id="editTimeModal">
@@ -240,8 +197,8 @@ function rowHtml(r){
     <td>${r.max_weight != null ? r.max_weight.toFixed(2) : '-'}</td>
     <td class="${r.out_of_spec_count ? 'oos' : ''}">${r.out_of_spec_count ?? '-'}</td>
     <td style="display:flex; gap:6px; flex-wrap:wrap;">
-      <a class="link" href="session.html?id=${r.id}">รายละเอียด</a>
-      <button class="btn small" data-action="pdf" data-id="${r.id}">📄 PDF</button>
+      <a class="link" href="session.html?id=${r.id}">รายละเอียด${icon('arrow-right','sm')}</a>
+      <button class="btn small" data-action="pdf" data-id="${r.id}">${icon('file')}PDF</button>
       <button class="btn small" data-action="edittime" data-id="${r.id}">แก้ไขเวลา</button>
     </td>
   </tr>`;

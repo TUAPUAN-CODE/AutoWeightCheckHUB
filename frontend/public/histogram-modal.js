@@ -15,23 +15,21 @@
     el = document.createElement('div');
     el.id = MODAL_ID;
     el.style.cssText = `
-      position:fixed; inset:0; background:#ffffff; z-index:5000;
+      position:fixed; inset:0; background:#F6F8FB; z-index:5000;
       display:none; flex-direction:column;
-      font-family:Tahoma,Geneva,Verdana,sans-serif; color:#131a2b;
+      font-family:'IBM Plex Sans Thai','Leelawadee UI',Tahoma,sans-serif; color:#0E1A2E;
     `;
     el.innerHTML = `
       <div style="display:flex; align-items:center; justify-content:space-between;
-                  padding:14px 22px; border-bottom:1px solid #e5e9f0; flex:none;">
-        <div id="hmTitle" style="font-size:16px; font-weight:700;">Histogram</div>
-        <button id="hmCloseBtn" style="border:1px solid #dbe4f0; background:#f4f6fb;
-                border-radius:6px; padding:8px 16px; font-size:13px; font-weight:700;
-                cursor:pointer; color:#131a2b;">✕ CLOSE</button>
+                  padding:14px 24px; background:#fff; border-bottom:1px solid #E4E9F1; flex:none;">
+        <div id="hmTitle" style="font-size:18px; font-weight:700; letter-spacing:-0.01em;">Histogram</div>
+        <button id="hmCloseBtn" class="btn" type="button"><svg class="i"><use href="assets/icons.svg#x"></use></svg>ปิด</button>
       </div>
-      <div style="flex:1; overflow:auto; padding:26px 30px;">
-        <div id="hmSubtitle" style="font-size:12.5px; color:rgba(19,26,43,0.6); margin-bottom:16px;"></div>
+      <div style="flex:1; overflow:auto; padding:24px 30px;"><div style="background:#fff; border:1px solid #E4E9F1; border-radius:16px; padding:22px 24px; box-shadow:0 1px 2px rgba(14,26,46,.04),0 2px 8px -2px rgba(14,26,46,.06);">
+        <div id="hmSubtitle" style="font-size:12.5px; color:#4A5870; margin-bottom:16px;"></div>
         <div id="hmChartWrap" style="width:100%;"></div>
-        <div id="hmMsg" style="display:none; text-align:center; color:rgba(19,26,43,0.45); padding:60px;"></div>
-      </div>
+        <div id="hmMsg" style="display:none; text-align:center; color:#8190A6; padding:60px;"></div>
+      </div></div>
     `;
     document.body.appendChild(el);
 
@@ -98,11 +96,11 @@
 
     let svg = `<svg viewBox="0 0 ${width} ${height}" width="100%" height="${height}"
                  xmlns="http://www.w3.org/2000/svg"
-                 style="font-family:Tahoma,Geneva,Verdana,sans-serif;">`;
+                 style="font-family:'IBM Plex Sans Thai','Leelawadee UI',Tahoma,sans-serif;">`;
 
     // เส้นฐาน
     svg += `<line x1="${padL}" y1="${padT + plotH}" x2="${padL + plotW}" y2="${padT + plotH}"
-              stroke="#c9d3e0" stroke-width="1"/>`;
+              stroke="#D3DAE5" stroke-width="1"/>`;
 
     // แท่งกราฟ
     hist.bins.forEach((count, i) => {
@@ -111,10 +109,10 @@
       const yPix = yOf(count);
       const h = (padT + plotH) - yPix;
       svg += `<rect x="${xPix + 1}" y="${yPix}" width="${Math.max(barW - 2, 1)}"
-                height="${Math.max(h, 0)}" fill="#3576d8"></rect>`;
+                height="${Math.max(h, 0)}" rx="2" fill="#2563EB"></rect>`;
       if (count > 0) {
         svg += `<text x="${xPix + barW / 2}" y="${yPix - 8}" font-size="14" font-weight="700"
-                  fill="#131a2b" text-anchor="middle">${count}</text>`;
+                  fill="#0E1A2E" text-anchor="middle">${count}</text>`;
       }
     });
 
@@ -124,7 +122,7 @@
       const val = hist.min + i * hist.binWidth;
       const xPix = xOf(val);
       svg += `<text x="${xPix}" y="${padT + plotH + 22}" font-size="13"
-                fill="rgba(19,26,43,0.55)" text-anchor="middle">${val}</text>`;
+                fill="#8190A6" text-anchor="middle">${val}</text>`;
     }
 
     // เส้น LSL / USL / Target
@@ -137,9 +135,9 @@
               fill="${color}" text-anchor="middle">${label}</text>`;
       return s;
     }
-    svg += specLine(opts.lsl, '#d1453d', 'LSL ' + opts.lsl, false);
-    svg += specLine(opts.usl, '#d1453d', 'USL ' + opts.usl, false);
-    svg += specLine(opts.target, '#e8720c', 'Target ' + opts.target, true);
+    svg += specLine(opts.lsl, '#D23A31', 'LSL ' + opts.lsl, false);
+    svg += specLine(opts.usl, '#D23A31', 'USL ' + opts.usl, false);
+    svg += specLine(opts.target, '#F57C1F', 'Target ' + opts.target, true);
 
     svg += `</svg>`;
     container.innerHTML = svg;

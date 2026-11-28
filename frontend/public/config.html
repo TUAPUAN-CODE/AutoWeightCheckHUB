@@ -4,83 +4,45 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ตั้งค่า — Auto Weight</title>
-<link rel="icon" type="image/png" href="icon.png">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="stylesheet" href="assets/theme.css">
 <style>
-  :root{
-    --bg:#f4f6fb; --panel:#ffffff; --panel-2:#f2f6fb; --line:#dbe4f0;
-    --text:#131a2b; --text-dim:rgba(19,26,43,0.65); --text-faint:rgba(19,26,43,0.45);
-    --ok:#1d9e5a; --down:#d1453d; --brand:#2f8fef; --warn:#e8720c;
-    --sans:Tahoma,Geneva,Verdana,sans-serif; --mono:Tahoma,Geneva,Verdana,sans-serif;
-  }
-  *{box-sizing:border-box;}
-  body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); padding:18px 22px;}
-  .page-wrap{padding-left:16px;}
-  h1{font-size:16px; margin-top:1px; font-weight:600; letter-spacing:-0.01em;}
-  h1 span{color:#ff9f1c;}
-  .sub{font-size:12px; color:var(--text-faint); margin-bottom:14px;}
-
-  header{
-    position:relative; overflow:hidden;
-    display:flex; flex-direction:row; align-items:center; justify-content:space-between;
-    gap:12px; flex-wrap:wrap;
-    background:var(--panel); border:1px solid var(--line); border-radius:8px;
-    padding:9px 14px; box-shadow:0 2px 5px rgba(0,0,0,0.07), 0 10px 24px -14px rgba(0,0,0,0.18);
-    margin-bottom:14px;
-  }
-  header::before{
-    content:''; position:absolute; top:0; left:0; right:0; height:3px;
-    background:linear-gradient(135deg,#ff4d5e 0%, #ff9f1c 20%, #ffd93d 40%, #3ecf6e 60%, #2f8fef 80%, #7c5cff 100%);
-  }
-  .header-left{display:flex; align-items:center; gap:10px;}
-  .logo-badge{
-    width:34px; height:34px; flex:none; display:flex; align-items:center; justify-content:center;
-    border-radius:10px; background:linear-gradient(160deg,#ffffff,#f2f6fc);
-    border:1px solid var(--line); box-shadow:0 1px 2px rgba(16,24,40,0.08);
-  }
-  .brand-logo{width:19px; height:auto; display:block;}
-  .eyebrow{font-family:var(--mono); font-size:9px; letter-spacing:.1em; text-transform:uppercase; color:var(--text-faint);}
-
-  .panel{background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:18px 20px; margin-bottom:16px; max-width:640px;}
-  .panel h2{font-size:14px; margin:0 0 4px;}
-  .panel .desc{font-size:12px; color:var(--text-faint); margin-bottom:16px; line-height:1.6;}
-  .field-row{display:grid; grid-template-columns:120px 1fr; align-items:center; gap:12px; margin-bottom:12px;}
-  .field-row label{font-size:12.5px; font-weight:700;}
-  .field-row .hint{font-size:11px; color:var(--text-faint); margin-top:3px;}
-  input, select{font-family:inherit; font-size:12.5px; padding:8px 10px; border:1px solid var(--line); border-radius:6px; background:#fff; color:var(--text); width:160px;}
-  input[type=checkbox]{width:auto;}
-  button{font-family:inherit; cursor:pointer;}
-  .btn{border:1px solid var(--line); background:var(--panel); border-radius:7px; padding:9px 16px; font-size:12.5px; font-weight:700; color:var(--text);}
-  .btn:hover{background:var(--panel-2);}
-  .btn.primary{background:var(--brand); border-color:var(--brand); color:#fff;}
-  .btn.small{padding:6px 12px; font-size:11.5px;}
-  .save-row{display:flex; align-items:center; gap:12px; margin-top:16px;}
-  .save-msg{font-size:12px; color:var(--ok); opacity:0; transition:opacity .3s;}
+  .settings{display:grid; grid-template-columns:repeat(auto-fit,minmax(460px,1fr)); gap:16px; align-items:start;}
+  .panel{padding:22px 24px;}
+  .panel h2{margin:0 0 4px; font-size:16px; font-weight:700;}
+  .panel .desc{font-size:13px; color:var(--ink-2); margin-bottom:18px; line-height:1.65;}
+  .field-row{display:grid; grid-template-columns:150px 1fr; align-items:center; gap:14px; margin-bottom:14px;}
+  .field-row > label{font-size:13.5px; font-weight:600;}
+  .field-row .hint{font-size:12px; color:var(--ink-3); margin-top:4px;}
+  .field-row input:not([type=checkbox]){width:180px;}
+  .save-row{display:flex; align-items:center; gap:12px; margin-top:20px; padding-top:16px; border-top:1px solid var(--hairline-2);}
+  .save-msg{display:inline-flex; align-items:center; gap:6px; font-size:13px; font-weight:600; color:var(--good); opacity:0; transition:opacity .3s;}
   .save-msg.show{opacity:1;}
-  .interp-table{width:100%; border-collapse:collapse; margin-top:10px; font-size:12.5px;}
-  .interp-table th{text-align:left; padding:7px 10px; background:var(--panel-2); border-bottom:1px solid var(--line); font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--text-faint);}
-  .interp-table td{padding:8px 10px; border-bottom:1px solid var(--panel-2);}
-  .interp-table td.bad{font-weight:700; color:var(--down);}
-  .interp-table td.warn{font-weight:700; color:var(--warn);}
-  .interp-table td.good{font-weight:700; color:var(--ok);}
-  .scale-row{display:flex; align-items:center; gap:8px; padding:6px 0; font-size:12.5px; border-bottom:1px solid var(--panel-2);}
+  .interp-table{width:100%; border-collapse:separate; border-spacing:0; margin-top:4px; font-size:13px; border:1px solid var(--hairline); border-radius:12px; overflow:hidden;}
+  .interp-table th{text-align:left; padding:9px 12px; background:var(--surface-2); border-bottom:1px solid var(--hairline); font-size:12px; font-weight:600; color:var(--ink-2);}
+  .interp-table td{padding:10px 12px; border-bottom:1px solid var(--hairline-2);}
+  .interp-table tr:last-child td{border-bottom:none;}
+  .interp-table td.bad{font-weight:700; color:var(--bad);}
+  .interp-table td.warn{font-weight:700; color:var(--caution);}
+  .interp-table td.good{font-weight:700; color:var(--good);}
+  .scale-row{display:flex; align-items:center; gap:8px; padding:8px 0; font-size:13.5px; border-bottom:1px solid var(--hairline-2);}
   .scale-row:last-child{border-bottom:none;}
+  @media (max-width:560px){ .settings{grid-template-columns:1fr;} .field-row{grid-template-columns:1fr; gap:6px;} }
 </style>
 </head>
 <body data-page="config">
-<script src="sidebar.js"></script>
-<div id="app-sidebar-root"></div>
-<div class="page-wrap">
+<script src="assets/app-header.js"></script>
+<main class="page">
 
-<header>
-  <div class="header-left">
-    <div class="logo-badge"><img class="brand-logo" src="icon.png" alt=""></div>
-    <div>
-      <div class="eyebrow">System Configuration</div>
-      <h1>ตั้งค่า<span>ระบบ</span></h1>
-    </div>
+<div class="page-head">
+  <div>
+    <div class="eyebrow">System Configuration</div>
+    <h1>ตั้งค่า<span class="accent">ระบบ</span></h1>
+    <div class="sub">เกณฑ์แจ้งเตือนและค่าที่ใช้ร่วมกันทุกเครื่อง</div>
   </div>
-</header>
+</div>
 
+<div class="settings">
 <div class="panel">
   <h2>เกณฑ์แจ้งเตือนความสามารถกระบวนการ (Cp / Cpk / Ppk)</h2>
   <div class="desc">
@@ -114,13 +76,13 @@
   <div class="field-row">
     <label>เสียงเตือน</label>
     <div><label style="font-weight:400;"><input type="checkbox" id="soundEnabled" checked> เปิดใช้งานเสียงเตือนต่อเนื่อง</label>
-      <button class="btn small" id="btnTestSound" style="margin-left:8px;">🔊 ทดสอบเสียง</button>
+      <button class="btn small" id="btnTestSound" type="button" style="margin-left:8px;"><svg class="i"><use href="assets/icons.svg#sound"></use></svg>ทดสอบเสียง</button>
     </div>
   </div>
 
   <div class="save-row">
     <button class="btn primary" id="btnSaveAlert">บันทึกเกณฑ์แจ้งเตือน</button>
-    <span class="save-msg" id="saveAlertMsg">บันทึกแล้ว ✓</span>
+    <span class="save-msg" id="saveAlertMsg"><svg class="i sm"><use href="assets/icons.svg#ok"></use></svg>บันทึกแล้ว</span>
   </div>
 </div>
 
@@ -149,7 +111,7 @@
 
   <div class="save-row">
     <button class="btn primary" id="btnSaveOos">บันทึกเกณฑ์นี้</button>
-    <span class="save-msg" id="saveOosMsg">บันทึกแล้ว ✓</span>
+    <span class="save-msg" id="saveOosMsg"><svg class="i sm"><use href="assets/icons.svg#ok"></use></svg>บันทึกแล้ว</span>
   </div>
 </div>
 
@@ -160,16 +122,17 @@
     <label>รหัสผ่าน</label>
     <div style="display:flex; gap:6px; align-items:center;">
       <input type="password" id="historyPassword" placeholder="172480116" autocomplete="new-password">
-      <button class="btn small" id="btnTogglePassword" type="button" title="แสดง/ซ่อนรหัสผ่าน">👁️</button>
+      <button class="btn small icon-only" id="btnTogglePassword" type="button" title="แสดง/ซ่อนรหัสผ่าน" aria-label="แสดง/ซ่อนรหัสผ่าน"><svg class="i"><use href="assets/icons.svg#eye"></use></svg></button>
     </div>
   </div>
   <div class="save-row">
     <button class="btn primary" id="btnSavePassword">บันทึกรหัสผ่าน</button>
-    <span class="save-msg" id="savePasswordMsg">บันทึกแล้ว ✓</span>
+    <span class="save-msg" id="savePasswordMsg"><svg class="i sm"><use href="assets/icons.svg#ok"></use></svg>บันทึกแล้ว</span>
   </div>
 </div>
 
-</div><!-- /.page-wrap -->
+</div><!-- /.settings -->
+</main>
 
 <script>
 const $ = (id) => document.getElementById(id);

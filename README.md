@@ -170,3 +170,34 @@ uvicorn main:app --host 0.0.0.0 --port 8000
 
 ### แก้ไขเพิ่มเติม
 - หน้า Dashboard / ประวัติ / รายละเอียดเอกสาร / ใบพิมพ์ และการสรุปผลตอนกดหยุดเอกสาร อ่านค่าน้ำหนักจาก **ตารางของเครื่องนั้นจริง** (`Spout 1/2/3` หรือ `CwPieces`) — เดิมอ่านจาก `dbo.Auto` เสมอ ทำให้เครื่องที่บันทึกลงตาราง Spout ได้กราฟ/สรุปผลว่าง
+
+## อัปเดต v4 — หน้าตาใหม่ทั้งระบบ + ลงทะเบียน checkweigher ทุกไลน์
+
+### หน้าตาใหม่
+- ธีม ขาว · ฟ้า · ส้ม ใช้ไฟล์กลาง `frontend/public/assets/theme.css` ทุกหน้า
+- เมนูย้ายจาก sidebar ไปอยู่ด้านบน (`assets/app-header.js`) มีนาฬิกา และบนมือถือย่อเป็นปุ่มเมนู
+- ไอคอนเป็น SVG (`assets/icons.svg`, Lucide — ISC License) แทน emoji ที่บางเครื่องแสดงไม่เต็ม และโลโก้ใหม่ `assets/logo.svg`
+- ฟอนต์ IBM Plex Sans Thai เก็บในเครื่อง (`assets/fonts`, SIL Open Font License) ไม่ต้องต่ออินเทอร์เน็ต
+- หน้า Monitor: การ์ดสรุป (ทั้งหมด / ออนไลน์ / ต้องตรวจสอบ / ปิดใช้งาน) กดเพื่อกรองได้, ช่องค้นหา Line / IP / S/N,
+  แสดงหมายเหตุของเครื่อง, ปุ่ม "เปิดใช้งาน" บนเครื่องที่ปิดอยู่, ฟอร์มเครื่องมีช่องหมายเหตุและสวิตช์เปิด/ปิดใช้งาน
+- ไม่ต้อง build — `git pull` แล้วกด Ctrl+F5 ที่หน้าเว็บ
+
+### ลงทะเบียน checkweigher ตามตารางสำรวจ (พ.ย. 2026)
+backend ต้องรันอยู่ แล้วรันจากโฟลเดอร์ repo บน server:
+```bash
+node backend/scripts/register-checkweighers.js
+```
+```bash
+node backend/scripts/register-checkweighers.js --apply
+```
+- รอบแรก (ไม่มี `--apply`) แสดงแผนอย่างเดียว ไม่แก้อะไร
+- เปิดใช้งานทันที: Pouch Auto B (.187), C (.188), D (.189), Spout 2 (.196)
+- เพิ่มแบบปิดใช้งานพร้อมหมายเหตุ: Pouch Auto A (.192), E (.193), F (.194), Cup 1.1 (.190), Cup 1.2 (.191), Spout 1 (.195), Pouch Dollop (.197)
+  — พอเครื่องพร้อม กด "เปิดใช้งาน" ที่การ์ดในหน้า Monitor
+- IP ที่มีอยู่แล้ว: ถ้าเป็น checkweigher อัปเดตแค่ Line / S/N / หมายเหตุ, ถ้าเป็นเครื่อง TCP แบบเดิมจะข้าม — รันซ้ำได้
+- Spout 3 ยังไม่มี S/N และ IP — เพิ่มเองในหน้า Monitor
+
+### backend ที่แก้
+- `/api/scales` ส่ง `enabled` และ `note` ของแต่ละเครื่อง, `POST /api/scales` รับ `enabled`
+- แก้ไขเครื่องโดยไม่ส่ง `note` จะไม่ล้างหมายเหตุเดิมอีก
+- ต้อง `pm2 reload auto-weight-backend` หลัง `git pull`

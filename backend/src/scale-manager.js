@@ -68,8 +68,8 @@ class ScaleManager {
   }
 
   // ------------------------------------------------------------ CRUD เครื่องชั่ง
-  async addScale({ name, ip, port, line, serialNo, note, deviceType }) {
-    const id = await db.createScale({ name, ip, port, line, serialNo, note, deviceType });
+  async addScale({ name, ip, port, line, serialNo, note, deviceType, enabled }) {
+    const id = await db.createScale({ name, ip, port, line, serialNo, note, deviceType, enabled });
     const rows = await db.listScales();
     const row = rows.find((r) => r.id === id);
     const reader = createReader(row);
@@ -87,7 +87,7 @@ class ScaleManager {
       port: patch.port ?? existing.port,
       line: patch.line ?? existing.line,
       serialNo: patch.serialNo ?? existing.serialNo,
-      note: patch.note,
+      note: patch.note !== undefined ? patch.note : existing.note,
       enabled: patch.enabled ?? true,
       deviceType: patch.deviceType ?? existing.deviceType ?? 'tcp',
     });

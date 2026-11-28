@@ -4,131 +4,99 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Checkweigher — Auto Weight</title>
-<link rel="icon" type="image/png" href="icon.png">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="stylesheet" href="assets/theme.css">
 <style>
-  :root{
-    --bg:#f4f6fb; --panel:#ffffff; --panel-2:#f2f6fb; --line:#dbe4f0;
-    --text:#131a2b; --text-dim:rgba(19,26,43,0.65); --text-faint:rgba(19,26,43,0.45);
-    --ok:#1d9e5a; --ok-dim:rgba(29,158,90,0.10);
-    --warn:#e8720c; --warn-dim:rgba(232,114,12,0.10);
-    --down:#d1453d; --down-dim:rgba(209,69,61,0.10);
-    --brand:#2f8fef; --sans:Tahoma,Geneva,Verdana,sans-serif;
-  }
-  *{box-sizing:border-box;}
-  body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); padding:18px 22px;}
-  .page-wrap{padding-left:16px;}
-  h1{font-size:16px; margin:1px 0 0; font-weight:600;}
-  h1 span{color:#ff9f1c;}
-  button,select,input{font-family:inherit;}
-  .btn{border:1px solid var(--line); background:var(--panel); border-radius:7px; padding:7px 12px; font-size:12px; font-weight:700; color:var(--text); cursor:pointer;}
-  .btn:hover{background:var(--panel-2);}
-  .btn.active{background:var(--brand); border-color:var(--brand); color:#fff;}
-  select,input{font-size:12px; padding:6px 8px; border:1px solid var(--line); border-radius:6px; background:#fff; color:var(--text);}
-
-  header{position:relative; overflow:hidden; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
-    background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:9px 14px; margin-bottom:12px;
-    box-shadow:0 2px 5px rgba(0,0,0,0.07), 0 10px 24px -14px rgba(0,0,0,0.18);}
-  header::before{content:''; position:absolute; top:0; left:0; right:0; height:3px;
-    background:linear-gradient(135deg,#ff4d5e 0%, #ff9f1c 20%, #ffd93d 40%, #3ecf6e 60%, #2f8fef 80%, #7c5cff 100%);}
-  .header-left{display:flex; align-items:center; gap:10px;}
-  .logo-badge{width:34px; height:34px; display:flex; align-items:center; justify-content:center; border-radius:10px; background:linear-gradient(160deg,#fff,#f2f6fc); border:1px solid var(--line);}
-  .logo-badge img{width:19px;}
-  .eyebrow{font-size:9px; letter-spacing:.1em; text-transform:uppercase; color:var(--text-faint);}
-  .controls{display:flex; align-items:center; gap:6px; flex-wrap:wrap;}
-  .seg{display:flex; border:1px solid var(--line); border-radius:7px; overflow:hidden;}
-  .seg button{border:none; border-right:1px solid var(--line); background:var(--panel); padding:7px 11px; font-size:11.5px; font-weight:700; color:var(--text-dim); cursor:pointer;}
-  .seg button:last-child{border-right:none;}
-  .seg button.active{background:var(--brand); color:#fff;}
-  #customRange{display:none; gap:6px; align-items:center;}
+  .controls{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
+  .controls select{min-width:190px; font-weight:600;}
+  #customRange{display:none; gap:8px; align-items:center;}
   #customRange.open{display:flex;}
+  #customRange input{width:190px;}
 
-  .panel{background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:12px 14px; box-shadow:0 2px 6px rgba(20,30,60,0.05);}
-  .panel h2{font-size:12px; margin:0 0 8px; text-transform:uppercase; letter-spacing:.05em; color:var(--text-dim);}
-  .panel h2 small{text-transform:none; letter-spacing:0; font-weight:400; color:var(--text-faint); margin-left:6px;}
+  .status-strip{display:flex; flex-wrap:wrap; gap:8px 22px; align-items:center; font-size:13px; color:var(--ink-2);
+    background:var(--surface); border:1px solid var(--hairline); border-radius:var(--radius-lg); padding:12px 16px; margin-bottom:16px; box-shadow:var(--shadow-xs);}
+  .status-strip b{color:var(--ink); font-weight:600;}
+  .alert{display:none; align-items:center; gap:8px; background:var(--bad-bg); color:var(--bad); border:1px solid var(--bad-line); border-radius:12px; padding:10px 14px; font-size:13px; font-weight:500; margin-bottom:16px;}
+  .alert.show{display:flex;}
 
-  .status-strip{display:flex; flex-wrap:wrap; gap:16px; align-items:center; font-size:12px; color:var(--text-dim); margin-bottom:12px;}
-  .status-strip b{color:var(--text);}
-  .pill{display:inline-flex; align-items:center; gap:6px; font-size:11px; font-weight:700; padding:4px 10px; border-radius:20px;}
-  .pill .dot{width:8px; height:8px; border-radius:50%;}
-  .pill.ok{background:var(--ok-dim); color:var(--ok);} .pill.ok .dot{background:var(--ok);}
-  .pill.warn{background:var(--warn-dim); color:var(--warn);} .pill.warn .dot{background:var(--warn);}
-  .pill.down{background:var(--down-dim); color:var(--down);} .pill.down .dot{background:var(--down);}
-  .pill.idle{background:#eef1f6; color:var(--text-dim);} .pill.idle .dot{background:#9aa3b5;}
-  .alert{background:var(--down-dim); color:var(--down); border-radius:8px; padding:8px 12px; font-size:12px; margin-bottom:12px; display:none;}
-  .alert.show{display:block;}
+  .kpis{display:grid; grid-template-columns:repeat(8,minmax(0,1fr)); gap:12px; margin-bottom:16px;}
+  .kpi{padding:14px 16px;}
+  .kpi span{display:block; font-size:12px; font-weight:500; color:var(--ink-3);}
+  .kpi b{display:block; font-size:22px; font-weight:700; margin-top:4px; letter-spacing:-0.02em; font-variant-numeric:tabular-nums;}
+  .kpi small{display:block; margin-top:2px; font-size:11.5px; color:var(--ink-3); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .kpi.ok b{color:var(--good);} .kpi.warn b{color:var(--caution);} .kpi.down b{color:var(--bad);}
+  .kpi.ok{box-shadow:inset 0 3px 0 var(--good), var(--shadow-xs);}
+  .kpi.warn{box-shadow:inset 0 3px 0 #E3A008, var(--shadow-xs);}
+  .kpi.down{box-shadow:inset 0 3px 0 var(--bad), var(--shadow-xs);}
 
-  .kpis{display:grid; grid-template-columns:repeat(8,minmax(0,1fr)); gap:10px; margin-bottom:12px;}
-  .kpi{background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:10px 12px;}
-  .kpi span{display:block; font-size:9.5px; letter-spacing:.05em; text-transform:uppercase; color:var(--text-faint);}
-  .kpi b{display:block; font-size:20px; margin-top:3px; letter-spacing:-0.01em;}
-  .kpi small{font-size:10.5px; color:var(--text-faint);}
-  .kpi.ok b{color:var(--ok);} .kpi.warn b{color:var(--warn);} .kpi.down b{color:var(--down);}
-
-  .row{display:grid; gap:12px; margin-bottom:12px;}
+  .row{display:grid; gap:16px; margin-bottom:16px;}
+  .row > .panel{min-width:0;}
   .row.r1{grid-template-columns:minmax(0,3fr) minmax(0,1fr);}
   .row.r2{grid-template-columns:repeat(3,minmax(0,1fr));}
   .row.r3{grid-template-columns:minmax(0,1fr) minmax(0,1fr);}
   canvas{width:100%; display:block;}
-  .last-box{display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; gap:8px;}
-  .last-weight{font-size:52px; font-weight:700; letter-spacing:-0.03em; line-height:1;}
-  .last-weight small{font-size:18px; color:var(--text-faint); margin-left:4px;}
-  .band{display:inline-block; font-size:12px; font-weight:700; padding:5px 12px; border-radius:20px;}
-  .band.b0{background:var(--ok-dim); color:var(--ok);}
-  .band.b1,.band.b2{background:var(--warn-dim); color:var(--warn);}
-  .band.b3,.band.b4{background:var(--down-dim); color:var(--down);}
-  .band.bn{background:#eef1f6; color:var(--text-faint);}
-  .lim-table{font-size:11.5px; color:var(--text-dim); width:100%; border-collapse:collapse; margin-top:6px;}
-  .lim-table td{padding:3px 6px; border-bottom:1px solid var(--line);}
-  .lim-table td:last-child{text-align:right; color:var(--text); font-weight:700;}
+  .last-box{display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; gap:10px;
+    background:linear-gradient(180deg,var(--blue-25),#fff 55%);}
+  .last-weight{font-size:56px; font-weight:700; letter-spacing:-0.04em; line-height:1; font-variant-numeric:tabular-nums;}
+  .last-weight small{font-size:18px; font-weight:500; color:var(--ink-3); margin-left:4px;}
+  .band{display:inline-flex; align-items:center; height:30px; padding:0 14px; border-radius:999px; font-size:13px; font-weight:700;}
+  .band.b0{background:var(--good-bg); color:var(--good);}
+  .band.b1,.band.b2{background:var(--caution-bg); color:var(--caution);}
+  .band.b3,.band.b4{background:var(--bad-bg); color:var(--bad);}
+  .band.bn{background:var(--idle-bg); color:var(--ink-3);}
+  table.list .band{height:22px; padding:0 9px; font-size:11.5px;}
+  .lim-table{font-size:12.5px; color:var(--ink-2); width:100%; border-collapse:collapse; margin-top:6px;}
+  .lim-table td{padding:6px 4px; border-bottom:1px solid var(--hairline-2); text-align:left;}
+  .lim-table td:last-child{text-align:right; color:var(--ink); font-weight:600; font-variant-numeric:tabular-nums;}
+  .lim-table tr:last-child td{border-bottom:none; font-weight:400; text-align:left; line-height:1.45;}
 
-  .bars{display:flex; flex-direction:column; gap:7px; font-size:12px;}
-  .bar-row{display:grid; grid-template-columns:70px 1fr 90px; gap:8px; align-items:center;}
-  .bar-track{height:14px; background:var(--panel-2); border-radius:4px; overflow:hidden;}
-  .bar-fill{height:100%; border-radius:4px;}
-  .bar-row .v{text-align:right; font-weight:700;}
+  .bars{display:flex; flex-direction:column; gap:9px; font-size:13px;}
+  .bar-row{display:grid; grid-template-columns:76px 1fr 100px; gap:10px; align-items:center;}
+  .bar-track{height:10px; background:var(--surface-2); border:1px solid var(--hairline-2); border-radius:999px; overflow:hidden;}
+  .bar-fill{height:100%; border-radius:999px;}
+  .bar-row .v{text-align:right; font-weight:600; font-variant-numeric:tabular-nums; font-size:12.5px;}
 
-  table.list{width:100%; border-collapse:collapse; font-size:11.5px;}
-  table.list th{position:sticky; top:0; background:var(--panel-2); text-align:left; padding:6px 8px; border-bottom:1px solid var(--line); white-space:nowrap;}
-  table.list td{padding:5px 8px; border-bottom:1px solid var(--line); white-space:nowrap;}
-  .scroll{max-height:290px; overflow:auto;}
-  .sev-alarm{color:var(--down); font-weight:700;} .sev-warn{color:var(--warn); font-weight:700;} .sev-info{color:var(--text-dim);}
-  .muted{color:var(--text-faint); font-size:11px;}
-  .empty{padding:30px; text-align:center; color:var(--text-faint); font-size:13px;}
-  .cmp-table{width:100%; font-size:11.5px; border-collapse:collapse;}
-  .cmp-table th,.cmp-table td{padding:4px 6px; border-bottom:1px solid var(--line); text-align:right;}
-  .cmp-table th:first-child,.cmp-table td:first-child{text-align:left;}
-  @media (max-width:1200px){ .kpis{grid-template-columns:repeat(4,minmax(0,1fr));} .row.r1,.row.r2,.row.r3{grid-template-columns:1fr;} }
+  table.list{width:100%; border-collapse:separate; border-spacing:0; font-size:12.5px;}
+  table.list th{position:sticky; top:0; background:var(--surface-2); text-align:left; padding:9px 10px; font-weight:600; color:var(--ink-2); border-bottom:1px solid var(--hairline); white-space:nowrap;}
+  table.list td{padding:8px 10px; border-bottom:1px solid var(--hairline-2); white-space:nowrap; font-variant-numeric:tabular-nums;}
+  table.list tbody tr:hover td{background:var(--blue-25);}
+  .scroll{max-height:330px; overflow:auto; border:1px solid var(--hairline); border-radius:12px;}
+  .sev-alarm{color:var(--bad); font-weight:600;} .sev-warn{color:var(--caution); font-weight:600;} .sev-info{color:var(--ink-2);}
+  .muted{color:var(--ink-3); font-size:12.5px;}
+  .cmp-table{width:100%; font-size:13px; border-collapse:collapse;}
+  .cmp-table th{font-size:12px; font-weight:600; color:var(--ink-3); padding:6px 8px; border-bottom:1px solid var(--hairline); text-align:right;}
+  .cmp-table td{padding:7px 8px; border-bottom:1px solid var(--hairline-2); text-align:right; font-variant-numeric:tabular-nums;}
+  .cmp-table th:first-child,.cmp-table td:first-child{text-align:left; color:var(--ink-2);}
+  @media (max-width:1300px){ .kpis{grid-template-columns:repeat(4,minmax(0,1fr));} }
+  @media (max-width:1100px){ .row.r1,.row.r2,.row.r3{grid-template-columns:1fr;} }
+  @media (max-width:560px){ .kpis{grid-template-columns:repeat(2,minmax(0,1fr));} #customRange input{width:100%;} .controls select{flex:1 1 100%;} }
 </style>
 </head>
 <body data-page="checkweigher">
-<div id="app-sidebar-root"></div>
-<script src="sidebar.js"></script>
-<div class="page-wrap">
+<script src="assets/app-header.js"></script>
+<main class="page">
 
-<header>
-  <div class="header-left">
-    <div class="logo-badge"><img src="icon.png" alt=""></div>
-    <div>
-      <div class="eyebrow">Checkweigher · OPC UA · น้ำหนักรายชิ้น</div>
-      <h1>Checkweigher — <span id="titleLine">-</span></h1>
-    </div>
+<div class="page-head">
+  <div>
+    <div class="eyebrow">Checkweigher · OPC UA · น้ำหนักรายชิ้น</div>
+    <h1>Checkweigher <span class="accent" id="titleLine">-</span></h1>
   </div>
   <div class="controls">
-    <select id="selScale" title="เลือกเครื่อง"></select>
+    <select id="selScale" title="เลือกเครื่อง" aria-label="เลือกเครื่อง"></select>
     <div class="seg" id="rangeSeg">
-      <button data-range="live" class="active">สด</button>
-      <button data-range="1h">1 ชม.</button>
-      <button data-range="shift">กะนี้</button>
-      <button data-range="custom">กำหนดเอง</button>
+      <button data-range="live" class="active" type="button">สด</button>
+      <button data-range="1h" type="button">1 ชม.</button>
+      <button data-range="shift" type="button">กะนี้</button>
+      <button data-range="custom" type="button">กำหนดเอง</button>
     </div>
     <div id="customRange">
-      <input type="datetime-local" id="fromInp" step="60">
+      <input type="datetime-local" id="fromInp" step="60" aria-label="ตั้งแต่">
       <span class="muted">ถึง</span>
-      <input type="datetime-local" id="toInp" step="60">
-      <button class="btn" id="btnApply">ดู</button>
+      <input type="datetime-local" id="toInp" step="60" aria-label="ถึง">
+      <button class="btn primary" id="btnApply" type="button">ดูข้อมูล</button>
     </div>
   </div>
-</header>
+</div>
 
 <div class="status-strip" id="statusStrip"><span class="muted">กำลังโหลด…</span></div>
 <div class="alert" id="alertBox"></div>
@@ -138,7 +106,7 @@
 <div class="row r1">
   <div class="panel">
     <h2>น้ำหนักรายชิ้น <small id="chartSub"></small></h2>
-    <canvas id="cTrend" height="260"></canvas>
+    <canvas id="cTrend" height="330"></canvas>
   </div>
   <div class="panel last-box">
     <div class="muted">ชิ้นล่าสุด</div>
@@ -152,7 +120,7 @@
 <div class="row r2">
   <div class="panel">
     <h2>Histogram <small id="histSub"></small></h2>
-    <canvas id="cHist" height="220"></canvas>
+    <canvas id="cHist" height="300"></canvas>
   </div>
   <div class="panel">
     <h2>ผลตัดสิน <small>(ระบบเทียบ limit)</small></h2>
@@ -178,12 +146,13 @@
   </div>
 </div>
 
-</div>
+</main>
 
 <script>
 const $ = (id) => document.getElementById(id);
 const BAND_LABELS = ['Accept','Over','Under','HiHi','LoLo'];
-const BAND_COLORS = ['#1d9e5a','#e8720c','#e8720c','#d1453d','#d1453d'];
+const BAND_COLORS = ['#0E9466','#F0A020','#F0A020','#D23A31','#D23A31'];
+const C = { blue:'#2563EB', blueSoft:'rgba(37,99,235,0.35)', grid:'#EEF2F7', axis:'#8190A6', limit:'#D23A31', target:'#F57C1F', zone:'rgba(14,148,102,0.07)', rank:'#5B7BEA' };
 const LIVE_MAX = 600;
 const qs = new URLSearchParams(location.search);
 let scaleId = Number(qs.get('scale')) || null;
@@ -230,7 +199,7 @@ function setupCanvas(cv){
   const w = cv.clientWidth; const h = Number(cv.getAttribute('height'));
   cv.width = Math.round(w*dpr); cv.height = Math.round(h*dpr); cv.style.height = h+'px';
   const ctx = cv.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0);
-  ctx.clearRect(0,0,w,h); ctx.font = '11px Tahoma'; return { ctx, w, h };
+  ctx.clearRect(0,0,w,h); ctx.font = "12px 'IBM Plex Sans Thai', Tahoma, sans-serif"; return { ctx, w, h };
 }
 function limitsOf(){ return (scale && scale.cw && scale.cw.limits) || {}; }
 
@@ -238,7 +207,7 @@ function drawTrend(){
   const { ctx, w, h } = setupCanvas($('cTrend'));
   const pad = { l:46, r:70, t:10, b:22 };
   const data = pieces;
-  if(!data.length){ ctx.fillStyle = 'rgba(19,26,43,0.45)'; ctx.fillText('ยังไม่มีข้อมูลชิ้นงานในช่วงนี้', pad.l, h/2); return; }
+  if(!data.length){ ctx.fillStyle = C.axis; ctx.fillText('ยังไม่มีข้อมูลชิ้นงานในช่วงนี้', pad.l, h/2); return; }
   const L = limitsOf();
   const vals = data.map(p => p.weight);
   const refs = [L.lo, L.hi, L.target].filter(v => v != null);
@@ -246,15 +215,15 @@ function drawTrend(){
   const span = Math.max(hi - lo, 1); lo -= span*0.08; hi += span*0.08;
   const X = (i) => pad.l + (data.length === 1 ? 0 : i/(data.length-1)) * (w - pad.l - pad.r);
   const Y = (v) => pad.t + (1 - (v - lo)/(hi - lo)) * (h - pad.t - pad.b);
-  if(L.lo != null && L.hi != null){ ctx.fillStyle = 'rgba(29,158,90,0.07)'; ctx.fillRect(pad.l, Y(L.hi), w-pad.l-pad.r, Y(L.lo)-Y(L.hi)); }
-  ctx.strokeStyle = '#e3e9f2'; ctx.lineWidth = 1; ctx.fillStyle = 'rgba(19,26,43,0.5)';
+  if(L.lo != null && L.hi != null){ ctx.fillStyle = C.zone; ctx.fillRect(pad.l, Y(L.hi), w-pad.l-pad.r, Y(L.lo)-Y(L.hi)); }
+  ctx.strokeStyle = C.grid; ctx.lineWidth = 1; ctx.fillStyle = C.axis;
   for(let k=0;k<=4;k++){ const v = lo + (hi-lo)*k/4; const y = Y(v); ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(w-pad.r,y); ctx.stroke(); ctx.fillText(v.toFixed(1), 6, y+4); }
   const line = (v, color, label, dash) => { if(v == null) return; const y = Y(v); ctx.save(); ctx.strokeStyle = color; ctx.setLineDash(dash || []); ctx.lineWidth = 1.3; ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(w-pad.r,y); ctx.stroke(); ctx.restore(); ctx.fillStyle = color; ctx.fillText(`${label} ${v.toFixed(1)}`, w-pad.r+4, y+4); };
-  line(L.hi, '#d1453d', 'Hi', [5,4]); line(L.lo, '#d1453d', 'Lo', [5,4]); line(L.target, '#e8720c', 'Target', [2,3]);
-  ctx.strokeStyle = 'rgba(47,143,239,0.45)'; ctx.lineWidth = 1; ctx.beginPath();
+  line(L.hi, C.limit, 'Hi', [5,4]); line(L.lo, C.limit, 'Lo', [5,4]); line(L.target, C.target, 'Target', [2,3]);
+  ctx.strokeStyle = C.blueSoft; ctx.lineWidth = 1; ctx.beginPath();
   data.forEach((p,i) => { const x = X(i), y = Y(p.weight); i ? ctx.lineTo(x,y) : ctx.moveTo(x,y); }); ctx.stroke();
-  data.forEach((p,i) => { ctx.fillStyle = p.band == null ? '#2f8fef' : (p.band === 0 ? '#2f8fef' : BAND_COLORS[p.band]); ctx.beginPath(); ctx.arc(X(i), Y(p.weight), p.band ? 2.8 : 1.8, 0, Math.PI*2); ctx.fill(); });
-  ctx.fillStyle = 'rgba(19,26,43,0.5)';
+  data.forEach((p,i) => { ctx.fillStyle = p.band == null || p.band === 0 ? C.blue : BAND_COLORS[p.band]; ctx.beginPath(); ctx.arc(X(i), Y(p.weight), p.band ? 2.8 : 1.8, 0, Math.PI*2); ctx.fill(); });
+  ctx.fillStyle = C.axis;
   ctx.fillText(hms(data[0].time_stamp), pad.l, h-6);
   const t2 = hms(data[data.length-1].time_stamp); ctx.fillText(t2, w-pad.r-ctx.measureText(t2).width, h-6);
 }
@@ -263,7 +232,7 @@ function drawHist(){
   const { ctx, w, h } = setupCanvas($('cHist'));
   const pad = { l:30, r:10, t:16, b:22 };
   const vals = pieces.map(p => p.weight);
-  if(vals.length < 2){ ctx.fillStyle = 'rgba(19,26,43,0.45)'; ctx.fillText('ข้อมูลไม่พอ', pad.l, h/2); return; }
+  if(vals.length < 2){ ctx.fillStyle = C.axis; ctx.fillText('ข้อมูลไม่พอ', pad.l, h/2); return; }
   const L = limitsOf();
   let lo = Math.min(...vals, L.lo ?? Infinity), hi = Math.max(...vals, L.hi ?? -Infinity);
   const bins = 24; const step = (hi - lo) / bins || 1; lo -= step; hi += step;
@@ -275,13 +244,13 @@ function drawHist(){
   cnt.forEach((c,i) => {
     const x0 = lo + i*step + step/2;
     const inSpec = L.lo == null || L.hi == null || (x0 >= L.lo && x0 <= L.hi);
-    ctx.fillStyle = inSpec ? '#2f8fef' : '#e8720c';
+    ctx.fillStyle = inSpec ? C.blue : C.target;
     const bh = (c/max) * (h - pad.t - pad.b);
-    ctx.fillRect(pad.l + i*bw + 1, h - pad.b - bh, bw - 2, bh);
+    ctx.fillRect(pad.l + i*bw + 1, h - pad.b - bh, Math.max(1, bw - 2), bh);
   });
   const vline = (v, color, label) => { if(v == null) return; const x = X(v); ctx.strokeStyle = color; ctx.setLineDash([4,3]); ctx.beginPath(); ctx.moveTo(x,pad.t); ctx.lineTo(x,h-pad.b); ctx.stroke(); ctx.setLineDash([]); ctx.fillStyle = color; ctx.fillText(label, x-ctx.measureText(label).width/2, 11); };
-  vline(L.lo, '#d1453d', 'Lo'); vline(L.hi, '#d1453d', 'Hi'); vline(L.target, '#e8720c', 'T');
-  ctx.fillStyle = 'rgba(19,26,43,0.5)'; ctx.fillText(lo.toFixed(1), pad.l, h-6); const t = hi.toFixed(1); ctx.fillText(t, w-pad.r-ctx.measureText(t).width, h-6);
+  vline(L.lo, C.limit, 'Lo'); vline(L.hi, C.limit, 'Hi'); vline(L.target, C.target, 'T');
+  ctx.fillStyle = C.axis; ctx.fillText(lo.toFixed(1), pad.l, h-6); const t = hi.toFixed(1); ctx.fillText(t, w-pad.r-ctx.measureText(t).width, h-6);
   $('histSub').textContent = `n=${fi(vals.length)}`;
 }
 
@@ -307,7 +276,7 @@ function renderStatus(){
   if((c.machine_errors || []).length) alerts.push('เครื่องแจ้ง error: ' + c.machine_errors.join(', '));
   if(scale.connection_status !== 'connected' && scale.last_error) alerts.push(scale.last_error);
   if(summary && summary.summary && summary.summary.cpk != null && summary.summary.cpk < 1) alerts.push(`Cpk ${summary.summary.cpk.toFixed(2)} ต่ำกว่า 1.00`);
-  $('alertBox').textContent = alerts.length ? '⚠ ' + alerts.join(' · ') : '';
+  $('alertBox').innerHTML = alerts.length ? icon('alert') + '<span>' + esc(alerts.join(' · ')) + '</span>' : '';
   $('alertBox').classList.toggle('show', alerts.length > 0);
 
   const last = pieces[pieces.length-1];
@@ -359,7 +328,7 @@ function renderBands(){
     { label:'Under', count:b.under, color:BAND_COLORS[2] }, { label:'HiHi', count:b.hihi, color:BAND_COLORS[3] },
     { label:'LoLo', count:b.lolo, color:BAND_COLORS[4] },
   ]);
-  bars($('rankBars'), (summary.ranks || []).map(r => ({ label: r.label ? `${r.rank_code} ${r.label}` : `code ${r.rank_code ?? '-'}`, count:r.count, color:'#7c5cff' })));
+  bars($('rankBars'), (summary.ranks || []).map(r => ({ label: r.label ? `${r.rank_code} ${r.label}` : `code ${r.rank_code ?? '-'}`, count:r.count, color:C.rank })));
 }
 function renderCompare(){
   const m = (scale && scale.cw && scale.cw.machine_stats) || {};
