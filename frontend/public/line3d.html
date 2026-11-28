@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>สายพาน 3D — Auto Weight</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="apple-touch-icon" href="assets/icon-192.png">
+<link rel="stylesheet" href="assets/theme.css">
+<style>
+  html, body{height:100%;}
+  body{overflow:auto; display:flex; flex-direction:column;}
+  .l3 [hidden]{display:none !important;}
+  .l3{flex:1; min-height:0; display:grid; grid-template-columns:minmax(0,1fr) 340px; gap:0; border-top:1px solid var(--hairline);}
+
+  /* ---- ฉาก 3D (เต็มพื้นที่ซ้าย) ---- */
+  .l3-stage{position:relative; min-height:520px; overflow:hidden; background:var(--canvas);}
+  #l3Canvas{position:absolute; inset:0; width:100%; height:100%; display:block; outline:none; touch-action:none;}
+  #l3Labels{position:absolute; inset:0; pointer-events:none;}
+  .l3-tag{
+    font:700 12.5px/1 var(--font); color:#fff; padding:4px 7px; border-radius:7px; white-space:nowrap;
+    box-shadow:0 2px 6px rgba(0,0,0,.25); transform:translateY(-6px); letter-spacing:.01em;
+  }
+  .l3-tag small{font-weight:600; opacity:.9; margin-left:4px; font-size:11px;}
+
+  /* แถบบนซ้าย: เลือกไลน์ + สถานะเครื่อง */
+  .l3-top{position:absolute; left:12px; right:12px; top:10px; display:flex; flex-wrap:wrap; align-items:center; gap:8px 10px; pointer-events:none;}
+  .l3-top > *{pointer-events:auto;}
+  .l3-top select{height:34px; min-width:180px; font-weight:600; font-size:13px; box-shadow:var(--shadow-sm);}
+  .l3-pill{display:inline-flex; align-items:center; gap:6px; height:30px; padding:0 11px; border-radius:999px; background:color-mix(in srgb, var(--surface) 88%, transparent);
+    border:1px solid var(--hairline); font-size:12.5px; color:var(--ink-2); box-shadow:var(--shadow-xs); backdrop-filter:blur(6px); white-space:nowrap;}
+  .l3-pill b{color:var(--ink); font-weight:600;}
+  .l3-dot{width:8px; height:8px; border-radius:50%; background:var(--idle);}
+  .l3-dot.ok{background:var(--good); box-shadow:0 0 0 3px var(--good-bg);}
+  .l3-dot.warn{background:var(--caution);} .l3-dot.down{background:var(--bad);} .l3-dot.idle{background:var(--idle);}
+  .l3-views{margin-left:auto;}
+  .l3-views.seg{background:color-mix(in srgb, var(--surface-2) 90%, transparent); backdrop-filter:blur(6px);}
+
+  /* การ์ดลอยล่างซ้าย: ชิ้นล่าสุด */
+  .l3-card{position:absolute; left:12px; bottom:12px; width:300px; max-width:calc(100% - 24px); padding:12px 14px; border-radius:14px;
+    background:color-mix(in srgb, var(--surface) 92%, transparent); border:1px solid var(--hairline); box-shadow:var(--shadow-md); backdrop-filter:blur(8px);}
+  .l3-card h3{margin:0 0 2px; font-size:12px; font-weight:600; color:var(--ink-3);}
+  .l3-big{display:flex; align-items:baseline; gap:8px;}
+  .l3-big b{font-size:34px; font-weight:700; letter-spacing:-.01em; color:var(--ink); font-variant-numeric:tabular-nums;}
+  .l3-big span{font-size:14px; color:var(--ink-2); font-weight:600;}
+  .l3-big .l3-badge{color:#fff; font-size:12px;}
+  .l3-badge{display:inline-flex; align-items:center; gap:5px; height:24px; padding:0 9px; border-radius:999px; font-size:12px; font-weight:700; color:#fff; margin-left:auto;}
+  .l3-spec{font-size:12px; color:var(--ink-2); margin-top:2px;}
+  .l3-recent{display:flex; gap:3px; margin-top:9px;}
+  .l3-recent i{flex:1; height:22px; border-radius:4px; font:600 10px/22px var(--font); color:#fff; text-align:center; font-style:normal; overflow:hidden; min-width:0;}
+  .l3-note{position:absolute; right:12px; bottom:12px; max-width:min(380px, calc(100% - 340px)); font-size:11.5px; color:var(--ink-3); text-align:right; line-height:1.45;
+    background:color-mix(in srgb, var(--canvas) 70%, transparent); padding:4px 8px; border-radius:8px;}
+
+  /* ---- แผงขวา ---- */
+  .l3-side{border-left:1px solid var(--hairline); background:var(--surface); overflow:auto; padding:14px; display:flex; flex-direction:column; gap:14px;}
+  .l3-sec h2{margin:0 0 8px; font-size:13.5px; font-weight:700; color:var(--ink); display:flex; align-items:center; gap:7px;}
+  .l3-sec h2 .i{width:16px; height:16px; color:var(--blue-600);}
+  .l3-stats{display:grid; grid-template-columns:1fr 1fr; gap:8px;}
+  .l3-stat{padding:9px 10px; border:1px solid var(--hairline); border-radius:10px; background:var(--surface-2);}
+  .l3-stat small{display:block; font-size:11.5px; color:var(--ink-3);}
+  .l3-stat b{font-size:19px; font-weight:700; color:var(--ink); font-variant-numeric:tabular-nums;}
+  .l3-stat b.good{color:var(--good);} .l3-stat b.bad{color:var(--bad);}
+  .l3-stat em{font-style:normal; font-size:11.5px; color:var(--ink-2);}
+  .l3-legend{display:grid; gap:6px; font-size:12.5px; color:var(--ink-2);}
+  .l3-legend div{display:flex; align-items:center; gap:8px;}
+  .l3-legend i{width:12px; height:12px; border-radius:3px; flex:none;}
+  .l3-sf{border:1px solid var(--hairline); border-radius:12px; overflow:hidden; background:var(--surface-2);}
+  .l3-sf-frame{aspect-ratio:4/3; position:relative; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:10px; padding:16px; text-align:center;
+    background:radial-gradient(120% 90% at 50% 20%, var(--blue-50), var(--surface-2));}
+  .l3-sf-frame .i{width:34px; height:34px; color:var(--blue-600);}
+  .l3-sf-frame p{margin:0; font-size:12px; color:var(--ink-2); line-height:1.5;}
+  .l3-sf-frame iframe{position:absolute; inset:0; width:100%; height:100%; border:0;}
+  .l3-credit{font-size:11.5px; color:var(--ink-3); padding:7px 10px; line-height:1.5;}
+  .l3-credit a{color:var(--blue-600); font-weight:600; text-decoration:none;}
+  .l3-help{font-size:12px; color:var(--ink-2); line-height:1.55; margin:0; padding-left:18px;}
+  .l3-help li{margin-bottom:3px;}
+
+  @media (max-width:1100px){
+    .l3{grid-template-columns:1fr;}
+    .l3-stage{min-height:0; height:68vh;}
+    .l3-side{border-left:0; border-top:1px solid var(--hairline);}
+    .l3-note{display:none;}
+  }
+  @media (max-width:640px){
+    .l3-stage{height:76vh;}
+    .l3-views{margin-left:0;}
+    .l3-top select{min-width:0; flex:1 1 100%;}
+    .l3-card{width:auto; right:12px; padding:9px 11px;}
+    .l3-big b{font-size:26px;}
+  }
+</style>
+<script type="importmap">
+{ "imports": { "three": "./assets/vendor/three/three.module.min.js", "three/addons/": "./assets/vendor/three/addons/" } }
+</script>
+</head>
+<body data-page="line3d">
+<script src="assets/app-header.js"></script>
+
+<div class="l3">
+  <section class="l3-stage" id="l3Stage">
+    <canvas id="l3Canvas" tabindex="0" aria-label="ภาพ 3D สายพานเครื่องชั่ง"></canvas>
+    <div id="l3Labels"></div>
+
+    <div class="l3-top">
+      <select id="scalePicker" aria-label="เลือกไลน์"><option>กำลังโหลด…</option></select>
+      <span class="l3-pill"><span class="l3-dot" id="l3StateDot"></span><b id="l3State">กำลังเชื่อมต่อ…</b></span>
+      <span class="l3-pill" id="l3ProgPill" hidden>โปรแกรม <b id="l3Prog"></b></span>
+      <span class="l3-pill" id="l3SpeedPill" hidden>ความเร็ว <b id="l3Speed"></b></span>
+      <div class="seg l3-views" role="group" aria-label="มุมกล้อง">
+        <button type="button" data-view="overview" class="active">ภาพรวม</button>
+        <button type="button" data-view="scale">เครื่องชั่ง</button>
+        <button type="button" data-view="reject">จุดคัดออก</button>
+        <button type="button" data-view="top">มุมบน</button>
+      </div>
+    </div>
+
+    <div class="l3-card" aria-live="polite">
+      <h3>ชิ้นล่าสุดที่ชั่ง</h3>
+      <div class="l3-big"><b id="l3Last">–</b><span>g</span><span class="l3-badge" id="l3LastBadge" hidden></span></div>
+      <div class="l3-spec" id="l3Spec">–</div>
+      <div class="l3-recent" id="l3Recent"></div>
+    </div>
+    <div class="l3-note">ภาพจำลองจากข้อมูลจริง — ถุงหนึ่งใบคือหนึ่งชิ้นที่เครื่องชั่ง (ช้ากว่าเครื่องจริงไม่กี่วินาที) · ลากเพื่อหมุน · ล้อเมาส์เพื่อซูม</div>
+  </section>
+
+  <aside class="l3-side">
+    <section class="l3-sec">
+      <h2><svg class="i"><use href="assets/icons.svg#activity"></use></svg><span id="l3StatTitle">200 ชิ้นล่าสุด</span></h2>
+      <div class="l3-stats">
+        <div class="l3-stat"><small>ผ่าน</small><b class="good" id="l3Pass">–</b> <em id="l3PassPct"></em></div>
+        <div class="l3-stat"><small>คัดออก</small><b class="bad" id="l3Rej">–</b> <em id="l3RejPct"></em></div>
+        <div class="l3-stat"><small>เกิน (USL)</small><b id="l3Over">–</b></div>
+        <div class="l3-stat"><small>ขาด (LSL)</small><b id="l3Under">–</b></div>
+      </div>
+    </section>
+
+    <section class="l3-sec">
+      <h2><svg class="i"><use href="assets/icons.svg#info"></use></svg>สีของถุง</h2>
+      <div class="l3-legend">
+        <div><i style="background:#0E9466"></i>เขียว — ใกล้ Target</div>
+        <div><i style="background:#E3A008"></i>เหลือง — เริ่มห่างจาก Target</div>
+        <div><i style="background:#F0602B"></i>ส้ม — ใกล้ขอบสเปก (ยังผ่าน)</div>
+        <div><i style="background:#D23A31"></i>แดง — หลุดสเปก ถูกผลักลงถังคัดออก</div>
+        <div><i style="background:#9AA6B8"></i>เทา — ยังไม่ถึงเครื่องชั่ง</div>
+      </div>
+    </section>
+
+    <section class="l3-sec">
+      <h2><svg class="i"><use href="assets/icons.svg#package"></use></svg>โมเดลเครื่องชั่ง (Sketchfab)</h2>
+      <div class="l3-sf">
+        <div class="l3-sf-frame" id="l3SfFrame">
+          <svg class="i"><use href="assets/icons.svg#factory"></use></svg>
+          <p>โมเดล SM_CheckWeigher สำหรับหมุนดูเครื่อง — ไม่มีข้อมูลจริง<br>ต้องต่ออินเทอร์เน็ตไปที่ sketchfab.com ได้</p>
+          <button class="btn primary small" id="l3SfLoad" type="button"><svg class="i"><use href="assets/icons.svg#play"></use></svg>โหลดโมเดล 3D</button>
+        </div>
+        <div class="l3-credit">
+          <a href="https://sketchfab.com/3d-models/sm-checkweigher-08d39b5ac3e5488895ecb8307bdbe56b" target="_blank" rel="nofollow noopener">SM_CheckWeigher</a>
+          by <a href="https://sketchfab.com/LuminousGroup" target="_blank" rel="nofollow noopener">LuminousGroup</a>
+          on <a href="https://sketchfab.com" target="_blank" rel="nofollow noopener">Sketchfab</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="l3-sec">
+      <h2><svg class="i"><use href="assets/icons.svg#info"></use></svg>เกี่ยวกับภาพนี้</h2>
+      <ul class="l3-help">
+        <li>ถุงวิ่งจากสายพานเข้า → สายพานชั่ง (จอแสดงน้ำหนัก) → สายพานออก</li>
+        <li>ถุงที่หลุดสเปกจะถูกแขนผลักลงถังคัดออกสีแดง</li>
+        <li>ไฟสัญญาณบนเครื่อง: เขียว = ปกติ · เหลือง = ใกล้ขอบ · แดง = คัดออก</li>
+        <li id="l3PouchCredit">ถุงในฉากเป็นแบบจำลองอย่างง่าย — วางไฟล์ <code>assets/models/pouch.glb</code> แล้วระบบจะใช้แทนอัตโนมัติ</li>
+      </ul>
+    </section>
+  </aside>
+</div>
+
+<script type="module" src="assets/line3d.js"></script>
+</body>
+</html>

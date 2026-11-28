@@ -174,7 +174,11 @@
     let n;
     while ((n = w.nextNode())) { if (n.nodeType === 3) doText(n); else doAttrs(n); }
   }
-  function doTitle() { if (TH.test(document.title)) document.title = translate(document.title); }
+  function doTitle() { // ตั้งเฉพาะเมื่อแปลแล้วต่างจากเดิม — ไม่งั้น observer ของ <title> วนไม่รู้จบ (ชื่อที่ยังไม่มีคำแปล)
+    if (!TH.test(document.title)) return;
+    const nv = translate(document.title);
+    if (nv !== document.title) document.title = nv;
+  }
 
   function start() {
     document.documentElement.lang = LANG;

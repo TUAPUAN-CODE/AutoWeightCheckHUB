@@ -4,7 +4,7 @@
  *   <body data-page="monitor">
  *   <script src="assets/app-header.js"></script>   ← วางเป็นบรรทัดแรกใน <body>
  *
- * data-page: monitor | dashboard | summary | history | config
+ * data-page: monitor | dashboard | line3d | summary | history | config
  * มี helper window.icon('scale', 'sm') คืน <svg> จาก assets/icons.svg ไว้ใช้ใน template ของแต่ละหน้า
  * ภาษา (ไทย / English / မြန်မာ / ខ្មែរ) และโหมดมืด จำไว้ใน localStorage ของเครื่องนั้น
  */
@@ -13,6 +13,7 @@
   const NAV_ITEMS = [
     { key: 'monitor', href: 'monitor.html', label: 'Monitor', icon: 'monitor', desc: 'สถานะเครื่องทั้งหมด' },
     { key: 'dashboard', href: 'dashboard.html', label: 'Dashboard', icon: 'dashboard', desc: 'กราฟ SPC แบบเรียลไทม์' },
+    { key: 'line3d', href: 'line3d.html', label: 'สายพาน 3D', icon: 'package', desc: 'ภาพ 3D สายพานเครื่องชั่ง — ถุงวิ่งตามข้อมูลจริง' },
     { key: 'summary', href: 'summary.html', label: 'สรุปผล', icon: 'chart-bar', desc: 'สรุปรายวันรายไลน์ · แนวโน้ม Cp / Cpk' },
     { key: 'history', href: 'history.html', label: 'ประวัติ', icon: 'history', desc: 'เอกสารย้อนหลัง / ค้นหา' },
     { key: 'config', href: 'config.html', label: 'ตั้งค่า', icon: 'settings', desc: 'เกณฑ์แจ้งเตือน Cp / Cpk / Ppk' },
