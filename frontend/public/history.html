@@ -32,7 +32,8 @@
   .pill.completed{background:var(--good-bg); color:var(--good);}
   .pill.aborted{background:var(--bad-bg); color:var(--bad);}
   .pill.ds{background:var(--orange-50); color:var(--orange-600);}
-  .pill.ns{background:#EEF0FF; color:#4338CA;}
+  .pill.ns{background:var(--blue-50); color:var(--blue-700);}
+  :root[data-theme="dark"] .pill.ns{color:var(--blue-200);}
   .oos{color:var(--bad); font-weight:700;}
   .link{display:inline-flex; align-items:center; gap:4px; height:32px; padding:0 10px; border-radius:8px; color:var(--blue-700); font-weight:600; text-decoration:none; font-size:12.5px;}
   .link:hover{background:var(--blue-50);}
@@ -50,7 +51,7 @@
 <div class="page-head">
   <div>
     <div class="eyebrow">เอกสารย้อนหลัง</div>
-    <h1>ประวัติ<span class="accent">เอกสาร</span></h1>
+    <h1>ประวัติ <span class="accent">เอกสาร</span></h1>
     <div class="sub" id="subLine">กำลังโหลด…</div>
   </div>
 </div>

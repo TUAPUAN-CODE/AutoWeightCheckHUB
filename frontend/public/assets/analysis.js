@@ -508,7 +508,7 @@
     }
     ctx.restore();
     ctx.fillStyle = c.ink3; ctx.font = `11px ${c.font}`; ctx.textAlign = 'right'; ctx.textBaseline = 'top';
-    ctx.fillText('ชิ้น', V.x - 8, V.y);
+    ctx.fillText(window.t('ชิ้น'), V.x - 8, V.y);
     ctx.strokeStyle = c.line; ctx.beginPath(); ctx.moveTo(V.x, V.y + V.h + 0.5); ctx.lineTo(V.x + V.w, V.y + V.h + 0.5); ctx.stroke();
   }
 
@@ -528,7 +528,7 @@
       ctx.fillText(label, x, base + 6);
       if (slot >= 46 && m.kind === 'points') {
         ctx.fillStyle = c.ink3; ctx.font = `10.5px ${c.font}`;
-        ctx.fillText(m.sub ? `กลุ่ม ${it.seq}` : `ชิ้นที่ ${it.seq}`, x, base + 20);
+        ctx.fillText(window.t(m.sub ? `กลุ่ม ${it.seq}` : `ชิ้นที่ ${it.seq}`), x, base + 20);
         ctx.font = `11.5px ${c.font}`;
       }
     }

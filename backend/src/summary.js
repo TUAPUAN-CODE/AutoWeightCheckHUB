@@ -99,13 +99,15 @@ function summarize(segments) {
   const docs = [...bySession.values()].map((e) => ({ ...e, ...capability(e.acc, e.spec) }));
   const eligible = docs.filter((d) => d.cpk != null && d.acc.n >= MIN_N_FOR_CPK);
   const pool = eligible.length ? eligible : docs.filter((d) => d.cpk != null);
-  let cp = null; let cpk = null; let cpkMin = null;
+  let cp = null; let cpk = null; let cpkMin = null; let cpkPrelim = null;
   if (pool.length) {
     const w = pool.reduce((a, d) => a + d.acc.n, 0);
     cp = pool.reduce((a, d) => a + d.cp * d.acc.n, 0) / w;
     cpk = pool.reduce((a, d) => a + d.cpk * d.acc.n, 0) / w;
     cpkMin = Math.min(...pool.map((d) => d.cpk));
   }
+  // ทุกเอกสารมีไม่ถึง 30 ชิ้น (เช่น เพิ่งเริ่มกะ) → ยังไม่ตัดสิน ให้ค่าเบื้องต้นไว้ดูเฉย ๆ
+  if (pool.length && !eligible.length) { cpkPrelim = cpk; cp = null; cpk = null; cpkMin = null; }
   const withSpec = all.n - noSpec;
   const fail = all.over + all.under;
   const products = [...new Set(docs.map((d) => d.product_code).filter(Boolean))];
@@ -116,9 +118,9 @@ function summarize(segments) {
     pass_pct: withSpec ? round(((withSpec - fail) / withSpec) * 100, 2) : null,
     mean: all.n ? round(all.mean, 3) : null, sd: all.n > 1 ? round(sdOf(all), 4) : null,
     min: Number.isFinite(all.min) ? all.min : null, max: Number.isFinite(all.max) ? all.max : null,
-    cp: round(cp), cpk: round(cpk), cpk_min: round(cpkMin),
+    cp: round(cp), cpk: round(cpk), cpk_min: round(cpkMin), cpk_prelim: round(cpkPrelim),
     docs: docs.length, products,
-    low_n: pool.length > 0 && !eligible.length, // Cpk มาจากเอกสารที่มีน้อยกว่า 30 ชิ้น — เชื่อถือได้น้อย
+    low_n: pool.length > 0 && !eligible.length, // มีแต่เอกสารที่น้อยกว่า 30 ชิ้น — ยังไม่คิด Cp/Cpk
   };
 }
 

@@ -85,7 +85,7 @@
   function verdict(s, key) {
     if (!s || !s.n) return { cls: 'none', label: 'ไม่ได้ผลิต', icon: 'clock' };
     const v = key === 'cp' ? s.cp : s.cpk;
-    if (v == null) return { cls: 'none', label: s.with_spec ? 'ข้อมูลไม่พอ' : 'ไม่มีสเปก', icon: 'info' };
+    if (v == null) return { cls: 'none', label: s.with_spec ? 'ข้อมูลยังน้อย' : 'ไม่มีสเปก', icon: 'info' };
     const min = key === 'cp' ? st.th.cpMin : st.th.cpkMin;
     if (v >= st.th.cpkGood) return { cls: 'good', label: 'ดี', icon: 'ok' };
     if (v >= min) return { cls: 'warn', label: 'พอใช้', icon: 'alert' };
@@ -201,7 +201,7 @@
       <div class="kpi bad"><small>ไม่ผ่าน (นอก LSL–USL)</small><b>${fint(tot.fail)}</b><em>ชิ้น</em></div>
       <div class="kpi"><small>% ผ่าน</small><b>${fpct(pp)}</b><em>จากชิ้นที่มีสเปก ${fint(tot.with_spec)}</em></div>
       <div class="kpi"><small>ไลน์ที่ผลิตวันนี้</small><b>${active}<span class="muted" style="font-size:16px; font-weight:500;"> / ${L.length}</span></b><em>ไลน์</em></div>
-      <div class="kpi"><small>ผลตาม Cpk</small><div class="verdicts">${chip('good', counts.good, 'ดี')}${chip('warn', counts.warn, 'พอใช้')}${chip('bad', counts.bad, 'ต้องปรับปรุง')}${chip('none', counts.none, 'ไม่มีสเปก')}${active ? '' : '<span class="muted">ยังไม่มีการผลิต</span>'}</div></div>`;
+      <div class="kpi"><small>ผลตาม Cpk</small><div class="verdicts">${chip('good', counts.good, 'ดี')}${chip('warn', counts.warn, 'พอใช้')}${chip('bad', counts.bad, 'ต้องปรับปรุง')}${chip('none', counts.none, 'ยังไม่ตัดสิน')}${active ? '' : '<span class="muted">ยังไม่มีการผลิต</span>'}</div></div>`;
   }
 
   function trendOf(id) { return trendLines().find((l) => l.scale_id === id); }
@@ -263,11 +263,11 @@
       if (t.products && t.products.length === 1 && t.mean != null) meta.push(`เฉลี่ย ${t.mean.toFixed(2)} g · SD ${t.sd == null ? '-' : t.sd.toFixed(3)}`);
       if (t.cpk_min != null && t.docs > 1 && t.cpk_min < st.th.cpkMin) meta.push(`<span class="warnline">เอกสารที่แย่สุด Cpk ${t.cpk_min.toFixed(2)}</span>`);
       if (t.no_spec) meta.push(`<span class="warnline">ไม่มีเอกสาร ${fint(t.no_spec)} ชิ้น (ไม่รู้สเปก ไม่นับผ่าน/ไม่ผ่าน)</span>`);
-      if (t.low_n) meta.push('<span class="warnline">Cpk จากเอกสารที่มีน้อยกว่า 30 ชิ้น — ยังเชื่อถือได้น้อย</span>');
+      if (t.low_n) meta.push(`<span class="warnline">ชิ้นที่มีสเปกยังไม่ถึง ${(st.dayData && st.dayData.min_n_for_cpk) || 30} ชิ้น — ยังไม่ตัดสิน Cpk${t.cpk_prelim != null ? ` (ค่าเบื้องต้น ${t.cpk_prelim.toFixed(2)})` : ''}</span>`);
       return `
       <article class="lc v-${v.cls}${t.n ? '' : ' empty-line'}${st.focus === l.scale_id ? ' focus' : ''}" data-id="${l.scale_id}" tabindex="0" aria-label="${esc(l.name)}">
         <div class="lc-head">
-          <div class="lc-name"><b>${esc(l.name)}</b><small>${esc(l.line || '')}${l.program ? ` · ${esc(l.program)}` : ''}</small></div>
+          <div class="lc-name"><b>${esc(l.name)}</b><small>${esc([l.line && l.line !== l.name ? l.line : '', l.program || ''].filter(Boolean).join(' · ') || (l.device_type === 'opcua' ? 'Checkweigher' : 'เครื่องชั่ง'))}</small></div>
           ${live ? `<span class="pill ${live.cls}"><span class="dot"></span>${live.text}</span>` : ''}
         </div>
         <div class="lc-main">
@@ -332,7 +332,7 @@
     }
     const periods = focus.series.map((s) => s.t);
     const nP = periods.length;
-    const padL = 52; const padR = 56; const padT = 18; const padB = 34;
+    const padL = 52; const padR = 48; const padT = 18; const padB = 34;
     const pw = W - padL - padR; const ph = H - padT - padB;
     const slot = pw / nP;
     const X = (i) => padL + (i + 0.5) * slot;
@@ -353,7 +353,7 @@
       const gMin = key === 'cp' ? st.th.cpMin : st.th.cpkMin;
       const band = (a, b, fill) => { const ya = Y(Math.min(hi, b)); const yb = Y(Math.max(lo, a)); if (yb > ya) s += `<rect x="${padL}" y="${ya}" width="${pw}" height="${yb - ya}" fill="${fill}"/>`; };
       band(st.th.cpkGood, hi, 'var(--good-bg)'); band(gMin, st.th.cpkGood, 'var(--caution-bg)'); band(lo, gMin, 'var(--bad-bg)');
-      for (const [v, lbl, col] of [[st.th.cpkGood, `${st.th.cpkGood.toFixed(2)} ดี`, 'var(--good)'], [gMin, `${gMin.toFixed(2)} ขั้นต่ำ`, 'var(--bad)']]) {
+      for (const [v, lbl, col] of [[st.th.cpkGood, st.th.cpkGood.toFixed(2), 'var(--good)'], [gMin, gMin.toFixed(2), 'var(--bad)']]) {
         if (v < lo || v > hi) continue;
         s += `<line x1="${padL}" x2="${padL + pw}" y1="${Y(v)}" y2="${Y(v)}" stroke="${col}" stroke-width="1" opacity=".7"/>`;
         s += `<text x="${padL + pw + 6}" y="${Y(v) + 4}" font-size="11.5" font-weight="600" fill="${col}">${lbl}</text>`;
