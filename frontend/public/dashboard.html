@@ -1691,6 +1691,12 @@ function xlPrepare(){
   let maxc = 1; bins.forEach(c => { if(c > maxc) maxc = c; });
   const mu = nIn ? s1/nIn : tgt, sdIn = nIn > 1 ? Math.sqrt(Math.max(0, (s2 - nIn*mu*mu)/(nIn - 1))) : 0;
   const cap = computeCpCpk(vals, lsl, usl);
+  // แท่งนับด้านซ้าย: กี่ชิ้นอยู่ใน x̄ ±1σ / ±2σ / ±3σ และกี่ชิ้นเลยสเปก (นับทุกชิ้น รวมที่อยู่นอกกราฟ)
+  const lad = { k:[0, 0, 0], over:0, under:0 };
+  for(const v of vals){
+    if(v > usl) lad.over++; else if(v < lsl) lad.under++;
+    if(sdIn > 0){ const z = Math.abs(v - mu)/sdIn; if(z <= 1) lad.k[0]++; if(z <= 2) lad.k[1]++; if(z <= 3) lad.k[2]++; }
+  }
 
   // ---- EWMA (λ = 0.25) และค่าเฉลี่ยเคลื่อนที่ 5 ค่า ของคอลัมน์ที่แสดง
   const base = bucket ? items.map(o=>o.v) : view.slice(-(items.length + 400)).map(r=>r.value);
@@ -1701,7 +1707,7 @@ function xlPrepare(){
 
   const wDec = res >= 1 ? 0 : res >= 0.1 ? 1 : 2;
   return { bucket, md, items, vals, n:vals.length, meta, title, rows, lsl, usl, tgt, lo, hi, specOff, lines,
-    dist:{ bins, bw, res, maxc, over, under, nIn, mu, sd:sdIn }, zc, cap, ew, ma, wDec, sig:{ mu, sd:sdIn } };
+    dist:{ bins, bw, res, maxc, over, under, nIn, mu, sd:sdIn }, zc, cap, ew, ma, wDec, sig:{ mu, sd:sdIn }, lad };
 }
 
 function xlEnsureCanvas(){
@@ -1790,10 +1796,12 @@ function xlDraw(now){
   const compact = W < 640;                    // มือถือ: แสดงกราฟ + ส่วนต่าง + ตาราง (ไม่มีการกระจายด้านขวา)
   const twoLine = W < 900;                    // คำอธิบายเส้นลงบรรทัดที่สอง
   const lw = compact ? 0 : 118, rw = compact ? 0 : Math.max(140, Math.min(280, W*0.17));
-  const rx1 = W - lw - 6, rx0 = rx1 - rw, mx0 = compact ? 74 : 92, mx1 = compact ? W - 8 : rx0 - 16;
+  const LAD = { x0:10, bw: W >= 1200 ? 44 : 40, gap:6 };          // แท่งนับ ±σ / นอกสเปก (ซ้ายสุด)
+  const ladW = compact ? 0 : 4*(LAD.bw + LAD.gap) + 4;
+  const rx1 = W - lw - 6, rx0 = rx1 - rw, mx0 = compact ? 74 : Math.max(92, LAD.x0 + ladW + 50), mx1 = compact ? W - 8 : rx0 - 16;
   const RH = H >= 470 ? 24 : 20, tableH = RH*4;
   const devH = H >= 340 ? Math.max(48, Math.min(96, Math.round(H*0.15))) : 0;
-  const A = { y0: twoLine ? 62 : 44, y1: H - 8 - tableH - (devH ? devH + 30 : 8) };
+  const A = { y0: twoLine ? 64 : (compact ? 44 : 54), y1: H - 8 - tableH - (devH ? devH + 30 : 8) };
   const D = { y0: A.y1 + 30, y1: A.y1 + 26 + devH };
   const ry = H - 8 - tableH;
   const NW = Math.max(3, Math.min(16, Math.floor((mx1 - mx0)/(compact ? 62 : 68))));
@@ -1891,6 +1899,55 @@ function xlDraw(now){
     for(let v = Math.ceil(vlo/st)*st; v <= vhi + 1e-9; v += st) xlText(ctx, v.toFixed(dec), mx0 - 8, Y(v) + 4, XL_C.TX, 11, 'right');
   }
 
+  // ---- แท่งนับด้านซ้าย: x̄ ±1σ / ±2σ / ±3σ และนอกสเปก — ความสูงแต่ละแท่ง = ช่วงนั้นบนแกนน้ำหนัก
+  if(!compact){
+    const L = d.lad, tot = d.n || 1, mu = d.sig.mu, sd = d.sig.sd;
+    const pct = (n)=> `${(n/tot*100).toFixed(n/tot >= 0.995 && n < tot ? 2 : 1)}%`;
+    const colX = (i)=> LAD.x0 + i*(LAD.bw + LAD.gap);
+    const cap = (x, y, w, col)=>{ ctx.strokeStyle = col; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(x - 3, y); ctx.lineTo(x + w + 3, y); ctx.stroke(); };
+    const inside = (x, yTop, yBot, lines)=>{            // ข้อความกลางแท่ง (ถ้าแท่งเตี้ยเกินวางเหนือแท่ง)
+      const h = yBot - yTop, need = lines.length*12 + 4;
+      let y = h >= need ? (yTop + yBot)/2 - (lines.length - 1)*6 + 4 : yTop - 6 - (lines.length - 1)*12;
+      for(const [t, col, sz, wt] of lines){ xlText(ctx, t, x + LAD.bw/2, y, col, sz, 'center', wt); y += 12; }
+    };
+    // นอกสเปก: แท่งบน (เกิน USL ถึงขอบบนกราฟ) และแท่งล่าง (ต่ำกว่า LSL ถึงขอบล่าง) — นับรวมชิ้นที่หลุดไปไกลนอกกราฟด้วย
+    {
+      const x = colX(0), yU = Y(d.usl), yL = Y(d.lsl);
+      xlText(ctx, 'นอกสเปก', x + LAD.bw/2, A.y0 - 8, XL_C.RD, 10.5, 'center', 600);
+      ctx.fillStyle = XL_C.RD;
+      if(yU > A.y0){ ctx.globalAlpha = 0.55; ctx.fillRect(x, A.y0, LAD.bw, yU - A.y0); ctx.globalAlpha = 1; cap(x, yU, LAD.bw, XL_C.RD); }
+      if(yL < A.y1){ ctx.globalAlpha = 0.55; ctx.fillRect(x, yL, LAD.bw, A.y1 - yL); ctx.globalAlpha = 1; cap(x, yL, LAD.bw, XL_C.RD); }
+      ctx.strokeStyle = 'rgba(239,83,80,0.35)'; ctx.setLineDash([2, 3]); ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(x + LAD.bw/2, Math.max(A.y0, yU)); ctx.lineTo(x + LAD.bw/2, Math.min(A.y1, yL)); ctx.stroke(); ctx.setLineDash([]);
+      // ตัวเลข: ▲ เกิน USL ใต้เส้น USL, ▼ ต่ำกว่า LSL เหนือเส้น LSL (พื้นที่ว่างตรงกลางแท่ง)
+      // ถ้าสเปกอยู่นอกกราฟ (แท่งชิดขอบ) ให้ตัวเลขยังอยู่ในกรอบและไม่ทับกัน
+      const top = Math.max(A.y0, yU), bot = Math.min(A.y1, yL);
+      const ovY = Math.min(Math.max(top + 14, A.y0 + 14), A.y1 - 44);
+      const unY = Math.max(Math.min(bot - 16, A.y1 - 16), ovY + 30);
+      xlText(ctx, `▲ ${L.over.toLocaleString('en-US')}`, x + LAD.bw/2, ovY, '#fff', 11, 'center', 700);
+      xlText(ctx, pct(L.over), x + LAD.bw/2, ovY + 12, '#ffb4b0', 10, 'center', 600);
+      xlText(ctx, `▼ ${L.under.toLocaleString('en-US')}`, x + LAD.bw/2, unY, '#fff', 11, 'center', 700);
+      xlText(ctx, pct(L.under), x + LAD.bw/2, unY + 12, '#ffb4b0', 10, 'center', 600);
+    }
+    // ±3σ, ±2σ, ±1σ (ในสุดอยู่ติดแกน)
+    const EXP = { 1:'68.3%', 2:'95.4%', 3:'99.7%' };
+    [3, 2, 1].forEach((k, i)=>{
+      const x = colX(i + 1);
+      xlText(ctx, `±${k}σ`, x + LAD.bw/2, A.y0 - 8, '#8fd3f6', 11, 'center', 700);
+      if(!(sd > 0)){ xlText(ctx, '–', x + LAD.bw/2, (A.y0 + A.y1)/2, XL_C.TX, 11, 'center'); return; }
+      const yT = Y(mu + k*sd), yB = Y(mu - k*sd);
+      const g = ctx.createLinearGradient(x, 0, x + LAD.bw, 0);
+      const a = { 1:'aa', 2:'77', 3:'4d' }[k];
+      g.addColorStop(0, XL_C.SIG + a); g.addColorStop(1, XL_C.SIG + '22');
+      ctx.fillStyle = g; ctx.fillRect(x, yT, LAD.bw, Math.max(2, yB - yT));
+      ctx.strokeStyle = XL_C.SIG; ctx.lineWidth = 1; ctx.strokeRect(x + 0.5, yT + 0.5, LAD.bw - 1, Math.max(1, yB - yT - 1));
+      if(mu + k*sd > vhi) xlText(ctx, '▲', x + LAD.bw/2, A.y0 + 10, '#8fd3f6', 9, 'center');
+      if(mu - k*sd < vlo) xlText(ctx, '▼', x + LAD.bw/2, A.y1 - 3, '#8fd3f6', 9, 'center');
+      const n = L.k[k - 1];
+      inside(x, yT, yB, [[n.toLocaleString('en-US'), '#fff', 11, 700], [pct(n), '#d8f1ff', 10, 600], [`ควร ${EXP[k]}`, '#8fa9b8', 9, 500]]);
+    });
+  }
+
   // ---- ป้ายแถวตาราง + หัวกราฟส่วนต่าง
   d.rows.forEach((s, r)=>{
     if(r % 2 === 0){ ctx.fillStyle = 'rgba(255,255,255,0.05)'; ctx.fillRect(4, ry + r*RH, mx1 - 4, RH); }
@@ -1898,6 +1955,10 @@ function xlDraw(now){
   });
   if(devH){
     xlText(ctx, 'ส่วนต่างจากเป้าหมาย (Target Deviation)', mx0, A.y1 + 19, '#e6ecea', 12.5, 'left', 600);
+  }
+  if(!compact){
+    xlText(ctx, `แท่งซ้าย = จำนวนชิ้นในแต่ละช่วง`, LAD.x0, A.y1 + 19, XL_C.MUTE, 10.5, 'left', 500);
+    xlText(ctx, `จาก ${d.n.toLocaleString('en-US')} ชิ้น · x̄ ${xlFmt(d.sig.mu, 2)} · σ ${xlFmt(d.sig.sd, 3)}`, LAD.x0, A.y1 + 33, XL_C.MUTE, 10.5, 'left', 500);
   }
 
   // ---- ส่วนที่เลื่อนได้ (คอลัมน์)
