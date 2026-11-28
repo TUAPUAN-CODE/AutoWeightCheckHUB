@@ -23,7 +23,7 @@
     --brand-gradient: linear-gradient(90deg, var(--blue-600), var(--orange-500));
   }
   html, body{height:100%;}
-  body{overflow:hidden; display:flex; flex-direction:column;}
+  body{overflow:auto; display:flex; flex-direction:column;}
   svg text{font-family:var(--font); font-weight:600;}
   .wrap{
     flex:1; min-height:0; display:flex; flex-direction:column;
@@ -148,7 +148,7 @@
   /* ---------- กราฟ ---------- */
   .main-grid{flex:1; min-height:150px; display:grid; grid-template-columns:repeat(5, minmax(0,1fr)); grid-template-rows:1fr; gap:8px;}
   /* X chart แบบสด — แผงมืดแบบจอมอนิเตอร์ ทั้งโหมดสว่างและมืด */
-  .xl-row{flex:3; min-height:360px; display:flex;}
+  .xl-row{flex:3; min-height:600px; display:flex;}
   .panel.xl-panel{flex:1; padding:8px 10px 8px; background:linear-gradient(180deg,#2d3835,#182020); border-color:#2b3634; box-shadow:var(--shadow-md);}
   .panel.xl-panel > h2{color:#fff; font-size:13.5px; align-items:center;}
   .panel.xl-panel > h2 em{color:#93a19e;}
@@ -248,7 +248,7 @@
   @media (max-width:1400px), (max-height:960px){
     body{overflow:auto; display:block;}
     .wrap{display:flex;}
-    .xl-row{height:540px; flex:none;}
+    .xl-row{height:640px; flex:none;}
     .main-grid{flex:none; grid-template-columns:repeat(3, minmax(0,1fr)); grid-template-rows:none;}
     .main-grid .panel{height:260px;}
   }
@@ -1628,7 +1628,7 @@ function xlResolution(vals){
 function xlPrepare(){
   const md = ICH_MODES[ICH_MODE] || ICH_MODES.live;
   const view = getView();
-  let items = [], vals = [], meta = '', title, rows, bucket = false;
+  let items = [], vals = [], series = [], meta = '', title, rows, bucket = false;
   if(md.kind === 'time'){
     bucket = true;
     const win = ichWindow(md);
@@ -1644,7 +1644,8 @@ function xlPrepare(){
       buckets = remote.concat(ichAggregate(local.filter(r=>r.ts.getTime() >= coveredFrom), md));
     }
     buckets.sort((a,b)=>a.t-b.t);
-    items = buckets.slice(-60).map(b=>({ v:b.mean, t:b.t, k:b.n, n:b.n, mn:b.min, mx:b.max, key:b.t }));
+    items = buckets.slice(-60).map(b=>({ v:b.mean, t:b.t, k:b.n, n:b.n, mn:b.min, mx:b.max, key:b.t, fail:(b.over || 0) + (b.under || 0) }));
+    series = buckets.map(b=>b.mean);
     vals = (useCustomRange && customBuffer ? view : local).map(r=>r.value);
     const spanTxt = useCustomRange ? selectedRangeLabel : ({ t1m:'1 ชม.', t5m:'4 ชม.', t15m:'12 ชม.', t30m:'24 ชม.', t1h:'2 วัน', t1d:'30 วัน' }[ICH_MODE] + 'ล่าสุด');
     meta = `เฉลี่ยทุก ${md.label} · ${spanTxt} · ${buckets.length} ช่วง` + (ichRemote.error ? ' · ⚠ โหลดข้อมูลเก่าไม่ได้' : '');
@@ -1654,6 +1655,7 @@ function xlPrepare(){
     const n0 = Math.max(0, view.length - 60);
     items = view.slice(n0).map((r,i)=>({ v:r.value, t:r.ts.getTime(), k:n0 + i + 1, key:r.id }));
     vals = view.map(r=>r.value);
+    series = vals;
     meta = `${selectedRangeLabel} · ${view.length.toLocaleString('en-US')} ชิ้น`;
     title = 'X chart · น้ำหนักแต่ละชิ้นเทียบกรอบ spec';
     rows = ['ชิ้นที่', 'วันที่', 'เวลา', 'น้ำหนัก (g)'];
@@ -1712,9 +1714,37 @@ function xlPrepare(){
   const ew = ewAll.slice(off);
   const ma = items.map((o, i) => { const s = base.slice(Math.max(0, off + i - 4), off + i + 1).filter(v=>v>=lo && v<=hi); return s.length ? mean(s) : null; });
 
+  // ---- MR (ต่างจากชิ้นก่อน) + สัญญาณ SPC ของทุกจุดในช่วงที่เลือก
+  //  ◆ นอกเส้นควบคุม x̄ ± 2.66·MR̄ · 8 = อยู่ฝั่งเดียวกันของเส้นกลาง 8 จุดติด · ↗↘ = ขึ้น/ลงต่อเนื่อง 6 จุด · ⇕ = MR เกิน UCL (3.27·MR̄)
+  const nS = series.length, mrS = new Array(nS).fill(null);
+  let mrSum = 0;
+  for(let i = 1; i < nS; i++){ const m = Math.abs(series[i] - series[i - 1]); mrS[i] = m; mrSum += m; }
+  const mrBar = nS > 1 ? mrSum/(nS - 1) : 0, mrUcl = 3.267*mrBar;
+  const cx = nS ? series.reduce((a, b)=>a + b, 0)/nS : tgt, uclX = cx + 2.66*mrBar, lclX = cx - 2.66*mrBar;
+  const spc = { out:0, run:0, trend:0, jump:0 };
+  const sigS = new Array(nS);
+  { let run = 0, side = 0, tr = 0, dir = 0;
+    for(let i = 0; i < nS; i++){
+      const v = series[i], f = [];
+      if(mrBar > 0 && (v > uclX || v < lclX)){ f.push('out'); spc.out++; }
+      const sd2 = v > cx ? 1 : v < cx ? -1 : 0;
+      if(sd2 !== 0 && sd2 === side) run++; else { side = sd2; run = sd2 ? 1 : 0; }
+      if(run >= 8){ f.push('run'); if(run === 8) spc.run++; }
+      if(i > 0){
+        const dd = Math.sign(v - series[i - 1]);
+        if(dd !== 0 && dd === dir) tr++; else { dir = dd; tr = dd ? 1 : 0; }
+        if(tr >= 5){ f.push(dir > 0 ? 'up' : 'down'); if(tr === 5) spc.trend++; }
+      }
+      if(mrS[i] != null && mrBar > 0 && mrS[i] > mrUcl){ f.push('jump'); spc.jump++; }
+      sigS[i] = f;
+    }
+  }
+  const offS = nS - items.length;
+  items.forEach((o, i)=>{ o.mr = offS + i >= 0 ? mrS[offS + i] : null; o.sig = (offS + i >= 0 && sigS[offS + i]) || []; });
   const wDec = res >= 1 ? 0 : res >= 0.1 ? 1 : 2;
   return { bucket, md, items, vals, n:vals.length, meta, title, rows, lsl, usl, tgt, lo, hi, specOff, lines,
-    dist:{ bins, bw, res, maxc, over, under, nIn, mu, sd:sdIn }, zc, cap, ew, ma, wDec, sig:{ mu, sd:sdIn }, lad, ou };
+    dist:{ bins, bw, res, maxc, over, under, nIn, mu, sd:sdIn }, zc, cap, ew, ma, wDec, sig:{ mu, sd:sdIn }, lad, ou,
+    mr:{ bar:mrBar, ucl:mrUcl }, spc, nSeries:nS };
 }
 
 function xlEnsureCanvas(){
@@ -1809,7 +1839,10 @@ function xlDraw(now){
   const RH = H >= 470 ? 24 : 20, tableH = RH*4;
   const devH = H >= 340 ? Math.max(56, Math.min(110, Math.round(H*0.19))) : 0;
   const devLabels = [];                    // ป้าย USL/LSL ของกราฟส่วนต่าง — วาดนอกส่วนที่เลื่อนได้
-  const A = { y0: twoLine ? 64 : (compact ? 44 : 54), y1: H - 8 - tableH - (devH ? devH + 30 : 8) };
+  const ribH = 16, mrH = compact ? 0 : (H >= 560 ? 58 : 46);          // แถบสถานะ + แถว MR เหนือกราฟเส้น
+  const R = { y0: twoLine ? 56 : 34 }; R.y1 = R.y0 + ribH;
+  const M = { y0: R.y1 + 6 }; M.y1 = M.y0 + mrH;
+  const A = { y0: (mrH ? M.y1 : R.y1) + (compact ? 12 : 24), y1: H - 8 - tableH - (devH ? devH + 30 : 8) };
   const D = { y0: A.y1 + 30, y1: A.y1 + 26 + devH };
   const ry = H - 8 - tableH;
   const NW = Math.max(3, Math.min(16, Math.floor((mx1 - mx0)/(compact ? 62 : 68))));
@@ -1976,15 +2009,59 @@ function xlDraw(now){
     return { o, x:X(j), y: oo > 0 ? A.y0 + 8 : oo < 0 ? A.y1 - 8 : Y(o.v), oo, idx: items.length - need + i };
   });
   ctx.save();
-  ctx.beginPath(); ctx.rect(mx0, A.y0 - 2, mx1 - mx0, H - A.y0); ctx.clip();
+  ctx.beginPath(); ctx.rect(mx0, R.y0 - 2, mx1 - mx0, H - R.y0 + 2); ctx.clip();
   // เส้นตาราง
   ctx.strokeStyle = XL_C.GRID; ctx.lineWidth = 1; ctx.beginPath();
-  for(let b = -1; b <= NW + 1; b++){ const x = mx0 + cw*(b + shift); ctx.moveTo(x, A.y0); ctx.lineTo(x, H - 8); }
+  for(let b = -1; b <= NW + 1; b++){ const x = mx0 + cw*(b + shift); ctx.moveTo(x, R.y0); ctx.lineTo(x, H - 8); }
   for(let i = 0; i <= 4; i++){ const y = A.y0 + (A.y1 - A.y0)*i/4; ctx.moveTo(mx0, y); ctx.lineTo(mx1, y); }
   for(let r = 0; r <= 4; r++){ ctx.moveTo(mx0, ry + r*RH); ctx.lineTo(mx1, ry + r*RH); }
   ctx.stroke();
   // ไฮไลต์คอลัมน์ล่าสุด
-  if(cols.length && pulse > 0){ const c = cols[cols.length - 1]; ctx.globalAlpha = 0.2*pulse; ctx.fillStyle = zcol(c.o.v); ctx.fillRect(c.x - cw/2, A.y0, cw, H - 8 - A.y0); ctx.globalAlpha = 1; }
+  if(cols.length && pulse > 0){ const c = cols[cols.length - 1]; ctx.globalAlpha = 0.2*pulse; ctx.fillStyle = zcol(c.o.v); ctx.fillRect(c.x - cw/2, R.y0, cw, H - 8 - R.y0); ctx.globalAlpha = 1; }
+  // ---- แถบสถานะ: สีโซนของชิ้น + สัญญาณ SPC
+  const GLYPH = { out:'◆', run:'8×', up:'↗', down:'↘', jump:'⇕' };
+  for(const c of cols){
+    const z = zoneOf(c.o.v);
+    ctx.fillStyle = XL_ZC[z]; ctx.globalAlpha = z === 'GREEN' ? 0.5 : 0.85;
+    ctx.fillRect(c.x - cw/2 + 1, R.y0, cw - 2, ribH); ctx.globalAlpha = 1;
+    const g = [...new Set((c.o.sig || []).map(k => GLYPH[k]))].join(' ');
+    if(g){
+      ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.fillRect(c.x - cw/2 + 1, R.y0, cw - 2, ribH);
+      xlText(ctx, g, c.x, R.y0 + 12, '#fff', 11, 'center', 700);
+    }
+  }
+  // ---- MR (ต่างจากชิ้นก่อน) / โหมดเฉลี่ย = จำนวนชิ้นต่อช่วง (แดง = ไม่ผ่าน)
+  if(mrH){
+    const base = M.y1, top = M.y0 + 12, bwM = Math.max(5, Math.min(40, cw*0.42));
+    ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(mx0, base + 0.5); ctx.lineTo(mx1, base + 0.5); ctx.stroke();
+    if(!d.bucket){
+      const mxv = Math.max(d.mr.ucl*1.15, ...cols.map(c => c.o.mr || 0), 0.1);
+      const MY = (v)=> base - Math.min(1, v/mxv)*(base - top);
+      for(const [v, col, dash] of [[d.mr.bar, XL_C.EW, [4, 3]], [d.mr.ucl, XL_C.RD, [6, 4]]]){
+        if(!(v > 0)) continue;
+        ctx.strokeStyle = col; ctx.globalAlpha = 0.8; ctx.lineWidth = 1.1; ctx.setLineDash(dash);
+        ctx.beginPath(); ctx.moveTo(mx0, MY(v)); ctx.lineTo(mx1, MY(v)); ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha = 1;
+      }
+      for(const c of cols){
+        if(c.o.mr == null) continue;
+        const v = c.o.mr, y = MY(v), over = v > d.mr.ucl, warn = v > d.mr.bar*2;
+        const col = over ? XL_C.RD : warn ? XL_C.YL : '#5fa8ff';
+        const g = ctx.createLinearGradient(0, base, 0, y); g.addColorStop(0, col + '66'); g.addColorStop(1, col);
+        ctx.fillStyle = g; ctx.fillRect(c.x - bwM/2, y, bwM, Math.max(1.5, base - y));
+        if(v > mxv){ ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.moveTo(c.x, y - 6); ctx.lineTo(c.x - 4, y); ctx.lineTo(c.x + 4, y); ctx.closePath(); ctx.fill(); }
+        if(cw >= 46) xlText(ctx, v.toFixed(d.wDec), c.x, Math.max(M.y0 + 9, y - 3), over ? '#ffb4b0' : '#c3cfcc', 10, 'center', 600);
+      }
+    } else {
+      const mxN = Math.max(1, ...cols.map(c => c.o.n || 0));
+      for(const c of cols){
+        const n = c.o.n || 0, f = Math.min(n, c.o.fail || 0);
+        const h = n/mxN*(base - top), hf = f/mxN*(base - top);
+        ctx.fillStyle = '#5fa8ff'; ctx.globalAlpha = 0.75; ctx.fillRect(c.x - bwM/2, base - h, bwM, Math.max(1, h - hf)); ctx.globalAlpha = 1;
+        if(f > 0){ ctx.fillStyle = XL_C.RD; ctx.fillRect(c.x - bwM/2, base - h, bwM, Math.max(1.5, hf)); }
+        if(cw >= 46) xlText(ctx, n.toLocaleString('en-US'), c.x, Math.max(M.y0 + 9, base - h - 3), '#c3cfcc', 10, 'center', 600);
+      }
+    }
+  }
   // แท่งต่ำสุด–สูงสุด (โหมดเฉลี่ย)
   if(d.bucket){
     ctx.strokeStyle = XL_C.MM; ctx.lineWidth = Math.max(3, Math.min(8, cw*0.12)); ctx.lineCap = 'round'; ctx.globalAlpha = 0.45;
@@ -2079,6 +2156,31 @@ function xlDraw(now){
   }
   ctx.restore();
   for(const [t, y] of devLabels) xlText(ctx, t, mx0 - 6, y + 3.5, '#ff9a96', 10, 'right', 600);
+  // ป้ายแถวสถานะ / MR (ซ้าย) และสรุปสัญญาณ SPC (ขวา)
+  xlText(ctx, compact ? 'SPC' : 'สถานะ · สัญญาณ SPC', mx0 - 8, R.y0 + 12, '#e6ecea', compact ? 10 : 11, 'right', 600);
+  if(mrH){
+    if(!d.bucket){
+      xlText(ctx, 'MR ต่างจากชิ้นก่อน', mx0 - 8, M.y0 + 16, '#e6ecea', 11, 'right', 600);
+      xlText(ctx, `MR̄ ${xlFmt(d.mr.bar, 2)} · UCL ${xlFmt(d.mr.ucl, 2)}`, mx0 - 8, M.y0 + 31, XL_C.MUTE, 10, 'right', 500);
+    } else {
+      xlText(ctx, 'จำนวนชิ้นต่อช่วง', mx0 - 8, M.y0 + 16, '#e6ecea', 11, 'right', 600);
+      xlText(ctx, 'แดง = ไม่ผ่าน', mx0 - 8, M.y0 + 31, XL_C.MUTE, 10, 'right', 500);
+    }
+  }
+  if(!compact){
+    const sx = rx0, S = d.spc;
+    xlText(ctx, `สัญญาณ SPC ในช่วงนี้ (${d.nSeries.toLocaleString('en-US')} ${d.bucket ? 'ช่วง' : 'ชิ้น'})`, sx, R.y0 + 11, '#e6ecea', 11, 'left', 600);
+    const rowsL = [
+      [`◆ นอกเส้นควบคุม: ${S.out.toLocaleString('en-US')}`, S.out], [`8× ฝั่งเดียวติดกัน 8 จุด: ${S.run.toLocaleString('en-US')}`, S.run],
+      [`↗↘ ขึ้น/ลงต่อเนื่อง 6 จุด: ${S.trend.toLocaleString('en-US')}`, S.trend], [`⇕ MR เกิน UCL: ${S.jump.toLocaleString('en-US')}`, S.jump],
+    ];
+    const colW = (rx1 + lw - 12 - sx)/2;
+    rowsL.forEach(([t, n], i)=>{
+      const x = sx + (i % 2)*colW, y = R.y0 + 27 + Math.floor(i/2)*14;
+      if(y < A.y0 - 14) xlText(ctx, t, x, y, n ? '#ffd0a8' : XL_C.MUTE, 10.5, 'left', n ? 600 : 500);
+    });
+    if(R.y0 + 27 + 2*14 < A.y0 - 14) xlText(ctx, 'สีแถบ = โซนของชิ้น · สัญลักษณ์ = เหตุที่เตือน', sx, R.y0 + 27 + 2*14, XL_C.MUTE, 10, 'left', 500);
+  }
   if(devH && !compact){
     const O = d.ou, z0 = (D.y0 + D.y1)/2, half = (D.y1 - D.y0)/2 - 4;
     const gTxt = (g)=> g >= 1000 ? `${(g/1000).toFixed(2)} kg` : `${g.toFixed(1)} g`;
