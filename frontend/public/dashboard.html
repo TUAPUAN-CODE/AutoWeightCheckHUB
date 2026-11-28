@@ -146,7 +146,6 @@
   .kpi.bad{box-shadow:inset 0 3px 0 var(--limit), var(--shadow-xs);}
 
   /* ---------- กราฟ ---------- */
-  .main-grid{flex:1; min-height:150px; display:grid; grid-template-columns:repeat(5, minmax(0,1fr)); grid-template-rows:1fr; gap:8px;}
   /* X chart แบบสด — แผงมืดแบบจอมอนิเตอร์ ทั้งโหมดสว่างและมืด */
   .xl-row{flex:3; min-height:600px; display:flex;}
   .panel.xl-panel{flex:1; padding:8px 10px 8px; background:linear-gradient(180deg,#2d3835,#182020); border-color:#2b3634; box-shadow:var(--shadow-md);}
@@ -216,14 +215,7 @@
   .tick{fill:var(--ink-3); font-size:9px; font-weight:600;}
 
   /* live feed */
-  .feed{display:flex; flex-direction:column; font-size:12px; flex:1; min-height:0; overflow-y:auto;}
-  .feed-row{display:grid; grid-template-columns:62px 64px 1fr 96px; gap:8px; align-items:center; padding:4px 2px; border-bottom:1px solid var(--hairline-2); font-variant-numeric:tabular-nums;}
-  .feed-row:first-child{animation:slideIn .3s ease;}
   @keyframes slideIn{from{opacity:0; transform:translateY(-6px);} to{opacity:1; transform:translateY(0);}}
-  .feed-row .sample{color:var(--ink-3); font-size:11px;}
-  .feed-row .value{font-weight:700; text-align:right;}
-  .feed-row .bar-bg{background:var(--surface-2); border-radius:3px; height:6px; position:relative; overflow:hidden;}
-  .feed-row .bar-fill{position:absolute; top:0; bottom:0; left:0; border-radius:3px;}
   .tag{justify-self:end; height:20px; font-size:10.5px; white-space:nowrap;}
   .tag.z-GREEN{background:var(--good-bg); color:var(--good);}
   .tag.z-YELLOW{background:var(--caution-bg); color:var(--caution);}
@@ -249,15 +241,11 @@
     body{overflow:auto; display:block;}
     .wrap{display:flex;}
     .xl-row{height:640px; flex:none;}
-    .main-grid{flex:none; grid-template-columns:repeat(3, minmax(0,1fr)); grid-template-rows:none;}
-    .main-grid .panel{height:260px;}
   }
   @media (max-width:1200px){ .kpis{grid-template-columns:repeat(3,1fr);} .kpi.yield{grid-column:span 3;} .doc-bar-info{flex-wrap:wrap;} .machine-strip{border-left:none; padding-left:0; margin-left:0;} }
   @media (max-width:900px){
     body{overflow:auto; display:block;}
     .wrap{display:flex; padding:12px;}
-    .main-grid{grid-template-columns:1fr; grid-template-rows:none;}
-    .main-grid .panel{height:300px;}
     .xl-row{height:560px; flex:none;}
     .kpis{grid-template-columns:repeat(2,1fr);}
     .kpi.yield{grid-column:span 2;}
@@ -412,45 +400,6 @@
         </label>
         <a class="expand-hint" id="xlExpand" href="analysis.html" title="เปิดกราฟวิเคราะห์เต็มจอ (ซูม / ย้อนหลัง / Histogram)"><svg class="i"><use href="assets/icons.svg#expand"></use></svg></a></h2>
       <div class="xl-box"><canvas id="xlCanvas" aria-label="X chart น้ำหนักรายชิ้น"></canvas></div>
-    </div>
-  </div>
-
-  <div class="main-grid">
-    <div class="panel expandable" data-title="X-bar Chart" data-src="xbarchart">
-      <h2>X-bar Chart <em id="xbarMeta"></em>
-        <span class="expand-hint"><svg class="i"><use href="assets/icons.svg#expand"></use></svg></span></h2>
-      <div class="chart-body-wrap">
-        <div class="chart-body"><svg id="xbarchart" viewBox="0 0 1120 220" preserveAspectRatio="xMidYMid meet"></svg></div>
-      </div>
-    </div>
-
-    <div class="panel expandable" data-title="R Chart (Range)" data-src="rchart">
-      <h2>R Chart <em id="rMeta"></em>
-        <span class="expand-hint"><svg class="i"><use href="assets/icons.svg#expand"></use></svg></span></h2>
-      <div class="chart-body-wrap">
-        <div class="chart-body"><svg id="rchart" viewBox="0 0 1120 220" preserveAspectRatio="xMidYMid meet"></svg></div>
-      </div>
-    </div>
-
-    <div class="panel expandable" data-title="Capability Trend — Cp / Cpk" data-src="trendchart">
-      <h2>Capability Trend <em id="trendMeta"></em>
-        <span class="expand-hint"><svg class="i"><use href="assets/icons.svg#expand"></use></svg></span></h2>
-      <div class="chart-body-wrap">
-        <div class="chart-body"><svg id="trendchart" viewBox="0 0 1120 240" preserveAspectRatio="xMidYMid meet"></svg></div>
-      </div>
-    </div>
-
-    <div class="panel expandable" data-title="S Chart (Std Dev)" data-src="schart">
-      <h2>S Chart <em id="sMeta"></em>
-        <span class="expand-hint"><svg class="i"><use href="assets/icons.svg#expand"></use></svg></span></h2>
-      <div class="chart-body-wrap">
-        <div class="chart-body"><svg id="schart" viewBox="0 0 1120 220" preserveAspectRatio="xMidYMid meet"></svg></div>
-      </div>
-    </div>
-
-    <div class="panel">
-      <h2>Live Feed <em>recent readings</em></h2>
-      <div class="feed" id="feed"></div>
     </div>
   </div>
 </div>
@@ -1378,11 +1327,6 @@ function renderAll(latest){
   safeRender(renderKPIs, 'renderKPIs');
   safeRender(renderHistogram, 'renderHistogram');
   safeRender(renderIndividuals, 'renderIndividuals');
-  safeRender(renderXbar, 'renderXbar');
-  safeRender(renderRChart, 'renderRChart');
-  safeRender(renderTrend, 'renderTrend');
-  safeRender(renderSChart, 'renderSChart');
-  safeRender(renderFeed, 'renderFeed');
   safeRender(paintConn, 'paintConn');
   safeRender(updateAlertBadge, 'updateAlertBadge');
 }
@@ -2319,248 +2263,8 @@ document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) xlKick(
 window.addEventListener('themechange', xlKick);
 
 
-// ================= X-bar =================
-function renderXbar(){
-  const svg=document.getElementById('xbarchart');
-  clearSvg(svg);
-  const vals = getView().map(r=>r.value);
-  const nSub = Math.floor(vals.length/5);
-  if(nSub<2){
-    document.getElementById('xbarMeta').textContent = `${nSub} subgroups × n=5 · ${selectedRangeLabel}`;
-    return;
-  }
-  const subMeans=[]; for(let s=0;s<nSub;s++) subMeans.push(mean(vals.slice(s*5,s*5+5)));
-  const subRanges=[]; for(let s=0;s<nSub;s++){ const g=vals.slice(s*5,s*5+5); subRanges.push(Math.max(...g)-Math.min(...g)); }
-  const shown = applyZoomWindow('xbarchart', subMeans.slice(-40));
-  const xbb=mean(subMeans), rBar=mean(subRanges), A2=0.577;
-  const UCL=xbb+A2*rBar, LCL=xbb-A2*rBar;
-
-  const W=1120,H=220,padL=48,padR=20,padT=16,padB=30;
-  const plotW=W-padL-padR, plotH=H-padT-padB;
-  // จำกัดขอบเขตแกน Y เหมือน Individuals — กันจุดที่หลุดไปไกลตัวเดียวดึงแกนยืดจนจุดอื่นแบน
-  const refLo = Math.min(SPEC.LSL,LCL), refHi = Math.max(SPEC.USL,UCL);
-  const band = Math.max(refHi-refLo, 1) * 0.6;
-  const yMin = refLo - band, yMax = refHi + band;
-  const x=(i)=> padL + (i/(Math.max(shown.length-1,1)))*plotW;
-  const y=(v)=> padT + plotH - ((v-yMin)/(yMax-yMin))*plotH;
-
-  let hiddenAbove=0, hiddenBelow=0;
-  const clipped = shown.map(v=>{
-    const c = clipVal(v, yMin, yMax);
-    if(c.off===1) hiddenAbove++; else if(c.off===-1) hiddenBelow++;
-    return c;
-  });
-  document.getElementById('xbarMeta').textContent = `${nSub} subgroups × n=5 · ${selectedRangeLabel}` +
-    (hiddenAbove+hiddenBelow>0 ? ` · ⚠ ${hiddenAbove+hiddenBelow} จุดเกินช่วงแสดงผล (▲${hiddenAbove} ▼${hiddenBelow})` : '');
-
-  svg.appendChild(el('rect',{x:padL,y:y(SPEC.USL),width:plotW,height:Math.max(y(SPEC.LSL)-y(SPEC.USL),0),fill:'var(--ok-dim)'}));
-  [[SPEC.LSL,'LSL','var(--limit)'],[SPEC.USL,'USL','var(--limit)']].forEach(([val,lbl,color])=>{
-    svg.appendChild(el('line',{x1:padL,x2:W-padR,y1:y(val),y2:y(val),stroke:color,'stroke-width':1.2}));
-    svg.appendChild(el('text',{x:W-padR+4,y:y(val)+3,class:'tick',fill:color})).textContent=lbl;
-  });
-  [[UCL,'UCL'],[LCL,'LCL'],[xbb,'x̿']].forEach(([val,lbl])=>{
-    svg.appendChild(el('line',{x1:padL,x2:W-padR,y1:y(val),y2:y(val),stroke: lbl==='x̿'?'var(--target)':'var(--ctrl)','stroke-width':1,'stroke-dasharray':'5 4'}));
-    svg.appendChild(el('text',{x:padL-6,y:y(val)+3,class:'tick','text-anchor':'end'})).textContent=lbl;
-  });
-  svg.appendChild(el('line',{x1:padL,x2:W-padR,y1:padT+plotH,y2:padT+plotH,class:'axis'}));
-  svg.appendChild(el('text',{x:padL,y:H-8,class:'tick'})).textContent='SG'+(nSub-shown.length+1);
-  svg.appendChild(el('text',{x:W-padR,y:H-8,class:'tick','text-anchor':'end'})).textContent='SG'+nSub;
-
-  let d='';
-  clipped.forEach((c,i)=>{ d += (i===0?'M':'L') + x(i) + ' ' + y(c.v) + ' '; });
-  svg.appendChild(el('path',{d, fill:'none', stroke:'var(--ok)', 'stroke-width':1.6}));
-  clipped.forEach((c,i)=>{
-    const isLast = i===clipped.length-1;
-    if(c.off!==0){
-      clipMarker(svg, x(i), y(c.v), c.off, 'var(--limit)');
-    } else {
-      const oob = shown[i]>UCL||shown[i]<LCL;
-      svg.appendChild(el('circle',{cx:x(i),cy:y(c.v),r: isLast?5.5:3.2, fill: oob?'var(--limit)':'var(--ok)',stroke:'var(--panel)','stroke-width':1}));
-    }
-  });
-}
-
-// ================= R chart (subgroup range, n=5 per point) =================
-function renderRChart(){
-  const svg=document.getElementById('rchart');
-  clearSvg(svg);
-  const vals = getView().map(r=>r.value);
-  const nSub = Math.floor(vals.length/5);
-  if(nSub<2){
-    document.getElementById('rMeta').textContent = `${nSub} subgroups × n=5 · ${selectedRangeLabel}`;
-    return;
-  }
-  const subRanges=[]; for(let s=0;s<nSub;s++){ const g=vals.slice(s*5,s*5+5); subRanges.push(Math.max(...g)-Math.min(...g)); }
-  const shown = applyZoomWindow('rchart', subRanges.slice(-40));
-  const rBar = mean(subRanges);
-  // D3/D4 control-limit constants for subgroup size n=5
-  const D3=0, D4=2.114;
-  const UCL = D4*rBar, LCL = D3*rBar;
-
-  const W=1120,H=220,padL=48,padR=20,padT=16,padB=30;
-  const plotW=W-padL-padR, plotH=H-padT-padB;
-  // จำกัด yMax ไว้ที่ ~2.5 เท่าของ UCL/R̄ — กันไม่ให้ subgroup ที่เหวี่ยงแรงผิดปกติจุดเดียวดึงแกนยืดจนจุดอื่นแบนหมด
-  const yMax = Math.max(UCL, rBar, 0.01) * 2.5;
-  const x=(i)=> padL + (i/(Math.max(shown.length-1,1)))*plotW;
-  const y=(v)=> padT + plotH - ((v-0)/(yMax-0))*plotH;
-
-  let hiddenAbove=0;
-  const clipped = shown.map(v=>{ const c=clipVal(v, 0, yMax); if(c.off===1) hiddenAbove++; return c; });
-  document.getElementById('rMeta').textContent = `${nSub} subgroups × n=5 · ${selectedRangeLabel}` +
-    (hiddenAbove>0 ? ` · ⚠ ${hiddenAbove} จุดเกินช่วงแสดงผล` : '');
-
-  [[UCL,'UCL'],[LCL,'LCL'],[rBar,'R̄']].forEach(([val,lbl])=>{
-    svg.appendChild(el('line',{x1:padL,x2:W-padR,y1:y(val),y2:y(val),stroke: lbl==='R̄'?'var(--target)':'var(--ctrl)','stroke-width':1,'stroke-dasharray':'5 4'}));
-    svg.appendChild(el('text',{x:padL-6,y:y(val)+3,class:'tick','text-anchor':'end'})).textContent=lbl;
-  });
-  svg.appendChild(el('line',{x1:padL,x2:W-padR,y1:padT+plotH,y2:padT+plotH,class:'axis'}));
-  svg.appendChild(el('text',{x:padL,y:H-8,class:'tick'})).textContent='SG'+(nSub-shown.length+1);
-  svg.appendChild(el('text',{x:W-padR,y:H-8,class:'tick','text-anchor':'end'})).textContent='SG'+nSub;
-
-  let d=''; clipped.forEach((c,i)=>{ d += (i===0?'M':'L') + x(i) + ' ' + y(c.v) + ' '; });
-  svg.appendChild(el('path',{d, fill:'none', stroke:'var(--ok)', 'stroke-width':1.6}));
-  clipped.forEach((c,i)=>{
-    const isLast = i===clipped.length-1;
-    if(c.off!==0){
-      clipMarker(svg, x(i), y(c.v), c.off, 'var(--limit)');
-    } else {
-      const oob = shown[i]>UCL||shown[i]<LCL;
-      svg.appendChild(el('circle',{cx:x(i),cy:y(c.v),r: isLast?5.5:3.2, fill: oob?'var(--limit)':'var(--ok)',stroke:'var(--panel)','stroke-width':1}));
-    }
-  });
-}
-
-// ================= capability trend =================
-function renderTrend(){
-  const svg=document.getElementById('trendchart');
-  clearSvg(svg);
-  const vals = getView().map(r=>r.value);
-  const batchSize = 20;
-  const nBatches = Math.floor(vals.length/batchSize);
-  document.getElementById('trendMeta').textContent = `${nBatches} batches × n=${batchSize} (rolling)`;
-  if(nBatches<2) return;
-
-  const batches=[];
-  for(let b=0;b<nBatches;b++){
-    const grp = vals.slice(b*batchSize,(b+1)*batchSize);
-    const gm=mean(grp), gs=stdev(grp);
-    batches.push({ cp: gs>0?(SPEC.USL-SPEC.LSL)/(6*gs):0, cpk: gs>0?Math.min(SPEC.USL-gm,gm-SPEC.LSL)/(3*gs):0 });
-  }
-  const shown = applyZoomWindow('trendchart', batches.slice(-20));
-
-  const W=1120,H=240,padL=42,padR=20,padT=16,padB=30;
-  const plotW=W-padL-padR, plotH=H-padT-padB;
-  const allVals = shown.flatMap(b=>[b.cp,b.cpk]);
-  const yMax = Math.max(2.0, Math.max(...allVals)*1.1);
-  const x=(i)=> padL + (i/(Math.max(shown.length-1,1)))*plotW;
-  const y=(v)=> padT + plotH - ((v-0)/(yMax-0))*plotH;
-
-  svg.appendChild(el('rect',{x:padL,y:y(Math.min(1.0,yMax)),width:plotW,height:y(0)-y(Math.min(1.0,yMax)),fill:'var(--limit-dim)'}));
-  if(yMax>1.0) svg.appendChild(el('rect',{x:padL,y:y(Math.min(1.33,yMax)),width:plotW,height:y(1.0)-y(Math.min(1.33,yMax)),fill:'rgba(232,176,75,0.10)'}));
-  if(yMax>1.33) svg.appendChild(el('rect',{x:padL,y:padT,width:plotW,height:y(1.33)-padT,fill:'var(--ok-dim)'}));
-
-  [[1.0,'1.00','var(--limit)'],[1.33,'1.33','var(--target)']].forEach(([val,lbl,color])=>{
-    if(val>yMax) return;
-    svg.appendChild(el('line',{x1:padL,x2:W-padR,y1:y(val),y2:y(val),stroke:color,'stroke-width':1,'stroke-dasharray':'3 3'}));
-    svg.appendChild(el('text',{x:padL-6,y:y(val)+3,class:'tick','text-anchor':'end'})).textContent=lbl;
-  });
-  for(let t=0; t<=yMax; t+=0.5){
-    svg.appendChild(el('text',{x:padL-6,y:y(t)+3,class:'tick','text-anchor':'end',fill:'var(--text-faint)'})).textContent=t.toFixed(1);
-  }
-  svg.appendChild(el('line',{x1:padL,x2:W-padR,y1:padT+plotH,y2:padT+plotH,class:'axis'}));
-  svg.appendChild(el('text',{x:padL,y:H-8,class:'tick'})).textContent='B'+(nBatches-shown.length+1);
-  svg.appendChild(el('text',{x:W-padR,y:H-8,class:'tick','text-anchor':'end'})).textContent='B'+nBatches;
-
-  function path(key){
-    let d=''; shown.forEach((b,i)=>{ d += (i===0?'M':'L') + x(i) + ' ' + y(b[key]) + ' '; }); return d;
-  }
-  svg.appendChild(el('path',{d:path('cp'), fill:'none', stroke:'var(--ctrl)', 'stroke-width':1.6, 'stroke-dasharray':'5 4'}));
-  svg.appendChild(el('path',{d:path('cpk'), fill:'none', stroke:'var(--ok)', 'stroke-width':2}));
-  shown.forEach((b,i)=>{
-    svg.appendChild(el('circle',{cx:x(i),cy:y(b.cpk),r: i===shown.length-1?4.5:2.6,
-      fill: b.cpk<1.0?'var(--limit)':(b.cpk<1.33?'var(--target)':'var(--ok)'), stroke:'var(--panel)','stroke-width':0.75}));
-  });
-}
-
-// ================= S chart (subgroup std-dev, n=30 per point) =================
-function renderSChart(){
-  const svg=document.getElementById('schart');
-  clearSvg(svg);
-  const vals = getView().map(r=>r.value);
-  const groupSize = 30;
-  const nSub = Math.floor(vals.length/groupSize);
-  if(nSub<2){
-    document.getElementById('sMeta').textContent = `${nSub} subgroups × n=${groupSize} · ${selectedRangeLabel}`;
-    return;
-  }
-
-  const subS=[]; for(let s=0;s<nSub;s++) subS.push(stdev(vals.slice(s*groupSize,s*groupSize+groupSize)));
-  const shown = applyZoomWindow('schart', subS.slice(-30));
-  const sBar = mean(subS);
-
-  // B3/B4 control-limit constants derived from c4, valid for any subgroup size n
-  const n = groupSize;
-  const c4 = 4*(n-1)/(4*n-3);
-  const term = 3*Math.sqrt(Math.max(0,1-c4*c4))/c4;
-  const B3 = Math.max(0, 1-term), B4 = 1+term;
-  const UCL = B4*sBar, LCL = B3*sBar;
-
-  const W=1120,H=220,padL=48,padR=20,padT=16,padB=30;
-  const plotW=W-padL-padR, plotH=H-padT-padB;
-  // จำกัด yMax ไว้ที่ ~2.5 เท่าของ UCL/s̄ เหมือน R chart — กันจุดที่เหวี่ยงแรงตัวเดียวดึงแกนยืดจนจุดอื่นแบนหมด
-  const yMax = Math.max(UCL, sBar, 0.01) * 2.5;
-  const x=(i)=> padL + (i/(Math.max(shown.length-1,1)))*plotW;
-  const y=(v)=> padT + plotH - ((v-0)/(yMax-0))*plotH;
-
-  let hiddenAbove=0;
-  const clipped = shown.map(v=>{ const c=clipVal(v, 0, yMax); if(c.off===1) hiddenAbove++; return c; });
-  document.getElementById('sMeta').textContent = `${nSub} subgroups × n=${groupSize} · ${selectedRangeLabel}` +
-    (hiddenAbove>0 ? ` · ⚠ ${hiddenAbove} จุดเกินช่วงแสดงผล` : '');
-
-  [[UCL,'UCL'],[LCL,'LCL'],[sBar,'s̄']].forEach(([val,lbl])=>{
-    svg.appendChild(el('line',{x1:padL,x2:W-padR,y1:y(val),y2:y(val),stroke: lbl==='s̄'?'var(--target)':'var(--ctrl)','stroke-width':1,'stroke-dasharray':'5 4'}));
-    svg.appendChild(el('text',{x:padL-6,y:y(val)+3,class:'tick','text-anchor':'end'})).textContent=lbl;
-  });
-  svg.appendChild(el('line',{x1:padL,x2:W-padR,y1:padT+plotH,y2:padT+plotH,class:'axis'}));
-  svg.appendChild(el('text',{x:padL,y:H-8,class:'tick'})).textContent='SG'+(nSub-shown.length+1);
-  svg.appendChild(el('text',{x:W-padR,y:H-8,class:'tick','text-anchor':'end'})).textContent='SG'+nSub;
-
-  let d=''; clipped.forEach((c,i)=>{ d += (i===0?'M':'L') + x(i) + ' ' + y(c.v) + ' '; });
-  svg.appendChild(el('path',{d, fill:'none', stroke:'var(--ok)', 'stroke-width':1.6}));
-  clipped.forEach((c,i)=>{
-    const isLast = i===clipped.length-1;
-    if(c.off!==0){
-      clipMarker(svg, x(i), y(c.v), c.off, 'var(--limit)');
-    } else {
-      const oob = shown[i]>UCL||shown[i]<LCL;
-      svg.appendChild(el('circle',{cx:x(i),cy:y(c.v),r: isLast?5.5:3.2, fill: oob?'var(--limit)':'var(--ok)',stroke:'var(--panel)','stroke-width':1}));
-    }
-  });
-}
-
 RENDER_FN.ichart = renderIndividuals;
-RENDER_FN.xbarchart = renderXbar;
-RENDER_FN.rchart = renderRChart;
-RENDER_FN.trendchart = renderTrend;
-RENDER_FN.schart = renderSChart;
 RENDER_FN.hist = () => renderHistogram();
-
-// ================= live feed =================
-function renderFeed(){
-  const recent = getView().slice(-15).reverse();
-  document.getElementById('feed').innerHTML = recent.map(r=>{
-    const pct = Math.max(0,Math.min(100, ((r.value-(SPEC.LSL-5))/((SPEC.USL+5)-(SPEC.LSL-5)))*100));
-    const z = zoneOf(r.value);
-    const color = ZONE_COLOR[z];
-    return `<div class="feed-row">
-      <span class="sample">${r.sample}</span>
-      <span class="value" style="color:${color}">${r.value.toFixed(1)} g</span>
-      <span class="bar-bg"><span class="bar-fill" style="width:${pct}%; background:${color}"></span></span>
-      <span class="tag z-${z}">${ZONE_LABEL[z]}</span>
-    </div>`;
-  }).join('');
-}
-
 
 // ================= controls =================
 function startPolling(){
